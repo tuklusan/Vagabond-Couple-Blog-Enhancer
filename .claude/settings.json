@@ -8,7 +8,10 @@
       "Write(*)",
       "Edit(*)",
       "Glob(*)",
-      "Grep(*)"
+      "Grep(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__*"
     ]
   },
   "skipDangerousModePermissionPrompt": true,
@@ -23,6 +26,18 @@
             "shell": "powershell",
             "timeout": 5,
             "statusMessage": "Checking for banned background task..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude\\check_no_direct_python_write.py",
+            "shell": "powershell",
+            "timeout": 5,
+            "statusMessage": "Enforcing coder workflow..."
           }
         ]
       }
