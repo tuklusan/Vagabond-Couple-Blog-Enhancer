@@ -1,0 +1,34 @@
+Write a complete Python script: .claude/code_agent.py
+
+PURPOSE: Claude calls this to get code written and reviewed. Claude never writes code itself.
+
+CODER HIERARCHY:
+1. Primary coder: model "deepseek-v4-pro" via api.deepseek.com using DEEPSEEK_API_KEY
+   - Load key from env DEEPSEEK_API_KEY or Config/deepseek-api-key.txt (line starting with DEEPSEEK_API_KEY=)
+   - base_url = "https://api.deepseek.com"
+2. Fallback coder: model "nvidia/nemotron-3-super-120b-a12b" via NVIDIA NIM using NVIDIA_API_KEY_CODING
+   - Load key from env NVIDIA_API_KEY_CODING or Config/nvidia-api-keys.txt (line starting with NVIDIA_API_KEY_CODING=)
+   - base_url = "https://integrate.api.nvidia.com/v1"
+   - Use fallback if primary raises any exception (timeout, 503, auth error, etc.)
+
+REVIEWER: model "deepseek-v4-pro" via api.deepseek.com using DEEPSEEK_API_KEY (same as primary coder)
+
+FUNCTIONS:
+- load_key(var_name, file_path, prefix): load from env or file, exit(1) if not found
+- call_coder(client, model, system, user, max_tokens=8192, temperature=0.2): call API, return text, strip markdown fences
+- write_code(task, context="", previous_code="", review_feedback=""): try primary, on any exception try fallback, print which coder was used
+- review_code(code, task): call DeepSeek reviewer, return (has_critical: bool, review_text: str). has_critical=True if "Critical" in review and "APPROVED" not in review (case-insensitive)
+
+MAIN LOOP (up to 3 rounds):
+  Round N: call write_code -> call review_code
+  If no critical issues: break
+  Else if round < 3: pass code + feedback back to write_code for next round
+  After 3 rounds: write best available code anyway
+
+CLI: argparse with --task (required), --output (required), --context (optional, default "")
+
+OUTPUT: write final code to --output path (create parent dirs). Write review text to --output path + ".review.txt" in same directory.
+
+Print progress: [*] which coder is writing, [+] approved, [!] critical issues found, round numbers.
+
+IMPORTANT: Script must be completely self-contained. No background processes. No subprocess calls.
