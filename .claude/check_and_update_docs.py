@@ -1,177 +1,161 @@
 import json
 import os
 import sys
-import traceback
+
 import requests
+
 
 def main():
     try:
-        # Read hook JSON from stdin
-        raw = sys.stdin.read()
-        hook = json.loads(raw)
-        tool_input = hook.get("tool_input", {})
-        file_path = tool_input.get("file_path", "")
+        # 1. Parse JSON from stdin
+        raw_stdin = sys.stdin.read()
+        hook_input = json.loads(raw_stdin)
+        file_path = hook_input.get("tool_input", {}).get("file_path", "")
 
-        # Skip certain paths
+        # 2. Skip conditions
         if not file_path:
-            print("[docs] No file_path in hook input. Skipping.")
+            return
+        if file_path.startswith("Doc/") or "/Doc/" in file_path:
+            return
+        if file_path.endswith(".review.txt"):
+            return
+        if "_SECRETS" in file_path:
+            return
+        if "check_and_update_docs" in file_path:
             return
 
-        # Normalize path
-        file_path = os.path.normpath(file_path)
-
-        # Skip Doc/ files, .review.txt files, Config/_SECRETS/ files
-        if file_path.startswith("Doc" + os.sep) or file_path.startswith("Doc/") \
-                or file_path.endswith(".review.txt") \
-                or ("Config/_SECRETS" + os.sep) in file_path or ("Config/_SECRETS/") in file_path:
-            print("[docs] Skipping excluded path: " + file_path)
+        # Path traversal protection
+        cwd = os.getcwd()
+        abs_file = os.path.abspath(file_path)
+        if not abs_file.startswith(os.path.join(cwd, "")):
+            safe_print("[docs] Error: path not within project root")
             return
 
-        # Read changed file content from disk
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                changed_content = f.read()
-        except Exception as e:
-            print("[docs] Error reading changed file: " + str(e))
+        if not os.path.isfile(file_path):
             return
 
-        # Read current DESIGN.txt and WORKFLOW.md
-        design_path = os.path.join("Doc", "DESIGN.txt")
-        workflow_path = os.path.join("Doc", "WORKFLOW.md")
+        # 3. Read changed file content, cap at 3000 chars
+        with open(file_path, "r", encoding="utf-8") as f:
+            changed_content = f.read(3000)
 
-        design_content = ""
-        if os.path.exists(design_path):
-            with open(design_path, 'r', encoding='utf-8') as f:
-                design_content = f.read()
+        # 4. Read Doc/DESIGN.txt
+        design_path = "Doc/DESIGN.txt"
+        if os.path.isfile(design_path):
+            with open(design_path, "r", encoding="utf-8") as f:
+                current_design = f.read()
+        else:
+            current_design = ""
 
-        workflow_content = ""
-        if os.path.exists(workflow_path):
-            with open(workflow_path, 'r', encoding='utf-8') as f:
-                workflow_content = f.read()
+        # 5. Read Doc/WORKFLOW.md
+        workflow_path = "Doc/WORKFLOW.md"
+        if os.path.isfile(workflow_path):
+            with open(workflow_path, "r", encoding="utf-8") as f:
+                current_workflow = f.read()
+        else:
+            current_workflow = ""
 
-        # Truncate changed content to 3000 chars
-        truncated_changed = changed_content[:3000]  # can be shorter
-
-        # Construct prompt
-        prompt = f"""You are a technical documentation maintainer.
-A file was just changed: {file_path}
-Current DESIGN.txt:
-{design_content[:3000] if design_content else "(empty)"}
-Current WORKFLOW.md:
-{workflow_content[:3000] if workflow_content else "(empty)"}
-Changed file content:
-{truncated_changed if truncated_changed else "(empty)"}
-Question: Does this change require updates to DESIGN.txt or WORKFLOW.md?
-If YES: respond with DESIGN_UPDATE: followed by the FULL updated DESIGN.txt, then WORKFLOW_UPDATE: followed by the FULL updated WORKFLOW.md (only include sections that changed, others unchanged)
-If NO: respond with just: NO_UPDATE_NEEDED"""
-
-        # Load DeepSeek API key
-        key_path = os.path.join("Config", "_SECRETS", "deepseek-api-key.txt")
-        api_key = None
-        try:
-            with open(key_path, 'r') as f:
+        # 6. Load DeepSeek API key
+        secrets_path = "Config/_SECRETS/deepseek-api-key.txt"
+        api_key = ""
+        if os.path.isfile(secrets_path):
+            with open(secrets_path, "r", encoding="utf-8") as f:
                 for line in f:
-                    line = line.strip()
                     if line.startswith("DEEPSEEK_API_KEY="):
-                        api_key = line.split("=", 1)[1].strip()
+                        api_key = line.strip().split("=", 1)[1]
                         break
-        except Exception as e:
-            print("[docs] Error reading API key: " + str(e))
-            return
-
         if not api_key:
-            print("[docs] No DEEPSEEK_API_KEY found.")
+            safe_print("[docs] Error: DeepSeek API key not found")
             return
 
-        # Call DeepSeek API
+        # 7. Build prompt
+        # Use unique delimiters unlikely to appear in documentation
+        DESIGN_MARKER = "!!DESIGN_UPDATE!!"
+        WORKFLOW_MARKER = "!!WORKFLOW_UPDATE!!"
+        prompt = (
+            "You are a technical documentation maintainer.\n"
+            "The file that was changed: " + file_path + "\n\n"
+            "Current Doc/DESIGN.txt content:\n"
+            + current_design + "\n\n"
+            "Current Doc/WORKFLOW.md content:\n"
+            + current_workflow + "\n\n"
+            "Changed file content:\n"
+            + changed_content + "\n\n"
+            "Does this change require updates to DESIGN.txt or WORKFLOW.md?\n"
+            "If YES: respond with exactly one or both of the following markers on their own lines:\n"
+            + DESIGN_MARKER + " followed by the full new DESIGN.txt content\n"
+            + WORKFLOW_MARKER + " followed by the full new WORKFLOW.md content\n"
+            "You must output the markers at the start of a line exactly as shown. "
+            "Do not include any additional text before the first marker.\n"
+            "If NO updates are needed, respond with exactly \"NO_UPDATE_NEEDED\"."
+        )
+
+        # 8. Call DeepSeek API
         headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Authorization": "Bearer " + api_key,
+            "Content-Type": "application/json",
         }
         payload = {
             "model": "deepseek-v4-pro",
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": 4096,
-            "temperature": 0.0
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,
+            "max_tokens": 8192,
         }
-        try:
-            resp = requests.post(
-                "https://api.deepseek.com/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=60
-            )
-            if resp.status_code != 200:
-                print("[docs] API request failed: HTTP " + str(resp.status_code) + " " + resp.text)
-                return
-            data = resp.json()
-            reply = data["choices"][0]["message"]["content"]
-        except Exception as e:
-            print("[docs] API call error: " + str(e))
-            return
+        resp = requests.post(
+            "https://api.deepseek.com/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=60,
+        )
+        resp.raise_for_status()
+        response_data = resp.json()
+        response_text = response_data["choices"][0]["message"]["content"]
 
-        # Parse response
-        reply = reply.strip()
+        # 9. Parse response using position-based extraction
+        if "NO_UPDATE_NEEDED" in response_text:
+            safe_print("[docs] No update needed.")
+        else:
+            # Find all marker occurrences and their positions
+            markers = {
+                DESIGN_MARKER: design_path,
+                WORKFLOW_MARKER: workflow_path,
+            }
+            positions = {}
+            for marker, path in markers.items():
+                idx = response_text.find(marker)
+                if idx != -1:
+                    positions[idx] = marker
 
-        if "NO_UPDATE_NEEDED" in reply and "DESIGN_UPDATE:" not in reply and "WORKFLOW_UPDATE:" not in reply:
-            print("[docs] No documentation update needed.")
-            return
-
-        updated_design = None
-        updated_workflow = None
-
-        # Find DESIGN_UPDATE: section
-        if "DESIGN_UPDATE:" in reply:
-            idx = reply.find("DESIGN_UPDATE:")
-            # Extract everything after that until WORKFLOW_UPDATE: or end
-            remaining = reply[idx + len("DESIGN_UPDATE:"):]
-            # If there is WORKFLOW_UPDATE: later, split
-            if "WORKFLOW_UPDATE:" in remaining:
-                wf_idx = remaining.find("WORKFLOW_UPDATE:")
-                updated_design = remaining[:wf_idx].strip()
-                # Remove potential leading/trailing whitespace
-                # For the workflow part, extract after WORKFLOW_UPDATE:
-                updated_workflow = remaining[wf_idx + len("WORKFLOW_UPDATE:"):].strip()
+            if not positions:
+                safe_print("[docs] No update needed.")
             else:
-                updated_design = remaining.strip()
-                updated_workflow = None
-        elif "WORKFLOW_UPDATE:" in reply:
-            # Only workflow update
-            idx = reply.find("WORKFLOW_UPDATE:")
-            updated_workflow = reply[idx + len("WORKFLOW_UPDATE:"):].strip()
-            updated_design = None
+                # Sort by position
+                sorted_positions = sorted(positions.items())  # [(pos, marker), ...]
+                num = len(sorted_positions)
+                for i, (pos, marker) in enumerate(sorted_positions):
+                    start = pos + len(marker)
+                    if i + 1 < num:
+                        end = sorted_positions[i + 1][0]
+                    else:
+                        end = len(response_text)
+                    content = response_text[start:end].strip()
+                    if content:
+                        output_path = markers[marker]
+                        with open(output_path, "w", encoding="utf-8") as f:
+                            f.write(content)
+                        if output_path == design_path:
+                            safe_print("[docs] Updated Doc/DESIGN.txt")
+                        elif output_path == workflow_path:
+                            safe_print("[docs] Updated Doc/WORKFLOW.md")
 
-        # If we have updates, write them to files
-        any_update = False
-        if updated_design is not None and updated_design:
-            try:
-                os.makedirs("Doc", exist_ok=True)
-                with open(design_path, 'w', encoding='utf-8') as f:
-                    f.write(updated_design)
-                print("[docs] Updated: DESIGN.txt")
-                any_update = True
-            except Exception as e:
-                print("[docs] Error writing DESIGN.txt: " + str(e))
-
-        if updated_workflow is not None and updated_workflow:
-            try:
-                os.makedirs("Doc", exist_ok=True)
-                with open(workflow_path, 'w', encoding='utf-8') as f:
-                    f.write(updated_workflow)
-                print("[docs] Updated: WORKFLOW.md")
-                any_update = True
-            except Exception as e:
-                print("[docs] Error writing WORKFLOW.md: " + str(e))
-
-        if not any_update:
-            print("[docs] No documentation update needed (parsed response indicates no update).")
     except Exception as e:
-        # Catch-all for unexpected errors
-        print("[docs] Unexpected error: " + str(e))
-        traceback.print_exc(file=sys.stderr)
+        safe_print("[docs] Error: " + str(e))
+
+    sys.exit(0)
+
+
+def safe_print(msg):
+    print(str(msg).encode("ascii", errors="replace").decode("ascii"))
+
 
 if __name__ == "__main__":
     main()
-    sys.exit(0)
