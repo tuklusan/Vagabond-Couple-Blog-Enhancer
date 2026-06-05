@@ -32,7 +32,7 @@
             "command": "python .claude\\check_no_background.py",
             "shell": "powershell",
             "timeout": 5,
-            "statusMessage": "Checking for banned background task..."
+            "statusMessage": "Enforcing no-background-task rule..."
           }
         ]
       },
@@ -45,6 +45,13 @@
             "shell": "powershell",
             "timeout": 5,
             "statusMessage": "Enforcing coder workflow..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude\\autocommit_and_push.py",
+            "shell": "powershell",
+            "timeout": 30,
+            "statusMessage": "Auto-committing before review..."
           }
         ]
       }
@@ -55,10 +62,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude\\autocommit_and_push.py",
+            "command": "python .claude\\check_and_update_docs.py",
             "shell": "powershell",
-            "timeout": 30,
-            "statusMessage": "Auto-committing before review..."
+            "timeout": 60,
+            "statusMessage": "Checking if docs need updating..."
           },
           {
             "type": "command",
