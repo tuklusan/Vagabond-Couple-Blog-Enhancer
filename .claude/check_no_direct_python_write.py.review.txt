@@ -1,0 +1,42 @@
+## Code Review: `.claude/check_no_direct_python_write.py`
+
+### Critical Issues
+
+1. **Incorrect hook input structure parsing**  
+   The hook expects JSON with the flat structure:
+   ```json
+   {
+     "tool_name": "Write",
+     "tool_input": { "file_path": "/path/to/file.py" }
+   }
+   ```
+   However, the code accesses `hook_data.get("hook_input", {}).get("tool_name", "")` and `hook_data.get("tool_input", {})`.  
+   - Because `hook_input` does not exist at the top level, `tool_name` will always be `""`.  
+   - This causes the script to block **any** `.py` file operation (including `Read`, `Bash`, etc.), not just `Write`/`Edit` as intended.  
+   - The required gating for `Write`/`Edit` is broken, and legitimate tool uses on `.py` files are blocked.  
+   - **Fix:** access the top‑level keys directly:  
+     ```python
+     tool_name = hook_data.get("tool_name", "")
+     tool_input = hook_data.get("tool_input", {})
+     ```
+   - Additionally, validate that `tool_name` is in `("Write", "Edit")` before blocking; otherwise, exit 0 immediately.
+
+### Warnings
+
+- **Permissive `code_agent` check**  
+  The condition `"code_agent" in file_path` matches any path containing that substring (e.g., `some_directory/code_agent/…`). While this is consistent with the task description, it could inadvertently allow files that are not the actual output of `.claude/code_agent.py`. No change required, but worth noting.
+
+### Info / Style Suggestions
+
+- **Comments and clarity**  
+  The script is minimal, but adding a brief comment explaining the hook’s purpose and the JSON structure expectation would improve maintainability.
+- **Type hints / docstrings**  
+  Not necessary but could be added for readability.
+- **Robustness**  
+  The exception handler `except Exception: sys.exit(0)` is safe and ensures no accidental blocks on errors.
+- **ASCII safety**  
+  `json.dumps(result)` with default `ensure_ascii=True` fulfills the requirement.
+
+### Conclusion
+
+The presence of a critical parsing bug means this code cannot be approved in its current state. The hook will not behave as intended and will block many legitimate tool invocations.
