@@ -1,21 +1,13 @@
-## Code Review
+**Critical:** None
 
-### Critical Issues
-None.
+**Warning:**
+- The regex to extract `DESIGN_UPDATE:`/`WORKFLOW_UPDATE:` sections can fail if the new documentation content accidentally contains those marker strings. This could lead to truncated or incorrect output written to the doc files.
+- The exact string equality check for `NO_UPDATE_NEEDED` (`response_text.strip() == 'NO_UPDATE_NEEDED'`) is strict. If the model ever emits extra whitespace characters (beyond what `strip()` removes) or punctuation, updates would be attempted with no markers found. A substring check would be more robust for this specific case.
+- File writes to `Doc/DESIGN.txt` and `Doc/WORKFLOW.md` are performed directly without atomic `write`‑to‑temp‑and‑rename, risking partial/corrupt files if the process is interrupted.
 
-### Warnings
-- **Substring match for `NO_UPDATE_NEEDED`**  
-  The check `if "NO_UPDATE_NEEDED" in response_text:` is overly broad. If the AI inadvertently returns that literal string inside the updated documentation content (though unlikely), updates would be skipped. A safer approach would be to compare `response_text.strip()` exactly to `"NO_UPDATE_NEEDED"`, or to check that markers are absent *and* the substring appears.
-- **Path traversal guard implementation**  
-  Using `os.path.join(cwd, "")` to append a trailing separator works but is non‑obvious. A more explicit comparison like `os.path.commonpath([cwd, abs_file]) == cwd` would be clearer and equally safe.
+**Info:**
+- The prompt includes the **full** current content of `DESIGN.txt` and `WORKFLOW.md` without any size limit, which could cause token overflow or degrade response quality for very large docs.
+- The script relies on the `requests` library; absent error handling for a missing library (the exception will be caught, but the message may be obscure).
+- The safe‑print helper correctly sanitises output, and the overall structure follows the specification.
 
-### Info
-- The script correctly reads and writes all files with UTF‑8 encoding.
-- The API call is wrapped in a timeout and properly handles HTTP errors via `raise_for_status()`.
-- The skip conditions and path checks are correctly applied before any file I/O.
-- The `safe_print()` function is defined after `main()` but is available at call time because `main()` is invoked after module‑level definitions.
-- Position‑based extraction of marker‑delimited content is robust given the constraints, and the script guards against empty doc updates.
-
-**Overall assessment**: The implementation faithfully follows the specification, handles edge cases, and contains no critical defects.
-
-APPROVED
+**APPROVED**
