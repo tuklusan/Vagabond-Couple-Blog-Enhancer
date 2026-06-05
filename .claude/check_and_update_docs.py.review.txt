@@ -1,3 +1,41 @@
-Info: The code to review is missing. The placeholder `{design_content}` is present instead of actual code content. No review can be performed. As there is no code, there are no critical issues.
+## Code Review
 
-APPROVED
+### Critical Issues
+
+1. **F-string injection in prompt construction**  
+   The script constructs the prompt using an f-string, directly embedding user-supplied content (`file_path`, `design_content[:3000]`, `workflow_content[:3000]`, `truncated_changed`). If any of these strings contain curly braces (`{` or `}`), Python will attempt to interpret them as expression placeholders, raising a `KeyError` or `ValueError` and crashing the script.  
+   **Fix:** Escape all curly braces by doubling them before embedding, e.g.:
+   ```python
+   escaped_design = design_content[:3000].replace("{", "{{").replace("}", "}}")
+   escaped_workflow = workflow_content[:3000].replace("{", "{{").replace("}", "}}")
+   escaped_changed = truncated_changed.replace("{", "{{").replace("}", "}}")
+   escaped_path = file_path.replace("{", "{{").replace("}", "}}")
+   ```
+
+### Warnings
+
+1. **Brittle parsing of AI response**  
+   - The marker `WORKFLOW_UPDATE:` could appear inside the `DESIGN_UPDATE` section, causing premature splitting and corrupted output.  
+   - Any extra text after the expected `WORKFLOW_UPDATE` block is silently included in the workflow content.  
+   - Consider using unambiguous start/end markers or a structured format (e.g., JSON) to make parsing robust, or add assertions to detect such anomalies.
+
+2. **Inconsistent path checks across platforms**  
+   After `os.path.normpath`, the skip logic tests for `"Doc/"` and `"Config/_SECRETS/"` (hard-coded forward slashes). On Windows, normalized paths use backslashes, so these checks will never match. The `os.sep`-based checks do work correctly, but the mixed approach is confusing and might hide future bugs.  
+   **Suggestion:** Use `os.path.commonpath` or check path components via `os.sep` consistently, or use `Path` from `pathlib` for clarity.
+
+3. **Memory usage for large files**  
+   The script reads the **entire** changed file into memory solely to truncate to 3000 characters for the prompt. For very large files (e.g., multi‑GB logs), this can cause memory pressure unnecessarily.  
+   **Improvement:** Read only the first 3000 bytes from the file (e.g., `f.read(3000)`) when gathering content for the API call, or use a buffer.
+
+### Info
+
+- The script always exits with code `0` (even on errors), as specified.
+- All `print()` calls use ASCII-safe strings (`[docs] ...`), complying with the requirement.
+- API call uses `requests` with a 60‑second timeout, good.
+- Missing or empty `Doc/` files are handled gracefully by using empty strings.
+- The API key loading is robust and reads the expected key format.
+- Custom exception handling covers most failure points, preventing unhandled crashes.
+
+---
+
+Because a critical issue exists (f-string injection that can crash the hook), the code does **not** fully meet production readiness as-is. The f-string issue must be resolved before it can be approved.
