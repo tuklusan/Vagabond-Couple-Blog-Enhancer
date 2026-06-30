@@ -57,8 +57,8 @@ def main():
     out = out_dir / ("analysis-" + stamp + ".md")
     out.write_text("# Test analysis (" + provider + ")\n\n" + report + "\n", encoding="utf-8")
     or_client.safe_print("[analyze] " + provider + " -> " + str(out))
-    print()
-    print(report[:1500])
+    or_client.safe_print("")
+    or_client.safe_print(report[:1500])
 
 
 if __name__ == "__main__":
