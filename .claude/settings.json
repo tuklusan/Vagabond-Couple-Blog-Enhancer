@@ -22,17 +22,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude\\autocommit_and_push.py",
-            "shell": "powershell",
-            "timeout": 30,
-            "statusMessage": "Auto-committing before test/run..."
-          },
-          {
-            "type": "command",
             "command": "python .claude\\check_no_background.py",
             "shell": "powershell",
             "timeout": 5,
             "statusMessage": "Enforcing no-background-task rule..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude\\commit_push_rule.py --phase pre",
+            "shell": "powershell",
+            "timeout": 180,
+            "statusMessage": "Commit+push rule: checkpoint before review..."
           }
         ]
       },
@@ -45,18 +45,23 @@
             "shell": "powershell",
             "timeout": 5,
             "statusMessage": "Enforcing coder workflow..."
-          },
-          {
-            "type": "command",
-            "command": "python .claude\\autocommit_and_push.py",
-            "shell": "powershell",
-            "timeout": 30,
-            "statusMessage": "Auto-committing before review..."
           }
         ]
       }
     ],
     "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude\\commit_push_rule.py --phase post",
+            "shell": "powershell",
+            "timeout": 180,
+            "statusMessage": "Commit+push rule: checkpoint after ticket close..."
+          }
+        ]
+      },
       {
         "matcher": "Write|Edit",
         "hooks": [
@@ -72,7 +77,7 @@
             "command": "python .claude\\deepseek_review_hook.py",
             "shell": "powershell",
             "timeout": 60,
-            "statusMessage": "DeepSeek reviewing changes..."
+            "statusMessage": "Advisory review (OpenRouter)..."
           }
         ]
       }
