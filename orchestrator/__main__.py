@@ -25,6 +25,8 @@ def main():
     ap = argparse.ArgumentParser(prog="orchestrator")
     ap.add_argument("--input", required=True, help="path to the source post HTML")
     ap.add_argument("--auto", action="store_true", help="auto-operator (headless; gates use safe defaults)")
+    ap.add_argument("--full", action="store_true", help="run the full canonical pipeline (needs live providers unless --dry)")
+    ap.add_argument("--dry", action="store_true", help="stub generative/analysis nodes (walk the machinery, no LLM)")
     ap.add_argument("--run-id", default=None, help="reuse/name a run id")
     args = ap.parse_args()
 
@@ -37,11 +39,16 @@ def main():
     state = RunState.create(html, run_id=args.run_id)
     op = Operator(auto=args.auto)
     sctx = sequencer.StepContext(state=state, context={}, operator=op,
-                                 mode="auto" if args.auto else "step")
+                                 mode="auto" if args.auto else "step",
+                                 dry_generative=args.dry)
 
+    seq = sequencer.build_full_sequence() if args.full else sequencer.build_phase1_deterministic_sequence()
     print(_ascii("run dir: " + str(state.dir)))
-    result = sequencer.run_sequence(sequencer.build_phase1_deterministic_sequence(), sctx)
+    result = sequencer.run_sequence(seq, sctx)
     print(_ascii("RESULT: " + str(result)))
+    out = state.working_html_path
+    if result.get("status") == "DONE":
+        print(_ascii("enhanced HTML: " + str(out)))
     sys.exit(0 if result.get("status") in ("DONE", "STOPPED") else 2)
 
 

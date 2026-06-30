@@ -12,7 +12,7 @@ human (Phase 4 approval gate blocks HTML generation).
 from dataclasses import dataclass
 from typing import Callable
 
-from . import config, validators, review_loop, assembler, nodes as node_specs
+from . import config, validators, review_loop, assembler, context_extractor, nodes as node_specs
 
 
 @dataclass
@@ -233,6 +233,21 @@ def analysis_node(node_id, phase):
     return SeqNode(node_id, phase, "analysis", handler)
 
 
+def context_extraction_node():
+    """Derive the generative context (route, sections, stops, landmarks) from the
+    source post -- deterministically, from its existing schema + structure."""
+    def handler(sctx):
+        ctx = context_extractor.extract_context(sctx.state.get_working_html())
+        sctx.state.save_artifact("context", ctx)
+        sctx.context.update(ctx)
+        return {"complete": True,
+                "note": "context: '" + (ctx.get("origin") or "?") + "' -> '"
+                        + (ctx.get("destination") or "?") + "', "
+                        + str(len(ctx.get("sections") or [])) + " sections, "
+                        + str(len(ctx.get("stops") or [])) + " stops"}
+    return SeqNode("context_extraction", "Setup - Source context extraction", "deterministic", handler)
+
+
 def phase2_url_lock_node():
     def handler(sctx):
         return {"complete": True, "note": "URL stub frozen -- no slug change permitted"}
@@ -293,6 +308,7 @@ def build_full_sequence():
     n = node_specs
     return [
         precheck_node(),
+        context_extraction_node(),
         # Phase 1 -- scan & analyze (read-only)
         a("1A_facts", "Phase 1 / 1A - Fact & sanity check"),
         a("1B_readability", "Phase 1 / 1B - Human readability"),

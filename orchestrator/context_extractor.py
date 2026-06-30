@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""
+Source-context extraction (deterministic, no LLM).
+
+Derives the generative-node context from the source post itself -- primarily its
+existing TravelAction ld+json (fromLocation/toLocation/hasPart/instrument) and its
+H2 structure -- so a raw old post can be fed in and the orchestrator knows the
+route, sections, stops, and landmarks without any operator data entry.
+"""
+import json
+
+from bs4 import BeautifulSoup
+
+from . import validators
+
+
+def parse_schema(html):
+    soup = BeautifulSoup(html, "html.parser")
+    s = soup.find("script", attrs={"type": "application/ld+json"})
+    if not s or not s.string:
+        return {}
+    try:
+        data = json.loads(s.string.strip())
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _summary_row_sections(html):
+    """Fallback sections: descriptor phrases from the summary block 'What's Covered' table."""
+    soup = BeautifulSoup(html, "html.parser")
+    for p in soup.find_all("p"):
+        if "Post Summary" in (p.get_text() or ""):
+            block = p.find_parent("div")
+            if not block:
+                return []
+            tbl = block.find("table")
+            if not tbl:
+                return []
+            out = []
+            for tr in tbl.find_all("tr"):
+                tds = tr.find_all("td")
+                if len(tds) >= 2:
+                    right = tds[1].get_text(" ", strip=True)
+                    if right and "covered" not in tds[0].get_text(strip=True).lower():
+                        # use the part before an em/en dash as the section name
+                        name = right.split(" - ")[0].split(" — ")[0].strip()
+                        out.append(name or right)
+            return out
+    return []
+
+
+def extract_context(html):
+    soup = BeautifulSoup(html, "html.parser")
+    schema = parse_schema(html)
+    ctx = {
+        "origin": "", "destination": "", "post_title": "", "method": "overland",
+        "waypoints": [], "stops": [], "landmarks": "", "covers": "",
+        "sections": [], "existing_facts": "", "etr_minutes": 0,
+    }
+
+    if schema:
+        ctx["origin"] = (schema.get("fromLocation") or {}).get("name", "") or ""
+        ctx["destination"] = (schema.get("toLocation") or {}).get("name", "") or ""
+        ctx["post_title"] = schema.get("name", "") or ""
+        instr = schema.get("instrument") or {}
+        if instr.get("name"):
+            ctx["method"] = instr["name"]
+        stops, landmarks, waypoints, facts = [], [], [], []
+        for part in schema.get("hasPart", []) or []:
+            if not isinstance(part, dict):
+                continue
+            name = part.get("name")
+            ptype = part.get("@type")
+            desc = part.get("description")
+            if not name:
+                continue
+            if desc:
+                facts.append(name + ": " + desc)
+            if ptype == "Place" and desc:
+                stops.append(name)            # legs of the journey, in order
+            elif ptype == "TouristAttraction":
+                landmarks.append(name)
+            elif ptype in ("Place", "Mountain", "LakeBodyOfWater", "Road") and not desc:
+                waypoints.append(name)        # bare named entities
+        ctx["stops"] = stops
+        ctx["landmarks"] = ", ".join(landmarks[:8])
+        ctx["waypoints"] = (waypoints or stops)[:5]
+        ctx["covers"] = (schema.get("description", "") or "")[:220]
+        ctx["existing_facts"] = "\n".join(facts[:25])
+
+    # sections: body H2s first, else summary-block descriptors
+    h2s = [h.get_text(strip=True) for h in soup.find_all("h2")]
+    sections = [t for t in h2s if t.lower() not in ("route at a glance", "next stop")]
+    if not sections:
+        sections = _summary_row_sections(html)
+    ctx["sections"] = sections
+
+    if not ctx["post_title"]:
+        h1 = soup.find("h1")
+        ctx["post_title"] = h1.get_text(strip=True) if h1 else ""
+
+    ctx["etr_minutes"] = validators.etr_minutes(html)["etr_minutes"]
+    return ctx
