@@ -12,7 +12,7 @@ human (Phase 4 approval gate blocks HTML generation).
 from dataclasses import dataclass
 from typing import Callable
 
-from . import config, validators, review_loop, nodes as node_specs
+from . import config, validators, review_loop, assembler, nodes as node_specs
 
 
 @dataclass
@@ -239,6 +239,33 @@ def phase2_url_lock_node():
     return SeqNode("phase2_url_lock", "Phase 2 - URL stub lock", "deterministic", handler)
 
 
+def phase5_generate_node():
+    """Phase 5 HTML generation: assemble the certified fragments into working.html
+    (and run the deterministic transforms: strip styles, reapply summary CSS,
+    re-emit YouTube, remove ?m=1)."""
+    def handler(sctx):
+        html = sctx.state.get_working_html()
+        mapping = {
+            "gen_step3_summary_block": "summary_block",
+            "gen_step6_first_body_paragraph": "first_paragraph",
+            "gen_step7_route_summary_box": "route_box",
+            "gen_step8_route_at_a_glance": "route_at_a_glance",
+            "gen_step10_journey_significance": "journey_significance",
+        }
+        fragments = {}
+        for art_key, frag_key in mapping.items():
+            art = sctx.state.read_artifact(art_key)
+            if art and art.get("status") == "CERTIFIED" and art.get("output"):
+                fragments[frag_key] = art["output"]
+        sep = sctx.state.read_artifact("gen_step13_separator")
+        if sep and sep.get("status") == "CERTIFIED" and sep.get("output"):
+            fragments["separators"] = [sep["output"]]
+        assembled = assembler.assemble(html, fragments or None)
+        sctx.state.set_working_html(assembled)
+        return {"complete": True, "note": "assembled HTML (" + str(len(fragments)) + " fragments spliced)"}
+    return SeqNode("phase5_generate", "Phase 5 - HTML generation (assemble fragments)", "deterministic", handler)
+
+
 def phase5_certification_node():
     def handler(sctx):
         cert = review_loop.run_document_certification(sctx.state, run_reviewer=not sctx.dry_generative)
@@ -292,7 +319,9 @@ def build_full_sequence():
         g("step13_separator", "Phase 3 / Step 13 - Image separators", n.step13_separator),
         # Phase 4 -- operator approval (blocks HTML generation)
         phase4_gate_node(),
-        # Phase 5 -- HTML sanity (Step 14 holistic read is Pass 1 here)
+        # Phase 5 -- HTML generation (assemble) then sanity cert (G2 two-pass;
+        # Step 14 holistic read is Pass 1)
+        phase5_generate_node(),
         phase5_certification_node(),
         # Phase 6 -- deliverables
         phase6_deliverables_node(),
