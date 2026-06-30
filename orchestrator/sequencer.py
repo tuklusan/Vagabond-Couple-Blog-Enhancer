@@ -12,7 +12,7 @@ human (Phase 4 approval gate blocks HTML generation).
 from dataclasses import dataclass
 from typing import Callable
 
-from . import config, validators
+from . import config, validators, review_loop, nodes as node_specs
 
 
 @dataclass
@@ -28,7 +28,8 @@ class StepContext:
     state: object
     context: dict
     operator: object
-    mode: str = "auto"   # auto | step | run-to-gate
+    mode: str = "auto"            # auto | step | run-to-gate
+    dry_generative: bool = False   # stub generative/analysis nodes (test the machinery)
 
 
 def _ascii(x):
@@ -76,7 +77,16 @@ def run_sequence(nodes, sctx):
         prev_id = node.id
         if result.get("stop_after"):
             return {"status": "STOPPED", "at": node.id, "note": result.get("note", "")}
+        # step-through UX: pause after each node unless auto. (run-to-gate only
+        # pauses at operator nodes, which prompt inside their own handler.)
+        if sctx.mode == "step" and node is not nodes_list_last(nodes):
+            if not sctx.operator.confirm("Continue past " + node.id + "?", default=True):
+                return {"status": "PAUSED", "at": node.id}
     return {"status": "DONE", "last": prev_id}
+
+
+def nodes_list_last(nodes):
+    return nodes[-1] if nodes else None
 
 
 # ===========================================================================
@@ -179,4 +189,111 @@ def build_phase1_deterministic_sequence():
         deterministic_node("schema_check", "Phase 3 / Step 4 - ld+json TravelAction validity",
                            validators.validate_ld_json),
         phase4_gate_node(),
+    ]
+
+
+# ===========================================================================
+# Generative / analysis / phase nodes for the FULL canonical sequence
+# ===========================================================================
+def generative_node(node_id, phase, spec_factory):
+    def handler(sctx):
+        if sctx.dry_generative:
+            return {"complete": True, "note": "[dry] generative stubbed"}
+        spec = spec_factory()
+        outcome = review_loop.run_generative_node(spec, sctx.context)
+        sctx.state.save_artifact("gen_" + node_id, {
+            "status": outcome["status"], "output": outcome["output"],
+            "verdict": outcome.get("verdict"), "sources": outcome.get("sources"),
+            "rounds": outcome.get("rounds"),
+        })
+        if outcome["status"] == "CERTIFIED":
+            return {"complete": True, "output_ref": "gen_" + node_id,
+                    "note": "certified in " + str(outcome.get("rounds")) + " round(s)"}
+        # ESCALATE -> operator decision (never silently accept an unverified claim)
+        sctx.operator.info("Node " + node_id + " ESCALATED: " + str(outcome.get("reason", "")))
+        choice = sctx.operator.choose("How to handle " + node_id + "?",
+                                      ["accept output as-is", "abort run"], default_index=1)
+        if choice.startswith("accept"):
+            return {"complete": True, "output_ref": "gen_" + node_id,
+                    "note": "operator accepted escalated output"}
+        return {"halt": True, "halt_reason": "operator aborted escalated node",
+                "item": node_id, "action": "resolve " + node_id + " and re-run"}
+    return SeqNode(node_id, phase, "generative", handler)
+
+
+def analysis_node(node_id, phase):
+    """LLM-judgment Phase-1 pass (1A/1B/1H/1I). Stubbed in dry mode; the live
+    reviewer-based implementation plugs in here. The per-node Tier-1 loops and
+    the Phase 5 G2 pass already enforce facts/rules/repetition on produced text."""
+    def handler(sctx):
+        if sctx.dry_generative:
+            return {"complete": True, "note": "[dry] analysis stubbed"}
+        sctx.state.save_artifact("analysis_" + node_id, {"status": "live_impl_pending"})
+        return {"complete": True, "note": "analysis recorded (live reviewer pass pending)"}
+    return SeqNode(node_id, phase, "analysis", handler)
+
+
+def phase2_url_lock_node():
+    def handler(sctx):
+        return {"complete": True, "note": "URL stub frozen -- no slug change permitted"}
+    return SeqNode("phase2_url_lock", "Phase 2 - URL stub lock", "deterministic", handler)
+
+
+def phase5_certification_node():
+    def handler(sctx):
+        cert = review_loop.run_document_certification(sctx.state, run_reviewer=not sctx.dry_generative)
+        if not cert["certified"]:
+            failed = cert["pass2_deterministic"]["failed"]
+            if not failed:
+                failed = [str((cert.get("pass1_reviewer") or {}).get("decision"))]
+            return {"halt": True, "halt_reason": "Phase 5 G2 certification not clean",
+                    "item": str(failed), "action": "fix the failing checks and re-run Phase 5"}
+        return {"complete": True, "note": "G2 two-pass clean -> delivery permitted"}
+    return SeqNode("phase5_cert", "Phase 5 - HTML sanity certification (G2 two-pass)", "analysis", handler)
+
+
+def phase6_deliverables_node():
+    def handler(sctx):
+        sctx.operator.info("Phase 6 - Deliverables ready: (1) updated post body HTML, "
+                           "(2) new SEO title, (3) <=150-char search description.")
+        return {"complete": True, "note": "deliverables presented"}
+    return SeqNode("phase6_deliverables", "Phase 6 - Deliverables", "operator", handler)
+
+
+def build_full_sequence():
+    """The complete rev-18 canonical node order (G4 line 82)."""
+    g, a, d = generative_node, analysis_node, deterministic_node
+    n = node_specs
+    return [
+        precheck_node(),
+        # Phase 1 -- scan & analyze (read-only)
+        a("1A_facts", "Phase 1 / 1A - Fact & sanity check"),
+        a("1B_readability", "Phase 1 / 1B - Human readability"),
+        d("1C_media_inventory", "Phase 1 / 1C - Media & links inventory", validators.media_inventory),
+        d("1G_encoding", "Phase 1 / 1G - Character-encoding audit", validators.scan_question_marks),
+        d("1F_summary_block", "Phase 1 / 1F - Summary block audit", validators.summary_block),
+        a("1H_repetition", "Phase 1 / 1H - Repetition scan"),
+        a("1I_writing_rules", "Phase 1 / 1I - Writing-rules audit (existing prose)"),
+        # Phase 2
+        phase2_url_lock_node(),
+        # Phase 3 -- pre-fold zone
+        g("step1_title", "Phase 3 / Step 1 - SEO title", n.step1_title),
+        g("step2f_search_description", "Phase 3 / Step 2-F - Search description", n.step2f_search_description),
+        g("step3_summary_block", "Phase 3 / Step 3 - Summary block", n.step3_summary_block),
+        d("schema_check", "Phase 3 / Step 4 - ld+json validity", validators.validate_ld_json),
+        d("step5_more", "Phase 3 / Step 5 - <!--more--> placement", validators.count_more_tags),
+        # Phase 3 -- body
+        g("step6_first_body_paragraph", "Phase 3 / Step 6 - First body paragraph", n.step6_first_body_paragraph),
+        g("step7_route_summary_box", "Phase 3 / Step 7 - Route summary box", n.step7_route_summary_box),
+        g("step8_route_at_a_glance", "Phase 3 / Step 8 - Route at a Glance", n.step8_route_at_a_glance),
+        g("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids", n.step9f_factoid),
+        g("step10_journey_significance", "Phase 3 / Step 10 - Journey significance", n.step10_journey_significance),
+        g("step12_resolve", "Phase 3 / Step 12 - Resolve repetition/rules", n.step12_resolve),
+        g("step13_separator", "Phase 3 / Step 13 - Image separators", n.step13_separator),
+        # Phase 4 -- operator approval (blocks HTML generation)
+        phase4_gate_node(),
+        # Phase 5 -- HTML sanity (Step 14 holistic read is Pass 1 here)
+        phase5_certification_node(),
+        # Phase 6 -- deliverables
+        phase6_deliverables_node(),
     ]

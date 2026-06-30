@@ -386,12 +386,205 @@ def step13_separator() -> GenerativeNode:
     )
 
 
-# Registry of generative nodes implemented so far.
+# ---------------------------------------------------------------------------
+# Step 3 -- summary block content (label + narrative + one row per H2)
+# ---------------------------------------------------------------------------
+def step3_summary_block() -> GenerativeNode:
+    def writer(context, prior, revision):
+        sections = context.get("sections", [])
+        system = (
+            "You write the TEXT content of a pre-fold summary block: (1) a small-caps label "
+            "'[POST TITLE] - Post Summary'; (2) ONE narrative paragraph in the author's voice "
+            "describing the full route arc; (3) one 'What's Covered' table row per top-level "
+            "H2 section (emoji + 'Section name - brief descriptor'). Narrator we/us, no "
+            "forbidden words. Output as: a LABEL: line, a NARRATIVE: paragraph, then ROWS: "
+            "one 'emoji | Section - descriptor' per line. One row per section, no more."
+        )
+        user = ("Post title: " + context.get("post_title", "") +
+                "\nRoute: " + context["origin"] + " -> " + context["destination"] +
+                "\nTop-level H2 sections (one row each):\n- " + "\n- ".join(sections))
+        if prior:
+            user += "\n\nYour previous draft:\n" + prior
+        if revision:
+            user += "\n\n" + revision
+        return system, user
+
+    def deterministic(output, context):
+        findings = writing_rules_findings(_plain(output))
+        sections = context.get("sections", [])
+        rows = [ln for ln in output.splitlines() if "|" in ln or " - " in ln]
+        # soft check: roughly one row per section (reviewer confirms exact match)
+        if sections and len(rows) and abs(len(rows) - len(sections)) > 2:
+            findings.append("row count " + str(len(rows)) + " far from section count " + str(len(sections)))
+        return (len(findings) == 0, findings)
+
+    def review(output, det_findings, context):
+        system = (
+            "You certify a summary block's text. Certify: (a) FACTS -- narrative matches the "
+            "route; (b) WRITING RULES -- narrator we/us, no forbidden words; (d) the table has "
+            "EXACTLY one row per top-level H2 section (no phantom/missing rows).\n" + _VERDICT_SHAPE
+        )
+        user = ("H2 sections:\n- " + "\n- ".join(context.get("sections", [])) +
+                "\n\nSummary block content to certify:\n" + output)
+        return system, user
+
+    return GenerativeNode(
+        id="step3_summary_block", label="Step 3 - Summary block content",
+        build_writer_prompt=writer, deterministic_check=deterministic,
+        build_review_prompt=review, web_search=False,
+        writer_max_tokens=900, review_max_tokens=1536,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Step 7 -- route summary box (template fill)
+# ---------------------------------------------------------------------------
+def step7_route_summary_box() -> GenerativeNode:
+    def writer(context, prior, revision):
+        system = (
+            "You fill a route summary box, EXACT template (tvc-route-summary class, no inline "
+            "colour styles):\n"
+            '<div class="tvc-route-summary"><strong>Route:</strong> [stops]<br />'
+            '<strong>Method:</strong> [method]<br />'
+            '<strong>Distance / Time:</strong> Approx. [X] km / [Y] days<br />'
+            '<strong>Themes:</strong> [theme] - [theme]<br />'
+            '<strong>Vehicle:</strong> Shehzadi (2024 Toyota Tundra)</div>\n'
+            "Fill the bracketed fields from the context. No forbidden words. Output ONLY the div."
+        )
+        user = ("Route stops: " + context["origin"] + " -> " + context["destination"] +
+                "\nMethod: " + context.get("method", "overland") +
+                "\nThemes: " + context.get("landmarks", "") +
+                "\nApprox distance/days: " + context.get("distance_time", "(estimate)"))
+        if prior:
+            user += "\n\nYour previous draft:\n" + prior
+        if revision:
+            user += "\n\n" + revision
+        return system, user
+
+    def deterministic(output, context):
+        findings = writing_rules_findings(_plain(output))
+        for label in ("Route:", "Method:", "Vehicle:"):
+            if label not in output:
+                findings.append("missing '" + label + "' field")
+        if "tvc-route-summary" not in output:
+            findings.append("missing tvc-route-summary class")
+        if re.search(r"style\s*=\s*[\"'][^\"']*(color|background)", output, re.IGNORECASE):
+            findings.append("inline colour style present (forbidden on new elements)")
+        return (len(findings) == 0, findings)
+
+    def review(output, det_findings, context):
+        system = (
+            "You certify a route summary box. Certify: (a) FACTS -- route/method/vehicle "
+            "accurate; (b) WRITING RULES -- no forbidden words, no field duplicates a fact "
+            "stated elsewhere; (d) no redundancy.\n" + _VERDICT_SHAPE
+        )
+        return system, "Route summary box to certify:\n" + output
+
+    return GenerativeNode(
+        id="step7_route_summary_box", label="Step 7 - Route summary box",
+        build_writer_prompt=writer, deterministic_check=deterministic,
+        build_review_prompt=review, web_search=False,
+        writer_max_tokens=400, review_max_tokens=1200,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Step 8 -- Route at a Glance (<ol>, one item per stop in travel order)
+# ---------------------------------------------------------------------------
+def step8_route_at_a_glance() -> GenerativeNode:
+    def writer(context, prior, revision):
+        system = (
+            "You write a 'Route at a Glance' navigation list: an <h2>Route at a Glance</h2> "
+            "followed by an ORDERED list <ol> with one <li> per named stop/leg in travel "
+            "order, each a brief descriptor. Use <ol>, never <ul>. No forbidden words. Output "
+            "ONLY the <h2> and the <ol>."
+        )
+        user = ("Stops in travel order:\n- " + "\n- ".join(context.get("stops", [])))
+        if prior:
+            user += "\n\nYour previous draft:\n" + prior
+        if revision:
+            user += "\n\n" + revision
+        return system, user
+
+    def deterministic(output, context):
+        findings = writing_rules_findings(_plain(output))
+        if "<ol" not in output.lower():
+            findings.append("must use <ol> (ordered list)")
+        if "<ul" in output.lower():
+            findings.append("uses <ul> -- must be <ol>")
+        if "<li" not in output.lower():
+            findings.append("no list items")
+        return (len(findings) == 0, findings)
+
+    def review(output, det_findings, context):
+        system = (
+            "You certify a Route at a Glance list. Certify: (a) FACTS -- stops are real and in "
+            "correct travel order; (b) WRITING RULES -- <ol>, no forbidden words; (d) items do "
+            "not duplicate the Route Summary box phrasing.\n" + _VERDICT_SHAPE
+        )
+        user = ("Stops in travel order:\n- " + "\n- ".join(context.get("stops", [])) +
+                "\n\nRoute at a Glance to certify:\n" + output)
+        return system, user
+
+    return GenerativeNode(
+        id="step8_route_at_a_glance", label="Step 8 - Route at a Glance",
+        build_writer_prompt=writer, deterministic_check=deterministic,
+        build_review_prompt=review, web_search=True,
+        writer_max_tokens=700, review_max_tokens=1536,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Step 12 -- resolve a flagged repetition / writing-rules violation
+# ---------------------------------------------------------------------------
+def step12_resolve() -> GenerativeNode:
+    def writer(context, prior, revision):
+        system = (
+            "You resolve ONE flagged issue (a repeated fact or a writing-rules violation) in a "
+            "passage. Prefer cutting the redundant instance; otherwise reword distinctly; "
+            "otherwise replace with a NEW, verifiable, non-duplicative fact about the same "
+            "subject. Preserve the author's voice. Narrator we/us, no forbidden words. Output "
+            "ONLY the corrected passage HTML."
+        )
+        user = ("Flagged issue: " + context.get("issue", "") +
+                "\nPassage to fix:\n" + context.get("passage", "") +
+                "\nFacts already in the post (do not reintroduce):\n" + context.get("existing_facts", "(none)"))
+        if prior:
+            user += "\n\nYour previous draft:\n" + prior
+        if revision:
+            user += "\n\n" + revision
+        return system, user
+
+    def review(output, det_findings, context):
+        system = (
+            "You certify a repetition/rules fix. Use web_search to verify any replacement "
+            "fact. Certify: (a) FACTS -- any new fact is verifiable; (b) WRITING RULES clean; "
+            "(d) REPETITION -- the original duplication/violation is resolved and no new "
+            "duplication introduced.\n" + _VERDICT_SHAPE
+        )
+        user = ("Original issue: " + context.get("issue", "") +
+                "\nFacts already in post:\n" + context.get("existing_facts", "(none)") +
+                "\n\nCorrected passage to certify:\n" + output)
+        return system, user
+
+    return GenerativeNode(
+        id="step12_resolve", label="Step 12 - Resolve repetition / rules violation",
+        build_writer_prompt=writer, deterministic_check=standard_deterministic_check,
+        build_review_prompt=review, web_search=True,
+        writer_max_tokens=800, review_max_tokens=1536,
+    )
+
+
+# Registry of generative nodes.
 GENERATIVE_NODES = {
     "step1_title": step1_title,
     "step2f_search_description": step2f_search_description,
+    "step3_summary_block": step3_summary_block,
     "step6_first_body_paragraph": step6_first_body_paragraph,
+    "step7_route_summary_box": step7_route_summary_box,
+    "step8_route_at_a_glance": step8_route_at_a_glance,
     "step9f_factoid": step9f_factoid,
     "step10_journey_significance": step10_journey_significance,
+    "step12_resolve": step12_resolve,
     "step13_separator": step13_separator,
 }
