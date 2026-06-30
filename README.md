@@ -64,8 +64,9 @@ rules; the reviewer spends its tokens only on facts and the holistic read.
 8. [Output layout](#output-layout)
 9. [Configuration reference](#configuration-reference)
 10. [Tests](#tests)
-11. [Troubleshooting](#troubleshooting)
-12. [Project status](#project-status)
+11. [Issue tracking](#issue-tracking)
+12. [Troubleshooting](#troubleshooting)
+13. [Project status](#project-status)
 
 ---
 
@@ -361,6 +362,29 @@ Live tests (consume tokens; need writer + reviewer keys):
 python tests/test_node_loop.py         # one writer<->reviewer node loop
 python tests/test_more_nodes.py        # title + description nodes
 ```
+
+---
+
+## Issue tracking
+
+The repo ships a small offline issue tracker, `ticket.py`. Each ticket is a plain
+markdown file under `Tickets/` (`TICKET-NNNN.md`), so tickets live with the code
+and need no external service.
+
+```bash
+python ticket.py new --title "Short title" [--type Bug|Task|Enhancement] \
+                     [--priority High|Medium|Low] [--desc "Details"]
+python ticket.py list [--status Open|Closed]
+python ticket.py show 0001
+python ticket.py update 0001 --status Closed [--notes "What was done"]
+```
+
+Closing a ticket (`update … --status Closed`) is one of the project's three
+commit+push points (before review · after a defect ticket · after applying review
+fixes).
+
+> A GitHub Issues tracker is also available on the origin remote if you prefer a
+> hosted option.
 
 ---
 
