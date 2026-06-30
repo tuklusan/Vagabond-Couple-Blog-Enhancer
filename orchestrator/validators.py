@@ -28,6 +28,11 @@ def _soup(html: str) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
+def plain_text(html: str) -> str:
+    """Visible prose only (excludes tags AND HTML comments)."""
+    return BeautifulSoup(html, "html.parser").get_text(separator=" ", strip=True)
+
+
 # ===========================================================================
 # Writing-rules term scanning (1I / Phase 5) -- terms LOADED from the file
 # ===========================================================================

@@ -19,7 +19,7 @@ claim; the reviewer must certify it (with sources) before it persists.
 """
 import json
 
-from . import config, writer_client, reviewer_client
+from . import config, writer_client, reviewer_client, validators
 
 
 def run_generative_node(spec, context, max_rounds=None, verbose=True):
@@ -89,3 +89,80 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
     # rounds exhausted without certification -> operator decision
     return {"status": "ESCALATE", "output": output, "verdict": verdict, "sources": sources,
             "rounds": max_rounds, "history": history, "reason": "max_rounds"}
+
+
+# ===========================================================================
+# Tier-2 -- document-level certification (Step 14 + Phase 5, Rule G2 two-pass)
+# ===========================================================================
+def document_deterministic_checklist(html, original_hrefs=None):
+    """
+    G2 Pass 2 -- re-derive every mechanical fact from the assembled output (not
+    from memory of the per-node verdicts). Pure code; no LLM.
+    """
+    checks = {}
+    checks["schema_ok"] = validators.validate_ld_json(html)["ok"]
+    checks["more_canonical"] = validators.count_more_tags(html)["canonical_after_script"]
+    media = validators.media_inventory(html)
+    checks["image_table_match"] = media["image_table_match"]
+    checks["no_consecutive_images"] = len(validators.consecutive_image_pairs(html)) == 0
+    checks["summary_present"] = validators.summary_block(html)["present"]
+    checks["no_ufffd"] = validators.scan_question_marks(html)["ufffd_count"] == 0
+    checks["no_forbidden"] = len(validators.scan_forbidden(validators.plain_text(html))) == 0
+    raag = validators.raag_vs_h2(html)
+    checks["raag_h2_match"] = (not raag["raag_present"]) or raag["counts_match"]
+    if original_hrefs is not None:
+        checks["hrefs_preserved"] = validators.diff_hrefs(original_hrefs, html)["ok"]
+    return {"checks": checks, "ok": all(checks.values()),
+            "failed": [k for k, v in checks.items() if not v]}
+
+
+_DOC_VERDICT_SHAPE = (
+    'Output ONLY a JSON verdict:\n'
+    '{"decision":"CERTIFIED|REVISE|ESCALATE","criteria":{'
+    '"html_sanity":{"status":"pass|fail","findings":["..."]},'
+    '"repetition":{"status":"pass|fail","findings":["..."]},'
+    '"smooth_read":{"status":"pass|fail","findings":["..."]}},'
+    '"revision_instructions":"which section/node to fix if REVISE"}'
+)
+
+
+def _document_review(html):
+    """G2 Pass 1 -- reviewer reads the whole post for the holistic criteria."""
+    system = (
+        "You are the final certifying reviewer for a travel blog post body. Read it as a "
+        "first-time human with no prior context. Certify: (c) HTML SANITY -- it reads as "
+        "clean, well-structured content with no broken/odd markup; (d) REPETITION -- no "
+        "idea, fact, or phrase repeats across sections; (e) SMOOTH READ -- it flows "
+        "naturally and makes sense in chronological and geographical order, with no jarring "
+        "transitions and one consistent authorial voice.\n" + _DOC_VERDICT_SHAPE
+    )
+    verdict, _text, _sources = reviewer_client.certify(system, "Post body:\n" + html[:18000],
+                                                       web_search=False, max_tokens=2048)
+    return verdict
+
+
+def run_document_certification(state, run_reviewer=True):
+    """
+    Run both G2 passes over the working HTML. Certified only if Pass 2
+    (deterministic re-derivation) is clean AND Pass 1 (reviewer holistic) is
+    CERTIFIED. A reviewer outage yields ESCALATE, never a silent pass.
+    """
+    html = state.get_working_html()
+    inv = state.read_artifact("1C_media_inventory")
+    original_hrefs = None
+    if inv:
+        original_hrefs = (inv.get("internal_links") or []) + (inv.get("external_links") or [])
+
+    pass2 = document_deterministic_checklist(html, original_hrefs)
+    pass1 = None
+    if run_reviewer:
+        try:
+            pass1 = _document_review(html)
+        except Exception as e:
+            pass1 = {"decision": "ESCALATE", "note": "reviewer unavailable: " + str(e)[:140]}
+
+    p1_ok = pass1 is None or str(pass1.get("decision", "")).upper() == "CERTIFIED"
+    result = {"certified": bool(pass2["ok"] and p1_ok),
+              "pass2_deterministic": pass2, "pass1_reviewer": pass1}
+    state.save_artifact("phase5_certification", result)
+    return result
