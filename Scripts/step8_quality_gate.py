@@ -56,42 +56,21 @@ def load_deepseek_key() -> str:
 
 
 def call_deepseek(model: str, messages: List[dict], api_key: str, temperature: float = 0.3, max_tokens: int = 8192) -> str:
-    """Call DeepSeek API directly and return the response content."""
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens
-    }
-    url = f"{DEEPSEEK_BASE_URL}/chat/completions"
-    response = requests.post(url, headers=headers, json=payload, timeout=120)
-    response.raise_for_status()
-    data = response.json()
-    return data["choices"][0]["message"]["content"]
+    """Offload to OpenRouter (free) with DeepSeek/NVIDIA fallback. Signature kept for callers."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.claude'))
+    import or_client
+    content, _ = or_client.chat(messages, max_tokens=max_tokens, temperature=temperature)
+    return content
 
 
 def call_nim(model: str, messages: List[dict], api_key: str, temperature: float = 1.0, top_p: float = 0.95, max_tokens: int = 8192) -> str:
-    """Call NVIDIA NIM API and return the response content."""
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-        "top_p": top_p,
-        "max_tokens": max_tokens
-    }
-    url = f"{NIM_BASE_URL}/chat/completions"
-    response = requests.post(url, headers=headers, json=payload, timeout=120)
-    response.raise_for_status()
-    data = response.json()
-    return data["choices"][0]["message"]["content"]
+    """Offload to OpenRouter (free) with DeepSeek/NVIDIA fallback. Signature kept for callers."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.claude'))
+    import or_client
+    content, _ = or_client.chat(messages, max_tokens=max_tokens, temperature=temperature)
+    return content
 
 
 def extract_prose(html: str) -> Tuple[str, List[dict]]:

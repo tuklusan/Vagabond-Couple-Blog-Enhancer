@@ -30,25 +30,16 @@ You are a travel blog editor. Rewrite each numbered prose block according to the
     
     user_prompt = f"WRITING RULES:\n{writing_rules}\n\nPROSE BLOCKS:\n{prose_blocks}"
     
-    # Initialize client
-    client = OpenAI(
-        base_url="https://integrate.api.nvidia.com/v1",
-        api_key=api_key
-    )
-    
-    # Make API call
-    response = client.chat.completions.create(
-        model="meta/llama-3.1-70b-instruct",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        max_tokens=8192,
-        temperature=0.3
-    )
-    
-    # Extract response
-    rewritten_content = response.choices[0].message.content
+    # Offload rewrite to OpenRouter (free) with DeepSeek/NVIDIA fallback
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.claude'))
+    import or_client
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    rewritten_content, _provider = or_client.chat(messages, max_tokens=8192, temperature=0.3)
+    print(f"Rewriter provider: {_provider}")
     
     # Save to file
     with open('Temp/rewritten_blocks.txt', 'w', encoding='utf-8') as f:

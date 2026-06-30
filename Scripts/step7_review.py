@@ -77,80 +77,29 @@ If the content is clean with no issues, respond with exactly: LGTM
 HTML Content:
 {html_content}"""
     
-    # Try DeepSeek first
+    # Offload review to OpenRouter (free) with DeepSeek/NVIDIA fallback
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.claude'))
+    import or_client
     try:
-        print("Using reviewer: deepseek-v4-pro (api.deepseek.com)")
-        client = OpenAI(
-            api_key=deepseek_api_key,
-            base_url="https://api.deepseek.com"
-        )
-        response = client.chat.completions.create(
-            model="deepseek-v4-pro",
-            messages=[
+        review_text, provider = or_client.chat(
+            [
                 {"role": "system", "content": "You are an expert English editor/reviewer for travel blog content."},
-                {"role": "user", "content": review_prompt}
+                {"role": "user", "content": review_prompt},
             ],
-            temperature=0.2,
-            max_tokens=4000
-        )
-        
-        review_text = response.choices[0].message.content
-        
-        # Save review to file
-        output_path = "Temp/output_review.txt"
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(review_text)
-        
-        # Print review
-        print(review_text.encode('ascii', 'replace').decode('ascii'))
-        
-        # Check for critical issues
-        if re.search(r'critical', review_text, re.IGNORECASE):
-            sys.exit(1)
-        else:
-            sys.exit(0)
-            
+            max_tokens=4000, temperature=0.2)
+        print(("Using reviewer: " + provider).encode('ascii', 'replace').decode('ascii'))
     except Exception as e:
-        print(f"DeepSeek review failed: {str(e)}".encode('ascii', 'replace').decode('ascii'))
-        print("Falling back to NVIDIA reviewer...")
-        
-        # Try NVIDIA fallback
-        try:
-            print("Using reviewer: meta/llama-3.1-70b-instruct (integrate.api.nvidia.com)")
-            client = OpenAI(
-                api_key=nvidia_api_key,
-                base_url="https://integrate.api.nvidia.com/v1"
-            )
-            response = client.chat.completions.create(
-                model="meta/llama-3.1-70b-instruct",
-                messages=[
-                    {"role": "system", "content": "You are an expert English editor/reviewer for travel blog content."},
-                    {"role": "user", "content": review_prompt}
-                ],
-                temperature=0.2,
-                max_tokens=4000
-            )
-            
-            review_text = response.choices[0].message.content
-            
-            # Save review to file
-            output_path = "Temp/output_review.txt"
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(review_text)
-            
-            # Print review
-            print(review_text.encode('ascii', 'replace').decode('ascii'))
-            
-            # Check for critical issues
-            if re.search(r'critical', review_text, re.IGNORECASE):
-                sys.exit(1)
-            else:
-                sys.exit(0)
-                
-        except Exception as e2:
-            print(f"Both reviewers failed. DeepSeek error: {str(e)}".encode('ascii', 'replace').decode('ascii'))
-            print(f"NVIDIA error: {str(e2)}".encode('ascii', 'replace').decode('ascii'))
-            sys.exit(1)
+        print(("All reviewers failed: " + str(e)).encode('ascii', 'replace').decode('ascii'))
+        sys.exit(1)
+
+    with open("Temp/output_review.txt", 'w', encoding='utf-8') as f:
+        f.write(review_text)
+    print(review_text.encode('ascii', 'replace').decode('ascii'))
+    if re.search(r'critical', review_text, re.IGNORECASE):
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
