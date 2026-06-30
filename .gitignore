@@ -1,7 +1,8 @@
 # ============================================================
-# SECRETS — never push these
+# SECRETS — never push these (everything EXCEPT the README template)
 # ============================================================
-Config/_SECRETS/
+Config/_SECRETS/*
+!Config/_SECRETS/README.md
 
 # ============================================================
 # Runtime / generated files — not part of the codebase

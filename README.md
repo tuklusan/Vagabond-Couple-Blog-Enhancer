@@ -11,6 +11,47 @@ an SEO-remediated post — an enhanced HTML body plus a new SEO title and a new
 
 ---
 
+## Architecture at a glance
+
+```
+        ┌──────────────────────────────────────────────────────────────────────┐
+        │  INPUT:  raw Blogger post HTML                                         │
+        └──────────────────────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+   ┌────────────────────────────────────────────────────────────────────────────────┐
+   │  ORCHESTRATOR  —  G4 state machine (durable · resumable · step-entry gate)        │
+   │                                                                                  │
+   │  Pre-check ─▶ Context extraction ─▶ Phase 1 (scan) ─▶ Phase 2 (URL lock)          │
+   │      ─▶ Phase 3: Steps 1..13 ─▶ Phase 4 ─▶ Phase 5 ─▶ Phase 6                      │
+   │             (generative nodes)   APPROVAL   GEN+CERT   deliver                     │
+   └────────────────────────────────────────────────────────────────────────────────┘
+        │                          │                              │
+        ▼                          ▼                              ▼
+  DETERMINISTIC             WRITER ⇄ REVIEWER                OPERATOR GATES
+  VALIDATORS (code)         (per generative node)            (human-in-the-loop)
+  · href byte-diff          1. writer drafts ───────────┐    · pre-check
+  · ?/U+FFFD scan              (OpenRouter→DeepSeek       │    · escalations (⚠ / ❌ / 🟠)
+  · ld+json validity           →NVIDIA)                   │    · Phase 4 approval
+  · ETR · ≤150 chars         2. deterministic pre-screen  │      (blocks HTML gen)
+  · forbidden terms          3. reviewer certifies ◀──────┘    · Phase 6 deliverables
+  · <!--more--> · images        (Claude web-grounded
+  · RaaG ↔ H2                    →DeepSeek fallback)
+                              facts · rules · repetition
+                              loop ⟳ until CERTIFIED
+                                          │
+                                          ▼
+        ┌──────────────────────────────────────────────────────────────────────┐
+        │  OUTPUT:  enhanced post body HTML  +  SEO title  +  ≤150-char description │
+        └──────────────────────────────────────────────────────────────────────┘
+```
+
+Key idea: the **writer never finalizes a claim** — the **reviewer must certify it
+(with source URLs)** before it persists. Deterministic checks own the mechanical
+rules; the reviewer spends its tokens only on facts and the holistic read.
+
+---
+
 ## Table of contents
 
 1. [What it does](#what-it-does)
