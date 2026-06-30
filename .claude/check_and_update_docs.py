@@ -62,19 +62,6 @@ def main():
             with open(workflow_path, 'r', encoding='utf-8') as f:
                 workflow_content = f.read()
 
-        # 6. Load DeepSeek API key
-        api_key = None
-        key_path = 'Config/_SECRETS/deepseek-api-key.txt'
-        if os.path.isfile(key_path):
-            with open(key_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.startswith('DEEPSEEK_API_KEY='):
-                        api_key = line.split('=', 1)[1].strip()
-                        break
-        if not api_key:
-            safe_print("[docs] No API key found.")
-            return
-
         # 7. Build prompt using pure string concatenation (no %-formatting)
         prompt = (
             "You are a technical documentation maintainer.\n"
@@ -88,26 +75,15 @@ def main():
             "If no, respond with exactly NO_UPDATE_NEEDED."
         )
 
-        # 8. POST to DeepSeek API
-        headers = {
-            'Authorization': 'Bearer ' + api_key,
-            'Content-Type': 'application/json'
-        }
-        payload = {
-            'model': 'deepseek-v4-pro',
-            'messages': [{'role': 'user', 'content': prompt}],
-            'temperature': 0.1,
-            'max_tokens': 8192
-        }
-        response = requests.post(
-            'https://api.deepseek.com/chat/completions',
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
-        response.raise_for_status()
-        resp_json = response.json()
-        response_text = resp_json['choices'][0]['message']['content']
+        # 8. Offload doc-impact analysis to OpenRouter (DeepSeek/NVIDIA fallback)
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import or_client
+        try:
+            response_text, _ = or_client.chat(
+                [{'role': 'user', 'content': prompt}], max_tokens=8192)
+        except Exception as e:
+            safe_print("[docs] review providers failed: " + str(e))
+            return
 
         # 9. Parse response with strict NO_UPDATE_NEEDED check
         if response_text.strip() == 'NO_UPDATE_NEEDED':

@@ -7,6 +7,9 @@ from pathlib import Path
 
 import requests
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import or_client as _or
+
 
 def load_key(var_name, filepath, prefix):
     """Load API key from environment variable or config file."""
@@ -132,24 +135,13 @@ def write_code(task, context="", previous_code="", review_feedback="",
         {"role": "user", "content": user_prompt}
     ]
 
-    # Try primary (DeepSeek)
+    # Offload codegen to OpenRouter (free), with DeepSeek/NVIDIA fallback.
     try:
-        safe_print("Calling DeepSeek (primary coder)...")
-        response = call_deepseek(messages, deepseek_key)
-        code = strip_markdown_fences(response)
-        return code, "deepseek-v4-pro"
+        safe_print("Calling OpenRouter (primary coder)...")
+        response, provider = _or.chat(messages, max_tokens=8192)
+        return strip_markdown_fences(response), provider
     except Exception as e:
-        safe_print(f"Primary coder failed: {e}")
-        safe_print("Switching to fallback (Mistral via NVIDIA)...")
-
-    # Try fallback (Mistral via NVIDIA)
-    try:
-        safe_print("Calling Mistral (fallback coder)...")
-        response = call_nvidia(messages, nvidia_key)
-        code = strip_markdown_fences(response)
-        return code, "mistral-large"
-    except Exception as e:
-        safe_print(f"Fallback coder failed: {e}")
+        safe_print(f"All coders failed: {e}")
         sys.exit(1)
 
 
@@ -170,26 +162,13 @@ def review_code(code, task, deepseek_key="", nvidia_key=""):
         {"role": "user", "content": user_prompt}
     ]
 
-    review = None
-    primary_error = None
-
-    # Try primary reviewer (DeepSeek)
+    # Offload review to OpenRouter (free), with DeepSeek/NVIDIA fallback.
     try:
-        safe_print("Calling DeepSeek (primary code reviewer)...")
-        review = call_deepseek(messages, deepseek_key)
+        safe_print("Calling OpenRouter (primary code reviewer)...")
+        review, _ = _or.chat(messages, max_tokens=8192)
     except Exception as e:
-        primary_error = e
-        safe_print(f"Primary reviewer failed: {e}")
-
-    # Try fallback reviewer (Qwen via NVIDIA)
-    if review is None:
-        try:
-            safe_print("Calling Qwen (fallback code reviewer)...")
-            review = call_nvidia(messages, nvidia_key,
-                                 model="qwen/qwen3-coder-480b-a35b-instruct")
-        except Exception as e2:
-            safe_print(f"Fallback reviewer failed: {e2}")
-            return True, f"Review failed: primary={primary_error}, fallback={e2}"
+        safe_print(f"All reviewers failed: {e}")
+        return True, f"Review failed: {e}"
 
     # Check for approval
     approved = bool(re.search(r'(?<!\bNOT\s)\bAPPROVED\b', review, re.IGNORECASE))
