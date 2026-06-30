@@ -71,13 +71,6 @@
             "shell": "powershell",
             "timeout": 60,
             "statusMessage": "Checking if docs need updating..."
-          },
-          {
-            "type": "command",
-            "command": "python .claude\\deepseek_review_hook.py",
-            "shell": "powershell",
-            "timeout": 60,
-            "statusMessage": "Advisory review (OpenRouter)..."
           }
         ]
       }

@@ -20,7 +20,7 @@ Override any of these with env vars: `OPENROUTER_MODEL`, `OPENROUTER_GATE_MODEL`
 |------|------|----------|
 | `or_client.py` | Single shared client + provider fallback | imported by all below |
 | `or_review_gate.py --staged` | **HARD gate**: reviews staged code+doc diff; Critical -> blocks commit | `.git/hooks/pre-commit` |
-| `deepseek_review_hook.py` | Advisory per-edit review; writes to `Output/reviews/`, one-line console | PostToolUse (Write/Edit) |
+| `deepseek_review_hook.py` | RETIRED (unwired). Per-edit review removed; review now happens only at the commit gate | manual only |
 | `check_and_update_docs.py` | Auto-updates `Doc/DESIGN.txt` / `Doc/WORKFLOW.md` | PostToolUse (Write/Edit) |
 | `code_agent.py` | Generates + reviews Python (3-round loop) | invoked for all `.py` authoring |
 | `or_testgen.py --target X` | Generates pytest tests -> `Output/tests/` | manual |
