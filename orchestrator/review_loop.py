@@ -39,10 +39,17 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
     for rnd in range(1, max_rounds + 1):
         # --- 1. writer ---
         wsys, wuser = spec.build_writer_prompt(context, prior_output, revision)
-        text, wprov = writer_client.chat(
-            [{"role": "system", "content": wsys}, {"role": "user", "content": wuser}],
-            max_tokens=spec.writer_max_tokens, temperature=spec.temperature,
-        )
+        try:
+            text, wprov = writer_client.chat(
+                [{"role": "system", "content": wsys}, {"role": "user", "content": wuser}],
+                max_tokens=spec.writer_max_tokens, temperature=spec.temperature,
+            )
+        except Exception as e:
+            # Every writer provider is down -> escalate rather than crash.
+            log(f"round {rnd}: writer unavailable -> ESCALATE ({e})")
+            return {"status": "ESCALATE", "output": output, "verdict": verdict,
+                    "sources": sources, "rounds": rnd, "history": history,
+                    "reason": "writer_unavailable: " + str(e)[:160]}
         output = spec.postprocess(text)
 
         # --- 2. deterministic pre-screen (cheap; no reviewer tokens) ---

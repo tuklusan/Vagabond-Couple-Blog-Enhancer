@@ -208,10 +208,19 @@ def review_raw(system, user, web_search=True, model=None, max_tokens=4096, max_c
     try:
         text, sources = _review_with_claude(system, user, web_search, model, max_tokens, max_continuations)
         return text, sources, "claude:" + (model or config.REVIEWER_MODEL)
-    except Exception as e:
-        _safe_print("[reviewer] Claude unusable (" + str(e)[:160] + "); falling back to DeepSeek...")
-        text, sources = _review_with_deepseek(system, user, max_tokens)
-        return text, sources, "deepseek:" + config.REVIEWER_DEEPSEEK_MODEL
+    except Exception as e_claude:
+        _safe_print("[reviewer] Claude unusable (" + str(e_claude)[:160] + "); falling back to DeepSeek...")
+        try:
+            text, sources = _review_with_deepseek(system, user, max_tokens)
+            return text, sources, "deepseek:" + config.REVIEWER_DEEPSEEK_MODEL
+        except Exception as e_ds:
+            # Both reviewer providers are unusable. Never crash and never silently
+            # certify -> emit a verdict that forces ESCALATE to the operator.
+            _safe_print("[reviewer] DeepSeek also failed (" + str(e_ds)[:160] + "); ESCALATING.")
+            note = ("both reviewer providers unavailable: claude=" + str(e_claude)[:120]
+                    + " | deepseek=" + str(e_ds)[:120])
+            synthetic = json.dumps({"decision": "ESCALATE", "note": note, "criteria": {}})
+            return synthetic, [], "none"
 
 
 def ping():
