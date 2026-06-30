@@ -66,6 +66,23 @@ def load_nvidia_key() -> str:
     return _load_key("NVIDIA_API_KEY_CODING", "nvidia-api-keys.txt", "NVIDIA_API_KEY_CODING")
 
 
+
+def _extract_content(resp_json):
+    """Pull text from a chat completion, tolerating reasoning-only messages."""
+    try:
+        msg = resp_json["choices"][0]["message"]
+    except (KeyError, IndexError, TypeError):
+        return ""
+    content = msg.get("content")
+    if content and content.strip():
+        return content
+    # Some free reasoning models leave content empty and put text in reasoning.
+    reasoning = msg.get("reasoning")
+    if reasoning and reasoning.strip():
+        return reasoning
+    return ""
+
+
 def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
                extra_headers=None, max_retries=2):
     headers = {
@@ -91,7 +108,14 @@ def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
                     continue
                 resp.raise_for_status()
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            text = _extract_content(resp.json())
+            if not text.strip():
+                last_err = RuntimeError("empty content from " + str(model))
+                if attempt < max_retries:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise last_err
+            return text
         except requests.exceptions.RequestException as e:
             last_err = e
             if attempt < max_retries:
@@ -172,6 +196,6 @@ def chat(messages, max_tokens=2048, temperature=0.1, allow_fallback=True):
 if __name__ == "__main__":
     content, provider = chat(
         [{"role": "user", "content": "Reply with exactly: PIPELINE OK"}],
-        max_tokens=16,
+        max_tokens=256,
     )
     safe_print("[" + provider + "] " + content)
