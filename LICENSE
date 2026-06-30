@@ -1,0 +1,64 @@
+LIMITED SOURCE-CODE VIEWING LICENSE AND NON-DISCLOSURE AGREEMENT
+
+Copyright (c) 2026 Supratim Sanyal of SANYALnet Labs. All rights reserved.
+
+BINDING ASSENT: BY DOWNLOADING, CLONING, OPENING, OR VIEWING THIS SOURCE CODE,
+YOU EXPLICITLY ACCEPT AND AGREE TO BE LEGALLY BOUND BY EVERY TERM OF THIS
+AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST IMMEDIATELY CEASE ALL
+ACCESS, CLOSE THE FILES, AND PERMANENTLY DESTROY ANY COPIES IN YOUR POSSESSION.
+
+1. GRANT OF LICENSE & CONFIDENTIALITY: The Licensor hereby grants you a personal,
+   non-exclusive, non-transferable, revocable, royalty-free license to view and
+   inspect the raw source code of this software solely for internal educational,
+   review, or evaluation purposes. The source code contains valuable trade secrets
+   and proprietary information of the Licensor. You agree to maintain the strict
+   confidentiality of the source code and shall not disclose, publish, or display
+   it to any third party.
+
+2. ABSOLUTE RESTRICTIONS ON USE: You strictly SHALL NOT, nor shall you cause,
+   permit, or authorize any third party to:
+   (a) Execute, run, compile, interpret, or instantiate the software or code;
+   (b) Modify, adapt, translate, reverse-engineer, or create derivative works;
+   (c) Distribute, publish, sublicense, lease, rent, loan, or sell the code;
+   (d) Use the code, or any portion thereof, to train, fine-tune, or validate
+       any artificial intelligence, machine learning, or automated model.
+
+3. NO COMMERCIAL OR PRODUCTION USE: This software and its source code may not
+   be deployed, utilized, or relied upon in any production, commercial, testing,
+   staging, or live environment for any reason whatsoever.
+
+4. NO PATENT GRANT & PATENT RETALIATION: Nothing in this Agreement shall be
+   construed as granting, by implication, estoppel, or otherwise, any license
+   or right under any patent, patent application, or intellectual property of
+   the Licensor. If you or any of your affiliates institute or authorize patent
+   litigation against the Licensor alleging that this software constitutes direct
+   or contributory patent infringement, all licenses granted to you hereunder
+   shall terminate instantly, and you shall be liable for all resulting damages,
+   legal fees, and costs.
+
+5. EQUITABLE RELIEF: You acknowledge that any breach of this Agreement will
+   cause irreparable harm to the Licensor for which monetary damages would be
+   inadequate. Accordingly, the Licensor shall be entitled to seek immediate
+   injunctive relief and specific performance, without the necessity of posting
+   a bond, in addition to any other legal or equitable remedies available.
+
+6. TERMINATION: This license terminates automatically and instantly without notice
+   from the Licensor if you breach any provision of this Agreement. Upon termination,
+   you must immediately destroy all copies of the source code in your possession.
+
+7. DISCLAIMER OF WARRANTIES: THE SOURCE CODE IS PROVIDED "AS IS", WITHOUT WARRANTY
+   OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO
+   EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES,
+   OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOURCE CODE OR THE VIEWING THEREOF.
+
+8. SEVERABILITY: If any provision of this Agreement is held to be unenforceable,
+   void, or invalid by a court of competent jurisdiction, such provision shall be
+   severed, and the remaining provisions shall continue in full force and effect
+   without impairment.
+
+9. GOVERNING LAW & JURISDICTION: This Agreement shall be governed by and construed
+   in accordance with the laws of Delaware, USA, without regard to conflict
+   of law principles. Any legal action arising hereunder shall be brought exclusively
+   in the courts located in Wilmington, Delaware.
