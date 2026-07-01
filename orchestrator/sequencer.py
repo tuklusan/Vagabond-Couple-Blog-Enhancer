@@ -201,20 +201,37 @@ def build_phase1_deterministic_sequence():
 # ===========================================================================
 # Generative / analysis / phase nodes for the FULL canonical sequence
 # ===========================================================================
-def generative_node(node_id, phase, spec_factory):
+def generative_node(node_id, phase, spec_factory, optional=False):
+    """A Tier-1 writer<->reviewer generative node.
+
+    optional=True marks a node the workflow explicitly allows to be skipped when no
+    verifiable, non-duplicative content can be produced (rev-18 Step 9-F factoids;
+    Step 13 separators): on escalation it SKIPS (adds nothing, records the reason)
+    instead of halting the run. Non-optional nodes still stop for an operator call.
+    """
     def handler(sctx):
         if sctx.dry_generative:
             return {"complete": True, "note": "[dry] generative stubbed"}
         spec = spec_factory()
         outcome = review_loop.run_generative_node(spec, sctx.context)
+        certified = outcome["status"] == "CERTIFIED"
         sctx.state.save_artifact("gen_" + node_id, {
-            "status": outcome["status"], "output": outcome["output"],
+            # A skipped optional node must contribute no body content.
+            "status": outcome["status"],
+            "output": outcome["output"] if certified else "",
             "verdict": outcome.get("verdict"), "sources": outcome.get("sources"),
             "rounds": outcome.get("rounds"),
+            "skipped": (not certified) and optional,
         })
-        if outcome["status"] == "CERTIFIED":
+        if certified:
             return {"complete": True, "output_ref": "gen_" + node_id,
                     "note": "certified in " + str(outcome.get("rounds")) + " round(s)"}
+        if optional:
+            # Workflow-sanctioned skip (e.g. no verifiable factoid for this pass).
+            sctx.operator.info("Node " + node_id + " skipped (optional): "
+                               + str(outcome.get("reason", "")))
+            return {"complete": True, "output_ref": "gen_" + node_id,
+                    "note": "skipped (optional): " + str(outcome.get("reason", ""))}
         # ESCALATE -> operator decision (never silently accept an unverified claim)
         sctx.operator.info("Node " + node_id + " ESCALATED: " + str(outcome.get("reason", "")))
         choice = sctx.operator.choose("How to handle " + node_id + "?",
@@ -336,10 +353,10 @@ def build_full_sequence():
         g("step6_first_body_paragraph", "Phase 3 / Step 6 - First body paragraph", n.step6_first_body_paragraph),
         g("step7_route_summary_box", "Phase 3 / Step 7 - Route summary box", n.step7_route_summary_box),
         g("step8_route_at_a_glance", "Phase 3 / Step 8 - Route at a Glance", n.step8_route_at_a_glance),
-        g("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids", n.step9f_factoid),
+        g("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids", n.step9f_factoid, optional=True),
         g("step10_journey_significance", "Phase 3 / Step 10 - Journey significance", n.step10_journey_significance),
         g("step12_resolve", "Phase 3 / Step 12 - Resolve repetition/rules", n.step12_resolve),
-        g("step13_separator", "Phase 3 / Step 13 - Image separators", n.step13_separator),
+        g("step13_separator", "Phase 3 / Step 13 - Image separators", n.step13_separator, optional=True),
         # Phase 4 -- operator approval (blocks HTML generation)
         phase4_gate_node(),
         # Phase 5 -- HTML generation (assemble) then sanity cert (G2 two-pass;
