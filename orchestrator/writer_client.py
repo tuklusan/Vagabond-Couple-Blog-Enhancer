@@ -33,6 +33,14 @@ OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
+# Both configured writer models (openrouter/free and deepseek-v4-pro) are
+# reasoning models: they spend output tokens on internal reasoning BEFORE
+# emitting the visible answer. A small max_tokens (e.g. 200-400) can be fully
+# consumed by reasoning, leaving empty content and a spurious escalation. This
+# floor guarantees reasoning headroom regardless of a node's short-output
+# budget -- the prompt, not max_tokens, controls how long the answer is.
+REASONING_TOKEN_FLOOR = int(os.environ.get("WRITER_TOKEN_FLOOR", "800"))
+
 
 def safe_print(msg):
     """Print ASCII-safe (Windows console can choke on unicode model output)."""
@@ -95,7 +103,8 @@ def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
         "model": model,
         "messages": messages,
         "temperature": temperature,
-        "max_tokens": max_tokens,
+        # Give reasoning models thinking headroom (see REASONING_TOKEN_FLOOR).
+        "max_tokens": max(max_tokens, REASONING_TOKEN_FLOOR),
     }
     last_err = None
     for attempt in range(max_retries + 1):

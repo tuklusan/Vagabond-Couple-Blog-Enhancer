@@ -31,6 +31,8 @@ def main():
     ap.add_argument("--auto", action="store_true", help="auto-operator (headless; gates use safe defaults)")
     ap.add_argument("--full", action="store_true", help="run the full canonical pipeline (needs live providers unless --dry)")
     ap.add_argument("--dry", action="store_true", help="stub generative/analysis nodes (walk the machinery, no LLM)")
+    ap.add_argument("--approve-phase4", action="store_true",
+                    help="auto-operator: grant the Phase 4 approval gate (test/CI opt-in; real runs approve interactively)")
     ap.add_argument("--run-id", default=None, help="reuse/name a run id")
     args = ap.parse_args()
 
@@ -44,7 +46,8 @@ def main():
     op = Operator(auto=args.auto)
     sctx = sequencer.StepContext(state=state, context={}, operator=op,
                                  mode="auto" if args.auto else "step",
-                                 dry_generative=args.dry)
+                                 dry_generative=args.dry,
+                                 approve_gates=args.approve_phase4)
 
     seq = sequencer.build_full_sequence() if args.full else sequencer.build_phase1_deterministic_sequence()
     print(_ascii("run dir: " + str(state.dir)))

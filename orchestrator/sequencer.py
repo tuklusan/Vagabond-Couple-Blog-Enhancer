@@ -34,6 +34,7 @@ class StepContext:
     operator: object
     mode: str = "auto"            # auto | step | run-to-gate
     dry_generative: bool = False   # stub generative/analysis nodes (test the machinery)
+    approve_gates: bool = False    # auto-operator: grant Phase 4 approval (test/CI opt-in only)
 
 
 def _ascii(x):
@@ -165,7 +166,8 @@ def build_phase4_summary(state):
 def phase4_gate_node():
     def handler(sctx):
         summary = build_phase4_summary(sctx.state)
-        approved = sctx.operator.approve("Phase 4 - Proposed Modifications", summary, default=False)
+        approved = sctx.operator.approve("Phase 4 - Proposed Modifications", summary,
+                                         default=sctx.approve_gates)
         if not approved:
             return {"halt": True, "halt_reason": "Phase 4 approval withheld",
                     "item": "operator did not approve HTML generation",
