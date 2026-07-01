@@ -113,11 +113,11 @@ def geographic_stops(context):
     origin -> waypoints/schema stops -> destination, deduped by leading place name."""
     seq = []
     if context.get("origin"):
-        seq.append(str(context.get("origin", "")).strip())
+        seq.append(str((context.get("origin") or "")).strip())
     seq += [str(v).strip() for v in (context.get("waypoints") or []) if v and str(v).strip()]
     seq += [str(v).strip() for v in (context.get("stops") or []) if v and str(v).strip()]
     if context.get("destination"):
-        seq.append(str(context.get("destination", "")).strip())
+        seq.append(str((context.get("destination") or "")).strip())
     out, seen = [], set()
     for s in seq:
         key = _first_place_token(s).lower()
@@ -192,11 +192,11 @@ def step6_first_body_paragraph() -> GenerativeNode:
             "Avoid all marketing/transition cliche words."
         )
         user = (
-            "Origin: " + context.get("origin", "") + "\n"
-            "Destination: " + context.get("destination", "") + "\n"
+            "Origin: " + (context.get("origin") or "") + "\n"
+            "Destination: " + (context.get("destination") or "") + "\n"
             "Waypoints: " + ", ".join(context.get("waypoints", [])) + "\n"
-            "Method: " + context.get("method", "overland") + "\n"
-            "What this post covers: " + context.get("covers", "")
+            "Method: " + (context.get("method") or "overland") + "\n"
+            "What this post covers: " + (context.get("covers") or "")
         )
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -246,9 +246,9 @@ def step9f_factoid() -> GenerativeNode:
             "the factoid text (a single <p>...</p>), no label opener unless told otherwise."
         )
         user = (
-            "Section topic: " + context.get("section_topic", "") + "\n"
-            "Place/object/event: " + context.get("subject", "") + "\n"
-            "Already-covered facts to AVOID duplicating:\n" + context.get("existing_facts", "(none)")
+            "Section topic: " + (context.get("section_topic") or "") + "\n"
+            "Place/object/event: " + (context.get("subject") or "") + "\n"
+            "Already-covered facts to AVOID duplicating:\n" + (context.get("existing_facts") or "(none)")
         )
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -267,8 +267,8 @@ def step9f_factoid() -> GenerativeNode:
             "swap to a verifiable fact) or ESCALATE."
         )
         user = (
-            "Section: " + context.get("section_topic", "") +
-            "\nAlready-covered facts:\n" + context.get("existing_facts", "(none)") +
+            "Section: " + (context.get("section_topic") or "") +
+            "\nAlready-covered facts:\n" + (context.get("existing_facts") or "(none)") +
             "\n\nFactoid to certify:\n" + output
         )
         return system, user
@@ -322,9 +322,9 @@ def step1_title() -> GenerativeNode:
             "business brand names, no forbidden words. Output ONLY the title text on one line."
         )
         user = (
-            "Origin: " + context.get("origin", "") + "\nDestination: " + context.get("destination", "") +
+            "Origin: " + (context.get("origin") or "") + "\nDestination: " + (context.get("destination") or "") +
             "\nWaypoints/themes available: " + ", ".join(context.get("waypoints", [])) +
-            "\nKnown high-value landmarks: " + context.get("landmarks", "")
+            "\nKnown high-value landmarks: " + (context.get("landmarks") or "")
         )
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -382,8 +382,8 @@ def step2f_search_description() -> GenerativeNode:
             "-- no preamble, no explanation, no quotes."
         )
         user = (
-            "Origin: " + context.get("origin", "") + "\nDestination: " + context.get("destination", "") +
-            "\nThemes/landmarks: " + context.get("landmarks", "") +
+            "Origin: " + (context.get("origin") or "") + "\nDestination: " + (context.get("destination") or "") +
+            "\nThemes/landmarks: " + (context.get("landmarks") or "") +
             "\nETR minutes: " + str(etr)
         )
         if prior:
@@ -426,9 +426,9 @@ def step10_journey_significance() -> GenerativeNode:
             "<p>...</p>."
         )
         user = (
-            "Post route: " + context.get("origin", "") + " -> " + context.get("destination", "") +
-            "\nThemes: " + context.get("landmarks", "") +
-            "\nFacts already in the post (do not repeat):\n" + context.get("existing_facts", "(none)")
+            "Post route: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
+            "\nThemes: " + (context.get("landmarks") or "") +
+            "\nFacts already in the post (do not repeat):\n" + (context.get("existing_facts") or "(none)")
         )
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -443,7 +443,7 @@ def step10_journey_significance() -> GenerativeNode:
             "(b) WRITING RULES -- narrator we/us, no forbidden words, no contrast framing; "
             "(d) REPETITION -- introduces no fact already in the post.\n" + _VERDICT_SHAPE
         )
-        user = ("Facts already in post:\n" + context.get("existing_facts", "(none)") +
+        user = ("Facts already in post:\n" + (context.get("existing_facts") or "(none)") +
                 "\n\nParagraph to certify:\n" + output)
         return system, user
 
@@ -468,9 +468,9 @@ def step13_separator() -> GenerativeNode:
             "no category-colon openers. Output ONLY a single <p>...</p>."
         )
         user = (
-            "Between photos of: " + context.get("subject", "") +
-            "\nSection: " + context.get("section_topic", "") +
-            "\nFacts already in the post (do not repeat):\n" + context.get("existing_facts", "(none)")
+            "Between photos of: " + (context.get("subject") or "") +
+            "\nSection: " + (context.get("section_topic") or "") +
+            "\nFacts already in the post (do not repeat):\n" + (context.get("existing_facts") or "(none)")
         )
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -486,7 +486,7 @@ def step13_separator() -> GenerativeNode:
             "post.\n" + _VERDICT_SHAPE +
             "\nNever CERTIFY an unverifiable factual claim -- REVISE or ESCALATE."
         )
-        user = ("Facts already in post:\n" + context.get("existing_facts", "(none)") +
+        user = ("Facts already in post:\n" + (context.get("existing_facts") or "(none)") +
                 "\n\nSeparator to certify:\n" + output)
         return system, user
 
@@ -514,8 +514,8 @@ def step3_summary_block() -> GenerativeNode:
             "NARRATIVE: paragraph, then ROWS: one 'emoji | Section - descriptor' per line. "
             "Output EXACTLY one row per section listed below -- no more, no fewer."
         )
-        user = ("Post title: " + context.get("post_title", "") +
-                "\nRoute: " + context.get("origin", "") + " -> " + context.get("destination", "") +
+        user = ("Post title: " + (context.get("post_title") or "") +
+                "\nRoute: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
                 "\nTop-level H2 sections (" + str(len(sections)) + " rows, one each):\n- " +
                 "\n- ".join(sections))
         if prior:
@@ -566,10 +566,10 @@ def step7_route_summary_box() -> GenerativeNode:
             '<strong>Vehicle:</strong> Shehzadi (2024 Toyota Tundra)</div>\n'
             "Fill the bracketed fields from the context. No forbidden words. Output ONLY the div."
         )
-        user = ("Route stops: " + context.get("origin", "") + " -> " + context.get("destination", "") +
-                "\nMethod: " + context.get("method", "overland") +
-                "\nThemes: " + context.get("landmarks", "") +
-                "\nApprox distance/days: " + context.get("distance_time", "(estimate)"))
+        user = ("Route stops: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
+                "\nMethod: " + (context.get("method") or "overland") +
+                "\nThemes: " + (context.get("landmarks") or "") +
+                "\nApprox distance/days: " + (context.get("distance_time") or "(estimate)"))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:
@@ -679,7 +679,7 @@ def step12_resolve() -> GenerativeNode:
         )
         user = ("Flagged issue: " + context.get("issue", "") +
                 "\nPassage to fix:\n" + context.get("passage", "") +
-                "\nFacts already in the post (do not reintroduce):\n" + context.get("existing_facts", "(none)"))
+                "\nFacts already in the post (do not reintroduce):\n" + (context.get("existing_facts") or "(none)"))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:
@@ -694,7 +694,7 @@ def step12_resolve() -> GenerativeNode:
             "duplication introduced.\n" + _VERDICT_SHAPE
         )
         user = ("Original issue: " + context.get("issue", "") +
-                "\nFacts already in post:\n" + context.get("existing_facts", "(none)") +
+                "\nFacts already in post:\n" + (context.get("existing_facts") or "(none)") +
                 "\n\nCorrected passage to certify:\n" + output)
         return system, user
 
