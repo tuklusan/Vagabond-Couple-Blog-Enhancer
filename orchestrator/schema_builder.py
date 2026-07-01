@@ -126,4 +126,7 @@ def build_schema_script(context, html="", indent=2):
     """Return the full <script type="application/ld+json"> ... </script> block."""
     schema = build_travelaction_schema(context, html, indent=indent)
     body = json.dumps(schema, ensure_ascii=False, indent=indent)
+    # Prevent a value containing '</script>' from closing the tag early (TICKET-0073).
+    # In JSON, '<\/' is an equivalent escaping of '</', so parsers still read it as '</'.
+    body = body.replace("</", "<\\/")
     return '<script type="application/ld+json">\n' + body + '\n</script>'

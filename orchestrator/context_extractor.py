@@ -88,6 +88,8 @@ def derive_route_from_prose(html, max_chars=9000):
             max_tokens=400)
     except Exception:
         return {}
+    if not isinstance(out, str):      # guard against a non-string return (TICKET-0067)
+        return {}
     for cand in (out, out[out.find("{"):out.rfind("}") + 1] if "{" in out else ""):
         try:
             obj = _json.loads(cand)

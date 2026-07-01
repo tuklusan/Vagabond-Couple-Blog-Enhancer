@@ -75,7 +75,13 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
         prefer_deepseek = det_fail_count >= WRITER_ESCALATE_AFTER
         if prefer_deepseek and det_fail_count == WRITER_ESCALATE_AFTER:
             log(f"round {rnd}: escalating writer -> DeepSeek after {det_fail_count} objective-check failures")
-        wsys, wuser = spec.build_writer_prompt(context, prior_output, revision)
+        try:
+            wsys, wuser = spec.build_writer_prompt(context, prior_output, revision)
+        except Exception as e:
+            log(f"round {rnd}: build_writer_prompt error -> ESCALATE ({e})")
+            return {"status": "ESCALATE", "output": output, "verdict": verdict,
+                    "sources": sources, "rounds": rnd, "history": history,
+                    "reason": "build_writer_prompt_failed: " + str(e)[:160]}
         try:
             text, wprov = writer_client.chat(
                 [{"role": "system", "content": wsys}, {"role": "user", "content": wuser}],
@@ -113,7 +119,13 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
         det_fail_count = 0        # a clean draft resets the escalation counter
 
         # --- 3. reviewer (judgment) ---
-        rsys, ruser = spec.build_review_prompt(output, det_findings, context)
+        try:
+            rsys, ruser = spec.build_review_prompt(output, det_findings, context)
+        except Exception as e:
+            log(f"round {rnd}: build_review_prompt error -> ESCALATE ({e})")
+            return {"status": "ESCALATE", "output": output, "verdict": verdict,
+                    "sources": sources, "rounds": rnd, "history": history,
+                    "reason": "build_review_prompt_failed: " + str(e)[:160]}
         verdict, _rtext, sources = _safe_certify(spec, rsys, ruser)
         decision = str(verdict.get("decision", "ESCALATE")).upper()
         log(f"round {rnd}: review {decision} (writer={wprov}, reviewer={verdict.get('reviewer_provider')})")
