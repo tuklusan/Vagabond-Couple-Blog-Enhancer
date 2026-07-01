@@ -88,10 +88,19 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
             return {"status": "ESCALATE", "output": output, "verdict": verdict,
                     "sources": sources, "rounds": rnd, "history": history,
                     "reason": "writer_unavailable: " + str(e)[:160]}
-        output = spec.postprocess(text)
+
+        # postprocess + deterministic check are pure code, but a malformed writer
+        # payload or a validator bug must not crash the whole loop (TICKET-0014).
+        try:
+            output = spec.postprocess(text)
+            det_ok, det_findings = spec.deterministic_check(output, context)
+        except Exception as e:
+            log(f"round {rnd}: postprocess/check error -> ESCALATE ({e})")
+            return {"status": "ESCALATE", "output": output, "verdict": verdict,
+                    "sources": sources, "rounds": rnd, "history": history,
+                    "reason": "postprocess_or_check_failed: " + str(e)[:160]}
 
         # --- 2. deterministic pre-screen (cheap; no reviewer tokens) ---
-        det_ok, det_findings = spec.deterministic_check(output, context)
         if not det_ok:
             det_fail_count += 1
             log(f"round {rnd}: deterministic FAIL ({wprov}) -> {det_findings}")
@@ -162,24 +171,37 @@ def document_deterministic_checklist(html, original_hrefs=None):
     G2 Pass 2 -- re-derive every mechanical fact from the assembled output (not
     from memory of the per-node verdicts). Pure code; no LLM.
     """
-    checks = {}
-    checks["schema_ok"] = validators.validate_ld_json(html)["ok"]
-    checks["more_canonical"] = validators.count_more_tags(html)["canonical_after_script"]
-    media = validators.media_inventory(html)
-    checks["image_table_match"] = media["image_table_match"]
-    checks["no_consecutive_images"] = len(validators.consecutive_image_pairs(html)) == 0
-    checks["summary_present"] = validators.summary_block(html)["present"]
-    checks["no_ufffd"] = validators.scan_question_marks(html)["ufffd_count"] == 0
-    checks["no_forbidden"] = len(validators.scan_forbidden(validators.plain_text(html))) == 0
+    # Each check is wrapped so a validator bug/edge case marks that check failed
+    # rather than aborting the whole certification (TICKET-0015).
+    def _chk(name, fn):
+        try:
+            checks[name] = bool(fn())
+        except Exception as e:
+            checks[name] = False
+            errors[name] = str(e)[:160]
+
+    checks, errors = {}, {}
+    _chk("schema_ok", lambda: validators.validate_ld_json(html)["ok"])
+    _chk("more_canonical", lambda: validators.count_more_tags(html)["canonical_after_script"])
+    _chk("image_table_match", lambda: validators.media_inventory(html)["image_table_match"])
+    _chk("no_consecutive_images", lambda: len(validators.consecutive_image_pairs(html)) == 0)
+    _chk("summary_present", lambda: validators.summary_block(html)["present"])
+    _chk("no_ufffd", lambda: validators.scan_question_marks(html)["ufffd_count"] == 0)
+    _chk("no_forbidden", lambda: len(validators.scan_forbidden(validators.plain_text(html))) == 0)
     # Route at a Glance is one item per GEOGRAPHIC stop in travel order (workflow
     # line 356) -- deliberately decoupled from the H2 section count (that is the
     # summary block's job). So only require RAAG, if present, to be a non-empty list.
-    raag = validators.raag_vs_h2(html)
-    checks["raag_nonempty"] = (not raag["raag_present"]) or len(raag["raag_items"]) >= 1
+    def _raag_ok():
+        raag = validators.raag_vs_h2(html)
+        return (not raag["raag_present"]) or len(raag["raag_items"]) >= 1
+    _chk("raag_nonempty", _raag_ok)
     if original_hrefs is not None:
-        checks["hrefs_preserved"] = validators.diff_hrefs(original_hrefs, html)["ok"]
-    return {"checks": checks, "ok": all(checks.values()),
-            "failed": [k for k, v in checks.items() if not v]}
+        _chk("hrefs_preserved", lambda: validators.diff_hrefs(original_hrefs, html)["ok"])
+    result = {"checks": checks, "ok": all(checks.values()),
+              "failed": [k for k, v in checks.items() if not v]}
+    if errors:
+        result["errors"] = errors
+    return result
 
 
 _DOC_VERDICT_SHAPE = (

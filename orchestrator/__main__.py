@@ -65,8 +65,18 @@ def main():
     if not src.exists():
         print(_ascii("input not found: " + str(src)))
         sys.exit(1)
+    if not src.is_file():                                   # TICKET-0004
+        print(_ascii("input is not a file: " + str(src)))
+        sys.exit(1)
 
-    html = src.read_text(encoding="utf-8", errors="ignore")
+    # Read strict UTF-8; on a decode error, warn and fall back to replacement rather
+    # than silently dropping bytes (TICKET-0005).
+    try:
+        html = src.read_text(encoding="utf-8")
+    except UnicodeDecodeError as e:
+        print(_ascii("warning: input is not valid UTF-8 (" + str(e)[:80]
+                     + "); reading with replacement characters"))
+        html = src.read_text(encoding="utf-8", errors="replace")
     state = RunState.create(html, run_id=args.run_id)
     op = Operator(auto=args.auto)
     sctx = sequencer.StepContext(state=state, context={}, operator=op,

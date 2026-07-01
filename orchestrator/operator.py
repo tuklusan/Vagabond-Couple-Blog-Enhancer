@@ -37,6 +37,9 @@ class Operator:
         return ans in ("y", "yes")
 
     def choose(self, message, options, default_index=0):
+        options = list(options)
+        if not options:                                     # TICKET-0012
+            raise ValueError("choose() requires at least one option: " + message)
         if self.auto:
             print(_ascii("[operator:auto] " + message + " -> " + str(options[default_index])))
             return options[default_index]

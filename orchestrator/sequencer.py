@@ -309,8 +309,8 @@ def phase5_generate_node():
 def phase5_certification_node():
     def handler(sctx):
         cert = review_loop.run_document_certification(sctx.state, run_reviewer=not sctx.dry_generative)
-        if not cert["certified"]:
-            failed = cert["pass2_deterministic"]["failed"]
+        if not cert.get("certified"):
+            failed = (cert.get("pass2_deterministic") or {}).get("failed", [])
             if not failed:
                 failed = [str((cert.get("pass1_reviewer") or {}).get("decision"))]
             return {"halt": True, "halt_reason": "Phase 5 G2 certification not clean",

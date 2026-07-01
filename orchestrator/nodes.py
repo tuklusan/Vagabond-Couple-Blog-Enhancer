@@ -286,7 +286,12 @@ def step9f_factoid() -> GenerativeNode:
 # ---------------------------------------------------------------------------
 # Step 1 -- SEO title  (distinct deterministic check: format, no emoji/brand)
 # ---------------------------------------------------------------------------
-_EMOJI_RE = re.compile(r"[\U0001F000-\U0001FAFF☀-➿←-⇿⬀-⯿]")
+# Actual emoji blocks only -- NOT arrows/misc-technical symbols, which are valid in
+# a title (TICKET-0010): Misc Symbols & Pictographs, Emoticons, Transport & Map,
+# Supplemental Symbols & Pictographs, Dingbats, and the two common Misc-Symbols emoji.
+_EMOJI_RE = re.compile(
+    r"[\U0001F300-\U0001F5FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF"
+    r"\U0001F900-\U0001FAFF☀-⛿✀-➿]")
 
 
 def title_deterministic_check(output, context):
@@ -355,8 +360,8 @@ def description_deterministic_check(output, context):
     findings = []
     if len(t) > 150:
         findings.append("description is " + str(len(t)) + " chars (max 150)")
-    if "ETR" not in t:
-        findings.append("missing 'ETR: N min'")
+    if not re.search(r"ETR:\s*\d+\s*min", t):   # require the number, not just 'ETR' (TICKET-0011)
+        findings.append("missing 'ETR: N min' (with a number)")
     findings += writing_rules_findings(t)
     return (len(findings) == 0, findings)
 

@@ -58,11 +58,18 @@ def _load_key(env_var: str, secret_file: str, prefix: str) -> str:
         text = path.read_text(encoding="utf-8", errors="ignore")
         for line in text.splitlines():
             line = line.strip()
-            if line.startswith(prefix + "="):
-                return line[len(prefix) + 1:].strip()
-        raw = text.strip()
-        if raw and "=" not in raw:
-            return raw
+            if not line or line.startswith("#"):
+                continue
+            # Tolerate 'NAME = value' with spaces around '=' (TICKET-0023).
+            if "=" in line:
+                name, val = line.split("=", 1)
+                if name.strip() == prefix:
+                    return val.strip()
+        # Bare-key file: return the first non-empty, non-'NAME=value' line.
+        for line in text.splitlines():
+            line = line.strip()
+            if line and "=" not in line and not line.startswith("#"):
+                return line
     return ""
 
 

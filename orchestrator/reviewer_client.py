@@ -50,20 +50,10 @@ SECRETS_DIR = PROJECT_ROOT / "Config" / "_SECRETS"
 
 
 def load_anthropic_key() -> str:
-    val = os.environ.get("ANTHROPIC_API_KEY")
-    if val:
-        return val.strip()
-    path = SECRETS_DIR / "anthropic-api-key.txt"
-    if path.exists():
-        text = path.read_text(encoding="utf-8", errors="ignore")
-        for line in text.splitlines():
-            line = line.strip()
-            if line.startswith("ANTHROPIC_API_KEY="):
-                return line.split("=", 1)[1].strip()
-        raw = text.strip()
-        if raw and "=" not in raw:
-            return raw
-    return ""
+    # Delegate to the shared, robust key loader (handles env, 'NAME=value',
+    # 'NAME = value' with spaces, comments, and bare-key files) so we never return a
+    # whole multi-line file as the key (TICKET-0016 / TICKET-0023).
+    return writer_client._load_key("ANTHROPIC_API_KEY", "anthropic-api-key.txt", "ANTHROPIC_API_KEY")
 
 
 def _client():
