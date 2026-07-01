@@ -20,6 +20,7 @@ Config (all overridable via environment):
     NVIDIA_API_KEY_CODING   - optional fallback
 """
 import os
+import re
 import time
 from pathlib import Path
 
@@ -185,6 +186,65 @@ def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
     raise RuntimeError("chat failed")
 
 
+_FREE_INSTRUCT_CACHE = None      # discovered ids, best-first (None = not yet queried)
+
+
+def _param_size(model_id):
+    """Comparable size from an id like '...-405b...'/'...80b...'/'...3b...' (else 0)."""
+    m = re.search(r"(\d+(?:\.\d+)?)\s*b\b", (model_id or "").lower())
+    return float(m.group(1)) if m else 0.0
+
+
+def list_free_instruct_models(timeout=30):
+    """Query OpenRouter /models and return FREE, INSTRUCT (non-reasoning) model ids,
+    best-first (bigger parameter count, then bigger context). This lets the code
+    DISCOVER a currently-available free instruct model instead of hardcoding one
+    that later gets deprecated (TICKET-0091)."""
+    resp = requests.get(OPENROUTER_BASE_URL + "/models", timeout=timeout)
+    resp.raise_for_status()
+    ranked = []
+    for m in resp.json().get("data", []) or []:
+        mid = m.get("id") or ""
+        pr = m.get("pricing") or {}
+        try:
+            free = float(pr.get("prompt", "1")) == 0 and float(pr.get("completion", "1")) == 0
+        except (TypeError, ValueError):
+            free = False
+        text = (mid + " " + (m.get("name") or "")).lower()
+        instruct = "instruct" in text
+        if free and instruct:
+            ranked.append((mid, _param_size(mid), m.get("context_length") or 0))
+    ranked.sort(key=lambda t: (t[1], t[2]), reverse=True)
+    return [mid for mid, _, _ in ranked]
+
+
+def pick_free_instruct_model(default="openrouter/free"):
+    """Best available free instruct model id (cached per process), or `default` on
+    any failure (network/parse) so discovery never breaks a run."""
+    global _FREE_INSTRUCT_CACHE
+    if _FREE_INSTRUCT_CACHE is None:
+        try:
+            _FREE_INSTRUCT_CACHE = list_free_instruct_models()
+        except Exception as e:
+            safe_print("[writer] free-instruct discovery failed (" + str(e)[:100] + ")")
+            _FREE_INSTRUCT_CACHE = []
+    return _FREE_INSTRUCT_CACHE[0] if _FREE_INSTRUCT_CACHE else default
+
+
+def _resolve_openrouter_model(model):
+    """Resolve the model id. OPENROUTER_MODEL='auto' (or model='auto') discovers the
+    best free instruct model; anything else is used verbatim. Returns
+    (model_id, is_specific_instruct)."""
+    m = model or OPENROUTER_MODEL
+    if m == "auto":
+        picked = pick_free_instruct_model(default="openrouter/free")
+        # A discovered pick is instruct by construction (may not have 'instruct' in
+        # its id, e.g. hermes-3-...-405b). The openrouter/free fallback is not.
+        return picked, picked != "openrouter/free"
+    is_instruct = m != "openrouter/free" and "instruct" in m.lower()
+    return m, is_instruct
+
+
 def call_openrouter(messages, max_tokens=2048, temperature=0.1, model=None, timeout=120):
     key = load_openrouter_key()
     if not key:
@@ -193,15 +253,17 @@ def call_openrouter(messages, max_tokens=2048, temperature=0.1, model=None, time
         "HTTP-Referer": os.environ.get("OPENROUTER_REFERER", "https://localhost/vagabond-blog"),
         "X-Title": "Vagabond-Couple-Blog-Enhancer",
     }
+    resolved, is_instruct = _resolve_openrouter_model(model)
     body = {}
-    if OPENROUTER_REASONING_EFFORT:
-        # "none" -> no reasoning, answer directly in message.content (writer wants
-        # finished text, not chain-of-thought). Ignored by non-reasoning models.
-        body["reasoning"] = {"effort": OPENROUTER_REASONING_EFFORT}
+    # On a specific instruct model, 'none' reasoning is valid and gives clean content
+    # directly (the free ROUTER rejects it -- see TICKET-0091). Explicit env wins.
+    effort = OPENROUTER_REASONING_EFFORT or ("none" if is_instruct else "")
+    if effort:
+        body["reasoning"] = {"effort": effort}
     if OPENROUTER_INCLUDE_USAGE:
         body["usage"] = {"include": True}
     return _post_chat(
-        OPENROUTER_BASE_URL + "/chat/completions", key, model or OPENROUTER_MODEL,
+        OPENROUTER_BASE_URL + "/chat/completions", key, resolved,
         messages, max_tokens, temperature, timeout, extra_headers=extra,
         extra_payload=body or None,
     )

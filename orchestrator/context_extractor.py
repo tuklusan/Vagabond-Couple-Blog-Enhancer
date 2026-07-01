@@ -123,8 +123,12 @@ def extract_context(html, allow_llm=False):
             name = part.get("name")
             ptype = part.get("@type")
             desc = part.get("description")
-            if not name:
+            # Schema.org allows non-string values; only accept string names/descs so
+            # string concatenation below can't crash (TICKET-0092).
+            if not isinstance(name, str) or not name.strip():
                 continue
+            if not isinstance(desc, str) or not desc.strip():
+                desc = None
             if desc:
                 facts.append(name + ": " + desc)
             if ptype == "Place" and desc:

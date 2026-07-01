@@ -354,7 +354,8 @@ All optional; sensible defaults shown.
 | `ORCH_RUN_ROOT` | `Output/runs` | Where run state is written. |
 | `ORCH_MAX_NODE_ROUNDS` | `6` | Writer↔reviewer rounds per node before escalating to the operator. |
 | `ORCH_GATE_FAIL_CLOSED` | `0` | `1` = block on a total review outage instead of failing open. |
-| `OPENROUTER_MODEL` | `openrouter/free` | Writer model (a non-deterministic free router; pin a specific `:free` model for stability). |
+| `OPENROUTER_MODEL` | `openrouter/free` | Writer model. `openrouter/free` is a non-deterministic router (a different model per call). Set to **`auto`** to have the code query OpenRouter's `/models` and pick the best available **free instruct** model (stable + clean content), or pin a specific `…:free` id yourself. |
+| `OPENROUTER_REASONING_EFFORT` | `` (off; `none` auto-applied on a pinned/`auto` instruct model) | OpenRouter reasoning effort. `none` returns the answer directly (no chain-of-thought) — valid only on a specific instruct model, **not** the `openrouter/free` router (which rejects it with 400). |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter endpoint. |
 | `REVIEWER_MODEL` | `claude-opus-4-8` | Claude reviewer model (`claude-sonnet-4-6` to trade quality for cost). |
 | `REVIEWER_DEEPSEEK_MODEL` | `deepseek-v4-pro` | DeepSeek reviewer-fallback model. |
