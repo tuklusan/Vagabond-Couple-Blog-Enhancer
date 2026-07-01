@@ -158,8 +158,11 @@ def document_deterministic_checklist(html, original_hrefs=None):
     checks["summary_present"] = validators.summary_block(html)["present"]
     checks["no_ufffd"] = validators.scan_question_marks(html)["ufffd_count"] == 0
     checks["no_forbidden"] = len(validators.scan_forbidden(validators.plain_text(html))) == 0
+    # Route at a Glance is one item per GEOGRAPHIC stop in travel order (workflow
+    # line 356) -- deliberately decoupled from the H2 section count (that is the
+    # summary block's job). So only require RAAG, if present, to be a non-empty list.
     raag = validators.raag_vs_h2(html)
-    checks["raag_h2_match"] = (not raag["raag_present"]) or raag["counts_match"]
+    checks["raag_nonempty"] = (not raag["raag_present"]) or len(raag["raag_items"]) >= 1
     if original_hrefs is not None:
         checks["hrefs_preserved"] = validators.diff_hrefs(original_hrefs, html)["ok"]
     return {"checks": checks, "ok": all(checks.values()),

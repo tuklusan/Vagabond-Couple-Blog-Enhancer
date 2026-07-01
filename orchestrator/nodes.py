@@ -105,19 +105,40 @@ def route_items(context):
     return []
 
 
+def geographic_stops(context):
+    """Ordered GEOGRAPHIC stops for Route at a Glance (workflow line 356: 'one item
+    per named stop or location in travel order' -- places, not thematic sections).
+    origin -> waypoints/schema stops -> destination, deduped by leading place name."""
+    seq = []
+    if context.get("origin"):
+        seq.append(str(context["origin"]).strip())
+    seq += [str(v).strip() for v in (context.get("waypoints") or []) if str(v).strip()]
+    seq += [str(v).strip() for v in (context.get("stops") or []) if str(v).strip()]
+    if context.get("destination"):
+        seq.append(str(context["destination"]).strip())
+    out, seen = [], set()
+    for s in seq:
+        key = _first_place_token(s).lower()
+        if s and key not in seen:
+            seen.add(key)
+            out.append(s)
+    return out
+
+
 def _first_place_token(name):
     """Leading place name from a section/stop label (before a ' - '/':' descriptor)."""
     return re.split(r"\s+[-:–—]\s+", name.strip())[0].strip()
 
 
-def grounded_route_check(output, context):
+def grounded_route_check(output, context, items=None):
     """Guard against hallucinated geography (the DeepSeek-only reviewer can't).
 
     The output must reflect the grounded route list: at least 70% of the grounded
     items must appear (by a significant token), catching wholesale invention like a
     Scandinavian route substituted for a US one."""
     findings = []
-    items = route_items(context)
+    if items is None:
+        items = route_items(context)
     if not items:
         return findings
     text = _plain(output).lower()
@@ -580,16 +601,17 @@ def step7_route_summary_box() -> GenerativeNode:
 # ---------------------------------------------------------------------------
 def step8_route_at_a_glance() -> GenerativeNode:
     def writer(context, prior, revision):
-        items = route_items(context)
+        items = geographic_stops(context)
         system = (
             "You write a 'Route at a Glance' navigation list: an <h2>Route at a Glance</h2> "
             "followed by an ORDERED list <ol> with EXACTLY one <li> per stop listed below, "
-            "IN THE GIVEN ORDER, each with a brief descriptor. "
+            "IN THE GIVEN ORDER, each with a brief descriptor. These are the geographic stops "
+            "along the drive, in travel order. "
             "CRITICAL: use ONLY the stops listed below -- never add, invent, rename, or "
             "substitute any place; every place you name must be one of these. Use <ol>, "
             "never <ul>. No forbidden words. Output ONLY the <h2> and the <ol>."
         )
-        user = ("Stops in travel order (use EXACTLY these, one <li> each, no others):\n- "
+        user = ("Geographic stops in travel order (use EXACTLY these, one <li> each, no others):\n- "
                 + "\n- ".join(items))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -606,20 +628,25 @@ def step8_route_at_a_glance() -> GenerativeNode:
         li_count = output.lower().count("<li")
         if li_count == 0:
             findings.append("no list items")
-        items = route_items(context)
+        items = geographic_stops(context)
         if items and li_count != len(items):
             findings.append("has " + str(li_count) + " list items; must be exactly "
                             + str(len(items)) + " (one per grounded stop)")
-        findings += grounded_route_check(output, context)
+        findings += grounded_route_check(output, context, items=items)
         return (len(findings) == 0, findings)
 
     def review(output, det_findings, context):
+        items = geographic_stops(context)
         system = (
-            "You certify a Route at a Glance list. Certify: (a) FACTS -- stops are real and in "
-            "correct travel order; (b) WRITING RULES -- <ol>, no forbidden words; (d) items do "
-            "not duplicate the Route Summary box phrasing.\n" + _VERDICT_SHAPE
+            "You certify a Route at a Glance list -- a navigational <ol> of the GEOGRAPHIC "
+            "stops along the drive in travel order (one <li> each). The stops are given below "
+            "and are the authoritative, grounded route; treat them as correct and real -- do "
+            "NOT ask for more specific locations or reject them as non-specific. Certify: "
+            "(a) every <li> corresponds to one of the given stops, in order; (b) WRITING RULES "
+            "-- <ol> used, no forbidden words; (d) descriptors do not merely restate the Route "
+            "Summary box.\n" + _VERDICT_SHAPE
         )
-        user = ("Stops in travel order:\n- " + "\n- ".join(context.get("stops", [])) +
+        user = ("Grounded geographic stops in travel order:\n- " + "\n- ".join(items) +
                 "\n\nRoute at a Glance to certify:\n" + output)
         return system, user
 
