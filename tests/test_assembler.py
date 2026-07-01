@@ -121,7 +121,18 @@ def test_trailing_content_before_outro():
           f"{out2.find('FLAST')},{out2.find('Until next time')}")
 
 
+def test_youtube_caption_escaped():
+    # source-provided title/caption must be escaped, not injected (TICKET-0061)
+    html = ('<div><div><iframe src="https://www.youtube.com/embed/ABC123XYZ" '
+            'title="x&quot; onerror=alert(1)"></iframe>'
+            '<p class="tr-caption">cap &quot;q &lt;script&gt;</p></div></div>')
+    out, n = assembler.reemit_youtube(html)
+    check("youtube_reemitted", n == 1, str(n))
+    check("no_raw_script_injected", "<script>" not in out.lower(), out[:120])
+
+
 def main():
+    test_youtube_caption_escaped()
     test_reference_transforms()
     test_strip_removes_body_style()
     test_m1_removal()

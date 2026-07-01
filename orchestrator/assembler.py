@@ -40,6 +40,11 @@ def _esc(s):
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _attr(s):
+    """Escape for an HTML double-quoted attribute value (also quotes)."""
+    return _esc(s).replace('"', "&quot;").replace("'", "&#39;")
+
+
 def canonical_summary_block(label, narrative, rows):
     """Build the canonical summary block. rows = list of (emoji, descriptor)."""
     out = ['<div style="' + _SB_OUTER + '">']
@@ -243,10 +248,12 @@ def reemit_youtube(html):
             cap = wrapper.find("p", class_=lambda c: c and "tr-caption" in c)
             if cap:
                 caption = cap.get_text(" ", strip=True)
+        # Escape source-provided title/caption before templating (TICKET-0061):
+        # title lands in a double-quoted attribute; caption in element text.
         block = (template.replace("[VIDEO_ID]", vid)
                  .replace("YJ354Qhiae0", vid)  # template ships with a sample id
-                 .replace("[VIDEO TITLE]", title or caption or "Video")
-                 .replace("[CAPTION TEXT]", caption or title or ""))
+                 .replace("[VIDEO TITLE]", _attr(title or caption or "Video"))
+                 .replace("[CAPTION TEXT]", _esc(caption or title or "")))
         new_node = BeautifulSoup(block, "html.parser")
         target = wrapper if (wrapper is not None and wrapper.name == "div") else iframe
         target.replace_with(new_node)
