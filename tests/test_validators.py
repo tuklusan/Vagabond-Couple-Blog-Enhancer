@@ -78,6 +78,21 @@ def main():
     etr = validators.etr_minutes(html)
     check("etr_runs", "etr_minutes" in etr, str(etr))
 
+    # --- negative / malformed inputs: validators must not crash and must report
+    #     the right "absent/invalid" verdicts (TICKET-0034) ---
+    empty = ""
+    check("neg_more_empty", validators.count_more_tags(empty)["count"] == 0)
+    check("neg_schema_absent", validators.validate_ld_json("<p>no schema</p>")["present"] is False)
+    check("neg_schema_malformed",
+          validators.validate_ld_json(
+              '<script type="application/ld+json">{bad json,}</script>')["valid_json"] is False)
+    check("neg_summary_absent", validators.summary_block("<p>nothing</p>")["present"] is False)
+    check("neg_media_empty", validators.media_inventory(empty)["photographs"] == 0)
+    check("neg_forbidden_clean", validators.scan_forbidden("A perfectly clean sentence.") == [])
+    check("neg_ufffd_detected", validators.scan_question_marks("bad � char")["ufffd_count"] == 1)
+    check("neg_etr_empty", validators.etr_minutes(empty)["etr_minutes"] == 0)
+    check("neg_raag_absent", validators.raag_vs_h2("<p>no raag</p>")["raag_present"] is False)
+
     print()
     if failures:
         print(_ascii(f"FAILED: {failures}"))

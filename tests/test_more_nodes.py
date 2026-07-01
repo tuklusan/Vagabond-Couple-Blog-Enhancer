@@ -29,10 +29,18 @@ CONTEXT = {
 def run(node_factory, name):
     node = node_factory()
     outcome = review_loop.run_generative_node(node, CONTEXT, max_rounds=2, verbose=True)
-    print(_ascii(name + " -> " + outcome["status"] + " | " + outcome["output"][:160]))
-    ok = (outcome["status"] in ("CERTIFIED", "REVISE", "ESCALATE")
-          and len(outcome["output"].strip()) > 0
-          and len(outcome["history"]) >= 1)
+    status = outcome.get("status", "")
+    output = outcome.get("output", "")
+    print(_ascii(name + " -> " + status + " | " + output[:160]))
+    # Skip on a total provider outage rather than failing a live test (TICKET-0029).
+    if status == "ESCALATE" and "writer_unavailable" in str(outcome.get("reason", "")):
+        print(_ascii("SKIP " + name + ": writer providers unavailable"))
+        return None, outcome
+    # Structural + content assertions (TICKET-0030): valid status, a real string
+    # output, and progress recorded.
+    ok = (status in ("CERTIFIED", "REVISE", "ESCALATE")
+          and isinstance(output, str) and len(output.strip()) > 0
+          and isinstance(outcome.get("history"), list) and len(outcome["history"]) >= 1)
     return ok, outcome
 
 
@@ -41,12 +49,15 @@ def main():
     for factory, name in [(nodes.step1_title, "step1_title"),
                           (nodes.step2f_search_description, "step2f_search_description")]:
         ok, outcome = run(factory, name)
+        if ok is None:                              # skipped (provider outage)
+            print(_ascii("[SKIP] " + name))
+            continue
         print(_ascii(("[PASS] " if ok else "[FAIL] ") + name))
         if not ok:
             failures.append(name)
         # description must respect the deterministic <=150 gate if it certified
-        if name == "step2f_search_description" and outcome["status"] == "CERTIFIED":
-            length = len(outcome["output"].strip())
+        if name == "step2f_search_description" and outcome.get("status") == "CERTIFIED":
+            length = len(outcome.get("output", "").strip())
             cond = length <= 150
             print(_ascii(("[PASS] " if cond else "[FAIL] ") + "desc_<=150 (" + str(length) + ")"))
             if not cond:

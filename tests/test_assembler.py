@@ -26,17 +26,36 @@ def check(name, cond, detail=""):
         FAILS.append(name)
 
 
+def _load_reference():
+    """Read the reference fixture, failing the test cleanly if it is missing
+    (TICKET-0026/0027) rather than raising an opaque traceback."""
+    path = config.resolve_doc("reference_prefold")
+    if not path or not Path(path).exists():
+        check("reference_fixture_present", False, "reference_prefold not found")
+        return None
+    try:
+        return Path(path).read_text(encoding="utf-8", errors="ignore")
+    except OSError as e:
+        check("reference_fixture_readable", False, str(e))
+        return None
+
+
 def test_reference_transforms():
-    html = Path(config.resolve_doc("reference_prefold")).read_text(encoding="utf-8", errors="ignore")
+    html = _load_reference()
+    if html is None:
+        return
     before_hrefs = validators.href_inventory(html)
     before_media = validators.media_inventory(html)
+    before_rows = validators.summary_block(html)["data_rows"]
 
     out = assembler.assemble(html)
 
     # summary block preserved + canonical CSS reapplied
     sb = validators.summary_block(out)
     check("summary_present_after", sb["present"], "")
-    check("summary_rows_preserved", sb["data_rows"] == 14, "rows=" + str(sb["data_rows"]))
+    # dynamic: row count is preserved through assembly, not a hardcoded 14 (TICKET-0024)
+    check("summary_rows_preserved", sb["data_rows"] == before_rows and before_rows > 0,
+          "rows=" + str(sb["data_rows"]) + " before=" + str(before_rows))
     check("canonical_radius", "border-radius: 8px" in out)
     check("canonical_georgia", "font-family: Georgia, serif" in out)
     # structure intact
@@ -84,7 +103,10 @@ def test_splice_separators():
     src = ('<table class="tr-caption-container"><tbody><tr><td>img A</td></tr></tbody></table>'
            '<table class="tr-caption-container"><tbody><tr><td>img B</td></tr></tbody></table>')
     out, inserted = assembler.insert_separators(src, ["<p>SEPARATOR</p>"])
+    # position, not mere presence: img A -> SEPARATOR -> img B (TICKET-0025)
+    pa, ps, pb = out.find("img A"), out.find("SEPARATOR"), out.find("img B")
     check("separator_inserted", inserted == 1 and "SEPARATOR" in out, str(inserted))
+    check("separator_between_tables", -1 < pa < ps < pb, f"{pa},{ps},{pb}")
 
 
 def main():

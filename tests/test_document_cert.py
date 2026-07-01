@@ -40,7 +40,8 @@ def main():
     check("image_table_match", c["image_table_match"])
     check("summary_present", c["summary_present"])
     check("no_ufffd", c["no_ufffd"])
-    check("hrefs_preserved", c.get("hrefs_preserved", True))
+    # assert the key EXISTS and is True, so an omitted check can't silently pass (TICKET-0028)
+    check("hrefs_preserved", c.get("hrefs_preserved") is True)
     # no_forbidden is reported but not hard-asserted (reference prose may trip a term)
     print(_ascii("no_forbidden (informational): " + str(c["no_forbidden"])))
 

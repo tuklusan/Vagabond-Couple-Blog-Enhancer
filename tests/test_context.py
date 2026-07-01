@@ -27,7 +27,19 @@ def check(name, cond, detail=""):
 
 
 def main():
-    html = Path(config.resolve_doc("reference_prefold")).read_text(encoding="utf-8", errors="ignore")
+    # Fail cleanly if the fixture is missing rather than raising a raw traceback
+    # (TICKET-0027).
+    path = config.resolve_doc("reference_prefold")
+    if not path or not Path(path).exists():
+        check("reference_fixture_present", False, "reference_prefold not found")
+        print(_ascii("FAILED: " + str(FAILS)))
+        sys.exit(1)
+    try:
+        html = Path(path).read_text(encoding="utf-8", errors="ignore")
+    except OSError as e:
+        check("reference_fixture_readable", False, str(e))
+        print(_ascii("FAILED: " + str(FAILS)))
+        sys.exit(1)
     ctx = context_extractor.extract_context(html)
 
     print(_ascii("origin: " + ctx["origin"]))

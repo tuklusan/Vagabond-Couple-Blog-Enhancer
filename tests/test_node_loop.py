@@ -34,11 +34,20 @@ def main():
     node = nodes.step6_first_body_paragraph()
     outcome = review_loop.run_generative_node(node, context, max_rounds=3, verbose=True)
 
+    status = outcome.get("status", "")
+    output = outcome.get("output", "")          # safe access (TICKET-0033)
+    history = outcome.get("history", [])
     print()
-    print(_ascii("status : " + outcome["status"]))
-    print(_ascii("rounds : " + str(outcome["rounds"])))
-    print(_ascii("output : " + outcome["output"][:300]))
+    print(_ascii("status : " + status))
+    print(_ascii("rounds : " + str(outcome.get("rounds"))))
+    print(_ascii("output : " + output[:300]))
     print(_ascii("sources: " + str(outcome.get("sources"))[:200]))
+
+    # Live test: if every writer provider was unavailable, skip rather than fail on
+    # an external outage (TICKET-0029).
+    if status == "ESCALATE" and "writer_unavailable" in str(outcome.get("reason", "")):
+        print(_ascii("SKIP: writer providers unavailable -- " + str(outcome.get("reason"))))
+        return
 
     failures = []
 
@@ -47,16 +56,16 @@ def main():
         if not cond:
             failures.append(name)
 
-    check("status_valid", outcome["status"] in ("CERTIFIED", "REVISE", "ESCALATE"), outcome["status"])
-    check("output_nonempty", len(outcome["output"].strip()) > 0)
-    check("history_recorded", isinstance(outcome["history"], list) and len(outcome["history"]) >= 1)
-    # route-first: origin & destination should appear in the produced paragraph
-    low = outcome["output"].lower()
-    check("mentions_origin", "ashgabat" in low)
-    check("mentions_destination", "turkmenbashi" in low)
-    # a verdict object was produced by the reviewer on at least one round
-    check("verdict_has_decision", isinstance(outcome.get("verdict"), dict)
-          and "decision" in outcome.get("verdict", {}))
+    # Structural invariants only -- not model wording, which varies (TICKET-0031).
+    check("status_valid", status in ("CERTIFIED", "REVISE", "ESCALATE"), status)
+    check("output_nonempty", len(output.strip()) > 0)
+    check("output_is_paragraph", "<p" in output.lower(), output[:80])
+    check("history_recorded", isinstance(history, list) and len(history) >= 1)
+    # A produced (non-escalated) result must carry a verdict with a decision; on an
+    # ESCALATE the verdict may legitimately be empty (TICKET-0032).
+    if status in ("CERTIFIED", "REVISE"):
+        v = outcome.get("verdict")
+        check("verdict_has_decision", isinstance(v, dict) and "decision" in v, str(v)[:80])
 
     print()
     if failures:
