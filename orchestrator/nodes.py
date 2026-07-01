@@ -276,7 +276,9 @@ def step2f_search_description() -> GenerativeNode:
             "landmarks, and the literal token 'ETR: " + str(etr) + " min.'. "
             "ETR means Estimated Time to Read (this blog post's reading time in minutes); "
             "it is a fixed value -- use it verbatim, never change it. Do NOT add the "
-            "#VagabondCouple hashtag. No forbidden words. Output ONLY the description line."
+            "#VagabondCouple hashtag. No forbidden words. Narrator is 'we/us' -- NEVER write "
+            "'I' or 'me'. Output ONLY the single description line (<=150 chars), nothing else "
+            "-- no preamble, no explanation, no quotes."
         )
         user = (
             "Origin: " + context["origin"] + "\nDestination: " + context["destination"] +
@@ -306,7 +308,7 @@ def step2f_search_description() -> GenerativeNode:
         id="step2f_search_description", label="Step 2-F - Search description",
         build_writer_prompt=writer, deterministic_check=description_deterministic_check,
         build_review_prompt=review, web_search=False,
-        writer_max_tokens=200, review_max_tokens=1000, temperature=0.3,
+        writer_max_tokens=200, review_max_tokens=1000, temperature=0.1,
     )
 
 

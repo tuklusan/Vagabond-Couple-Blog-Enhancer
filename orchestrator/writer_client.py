@@ -35,11 +35,13 @@ NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 # Both configured writer models (openrouter/free and deepseek-v4-pro) are
 # reasoning models: they spend output tokens on internal reasoning BEFORE
-# emitting the visible answer. A small max_tokens (e.g. 200-400) can be fully
-# consumed by reasoning, leaving empty content and a spurious escalation. This
-# floor guarantees reasoning headroom regardless of a node's short-output
-# budget -- the prompt, not max_tokens, controls how long the answer is.
-REASONING_TOKEN_FLOOR = int(os.environ.get("WRITER_TOKEN_FLOOR", "800"))
+# emitting the visible answer. A small max_tokens can be fully consumed by
+# reasoning, leaving empty content and a spurious escalation. Measured: a tight
+# node (<=150-char description) needs ~1500 tokens for deepseek-v4-pro to finish
+# reasoning AND emit content; 800 was too low. This floor guarantees reasoning
+# headroom regardless of a node's short-output budget -- the prompt, not
+# max_tokens, controls how long the answer actually is.
+REASONING_TOKEN_FLOOR = int(os.environ.get("WRITER_TOKEN_FLOOR", "1600"))
 
 
 def safe_print(msg):
@@ -175,33 +177,39 @@ def call_nvidia(messages, max_tokens=2048, temperature=0.1,
     )
 
 
-def chat(messages, max_tokens=2048, temperature=0.1, allow_fallback=True):
+def chat(messages, max_tokens=2048, temperature=0.1, allow_fallback=True,
+         prefer_deepseek=False):
     """
-    Send a chat completion. OpenRouter first; on failure fall back to DeepSeek
-    then NVIDIA so the pipeline keeps moving.
+    Send a chat completion across the writer provider chain, moving on when a
+    provider errors so the pipeline keeps going.
 
-    Returns: (content_str, provider_label)
-    Raises RuntimeError only if every provider fails.
+    Default order: OpenRouter (free) -> DeepSeek -> NVIDIA.
+    prefer_deepseek=True reorders to DeepSeek -> OpenRouter -> NVIDIA. The review
+    loop sets this after openrouter/free repeatedly fails a node's OBJECTIVE
+    (deterministic) checks: the free model is a weak instruction-follower on
+    tight-constraint nodes, so we escalate the writer to the reliable provider
+    rather than burning rounds -- mirroring the reviewer's universal fallback.
+
+    Returns: (content_str, provider_label). Raises only if every provider fails.
     """
+    providers = [
+        ("openrouter:" + OPENROUTER_MODEL, lambda: call_openrouter(messages, max_tokens, temperature)),
+        ("deepseek-v4-pro", lambda: call_deepseek(messages, max_tokens, temperature)),
+        ("nvidia-nemotron", lambda: call_nvidia(messages, max_tokens, temperature)),
+    ]
+    if prefer_deepseek:
+        providers[0], providers[1] = providers[1], providers[0]
+
     errors = []
-    try:
-        return call_openrouter(messages, max_tokens, temperature), "openrouter:" + OPENROUTER_MODEL
-    except Exception as e:
-        errors.append("openrouter=" + str(e))
-        if not allow_fallback:
-            raise
-        safe_print("[writer] OpenRouter failed (" + str(e) + "); trying DeepSeek...")
-
-    try:
-        return call_deepseek(messages, max_tokens, temperature), "deepseek-v4-pro"
-    except Exception as e:
-        errors.append("deepseek=" + str(e))
-        safe_print("[writer] DeepSeek failed (" + str(e) + "); trying NVIDIA...")
-
-    try:
-        return call_nvidia(messages, max_tokens, temperature), "nvidia-nemotron"
-    except Exception as e:
-        errors.append("nvidia=" + str(e))
+    for i, (label, call) in enumerate(providers):
+        try:
+            return call(), label
+        except Exception as e:
+            errors.append(label + "=" + str(e))
+            if not allow_fallback:
+                raise
+            nxt = providers[i + 1][0] if i + 1 < len(providers) else "none"
+            safe_print("[writer] " + label + " failed (" + str(e) + "); trying " + nxt + "...")
 
     raise RuntimeError("All writer providers failed: " + " | ".join(errors))
 

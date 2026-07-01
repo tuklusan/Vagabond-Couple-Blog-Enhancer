@@ -22,8 +22,14 @@ This is the structural anti-hallucination guarantee: the writer never finalises 
 claim; the reviewer must certify it (with sources) before it persists.
 """
 import json
+import os
 
 from . import config, writer_client, reviewer_client, validators
+
+# Consecutive objective (deterministic) failures on the primary writer before the
+# loop escalates the writer to DeepSeek for the remaining rounds. Keeps the free
+# model primary (cost) while guaranteeing convergence on tight-constraint nodes.
+WRITER_ESCALATE_AFTER = int(os.environ.get("ORCH_WRITER_ESCALATE_AFTER", "2"))
 
 
 def run_generative_node(spec, context, max_rounds=None, verbose=True):
@@ -35,6 +41,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
     output = ""
     verdict = {}
     sources = []
+    det_fail_count = 0            # consecutive objective-check failures on the writer
 
     def log(msg):
         if verbose:
@@ -42,11 +49,18 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
 
     for rnd in range(1, max_rounds + 1):
         # --- 1. writer ---
+        # After the free model repeatedly fails a node's OBJECTIVE checks, escalate
+        # the writer to DeepSeek (reliable instruction-follower) instead of burning
+        # the remaining rounds on a model that cannot meet the constraints.
+        prefer_deepseek = det_fail_count >= WRITER_ESCALATE_AFTER
+        if prefer_deepseek and det_fail_count == WRITER_ESCALATE_AFTER:
+            log(f"round {rnd}: escalating writer -> DeepSeek after {det_fail_count} objective-check failures")
         wsys, wuser = spec.build_writer_prompt(context, prior_output, revision)
         try:
             text, wprov = writer_client.chat(
                 [{"role": "system", "content": wsys}, {"role": "user", "content": wuser}],
                 max_tokens=spec.writer_max_tokens, temperature=spec.temperature,
+                prefer_deepseek=prefer_deepseek,
             )
         except Exception as e:
             # Every writer provider is down -> escalate rather than crash.
@@ -59,6 +73,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
         # --- 2. deterministic pre-screen (cheap; no reviewer tokens) ---
         det_ok, det_findings = spec.deterministic_check(output, context)
         if not det_ok:
+            det_fail_count += 1
             log(f"round {rnd}: deterministic FAIL ({wprov}) -> {det_findings}")
             history.append({"round": rnd, "writer": wprov, "stage": "deterministic",
                             "decision": "REVISE", "findings": det_findings})
@@ -66,6 +81,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
                         "exactly, keep everything else:\n" + json.dumps(det_findings, ensure_ascii=False))
             prior_output = output
             continue
+        det_fail_count = 0        # a clean draft resets the escalation counter
 
         # --- 3. reviewer (judgment) ---
         rsys, ruser = spec.build_review_prompt(output, det_findings, context)
