@@ -38,6 +38,13 @@ DEEPSEEK_FALLBACK_NOTE = (
     "ESCALATE (when you do not) rather than certifying it from memory."
 )
 
+# The DeepSeek reviewer fallback (deepseek-v4-pro) is a reasoning model AND must
+# emit a full 5-criteria JSON verdict. A node's review_max_tokens (often 1000-1536)
+# leaves no room: the reasoning consumes the whole budget and the JSON never lands,
+# yielding empty content -> spurious ESCALATE (even on valid, gate-passing output).
+# Give the reviewer generous headroom, independent of the node's writer-side cap.
+REVIEWER_DEEPSEEK_TOKEN_FLOOR = int(os.environ.get("REVIEWER_TOKEN_FLOOR", "3000"))
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SECRETS_DIR = PROJECT_ROOT / "Config" / "_SECRETS"
 
@@ -199,7 +206,9 @@ def _review_with_deepseek(system, user, max_tokens):
         {"role": "system", "content": system + DEEPSEEK_FALLBACK_NOTE},
         {"role": "user", "content": user},
     ]
-    text = writer_client.call_deepseek(messages, max_tokens=max_tokens, model=config.REVIEWER_DEEPSEEK_MODEL)
+    # Reasoning + full JSON verdict needs generous headroom (see the floor note).
+    budget = max(max_tokens, REVIEWER_DEEPSEEK_TOKEN_FLOOR)
+    text = writer_client.call_deepseek(messages, max_tokens=budget, model=config.REVIEWER_DEEPSEEK_MODEL)
     return text, []
 
 

@@ -273,7 +273,9 @@ def step2f_search_description() -> GenerativeNode:
         system = (
             "You write ONE Blogger search description, MAX 150 characters. Include the "
             "primary route (origin -> destination), the highest-value searchable themes/"
-            "landmarks, and the literal token 'ETR: " + str(etr) + " min.'. Do NOT add the "
+            "landmarks, and the literal token 'ETR: " + str(etr) + " min.'. "
+            "ETR means Estimated Time to Read (this blog post's reading time in minutes); "
+            "it is a fixed value -- use it verbatim, never change it. Do NOT add the "
             "#VagabondCouple hashtag. No forbidden words. Output ONLY the description line."
         )
         user = (
@@ -292,6 +294,9 @@ def step2f_search_description() -> GenerativeNode:
             "You certify a <=150-char Blogger search description. Certify: (a) FACTS -- route "
             "and landmarks accurate; (b) WRITING RULES -- <=150 chars, includes ETR, highest-"
             "value keywords prioritised, no forbidden words/hashtag; (d) no redundancy.\n"
+            "NOTE: 'ETR: N min.' means Estimated Time to READ this blog post (reading time, "
+            "computed deterministically from word count). It is NOT travel/driving time. "
+            "The value is locked -- do NOT flag it as unrealistic and do NOT ask to change it.\n"
             + _VERDICT_SHAPE
         )
         user = "Length: " + str(len(_plain(output).strip())) + " chars\n\nDescription:\n" + output
