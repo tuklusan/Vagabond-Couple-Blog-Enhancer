@@ -38,6 +38,13 @@ def _sanitize_run_id(run_id: str) -> str:
     return run_id
 
 
+def _safe_artifact_name(name: str) -> str:
+    """Sanitize an artifact name to a single safe path component so it can't escape
+    the artifacts dir via separators or '..' (TICKET-0094)."""
+    base = re.sub(r"[^A-Za-z0-9_\-]", "_", str(name)).strip("._-")
+    return base or "artifact"
+
+
 def _atomic_write_text(path: Path, text: str):
     """Write via a temp file + atomic replace so a crash mid-write never leaves a
     truncated/partial file for a concurrent reader (TICKET-0019/0020). The temp name
@@ -89,12 +96,12 @@ class RunState:
 
     # ---- artifacts -------------------------------------------------------
     def save_artifact(self, name: str, obj) -> str:
-        path = self.artifacts_dir / (name + ".json")
+        path = self.artifacts_dir / (_safe_artifact_name(name) + ".json")
         _atomic_write_text(path, json.dumps(obj, ensure_ascii=False, indent=2))
         return str(path)
 
     def read_artifact(self, name: str):
-        path = self.artifacts_dir / (name + ".json")
+        path = self.artifacts_dir / (_safe_artifact_name(name) + ".json")
         if not path.exists():
             return None
         try:
@@ -105,7 +112,7 @@ class RunState:
             return None
 
     def has_artifact(self, name: str) -> bool:
-        return (self.artifacts_dir / (name + ".json")).exists()
+        return (self.artifacts_dir / (_safe_artifact_name(name) + ".json")).exists()
 
     # ---- status / G4 gate ------------------------------------------------
     def _read_status(self):

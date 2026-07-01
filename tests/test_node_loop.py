@@ -41,7 +41,7 @@ def main():
         sys.exit(1)
 
     status = outcome.get("status", "")
-    output = outcome.get("output", "")          # safe access (TICKET-0033)
+    output = outcome.get("output") or ""        # None-safe (TICKET-0033/0097)
     history = outcome.get("history", [])
     print()
     print(_ascii("status : " + status))
@@ -52,8 +52,10 @@ def main():
     # Live test: skip on any external provider outage/rate-limit that escalated --
     # not just the exact 'writer_unavailable' string (TICKET-0029/0087).
     reason = str(outcome.get("reason", "")).lower()
+    # Specific outage/rate-limit markers only -- NOT generic 'failed'/'error', which
+    # could mask a real bug (TICKET-0096).
     if status == "ESCALATE" and any(k in reason for k in
-                                    ("unavailable", "outage", "rate", "429", "timeout", "timed out", "failed", "error")):
+                                    ("unavailable", "outage", "rate", "429", "timeout", "timed out")):
         print(_ascii("SKIP: external provider outage/rate-limit -- " + reason[:80]))
         return
 

@@ -155,8 +155,14 @@ def extract_context(html, allow_llm=False):
         ctx["post_title"] = h1.get_text(strip=True) if h1 else ""
 
     # Schema-less posts: derive the route from the prose (LLM), when permitted.
+    # Never let an LLM/import error here crash extraction -- proceed with what we
+    # have (TICKET-0093). derive_route_from_prose already guards its own call, but
+    # this wraps import errors and any other surprise too.
     if allow_llm and (not ctx["origin"] or not ctx["destination"]):
-        derived = derive_route_from_prose(html)
+        try:
+            derived = derive_route_from_prose(html)
+        except Exception:
+            derived = {}
         if derived:
             ctx["origin"] = ctx["origin"] or derived.get("origin", "") or ""
             ctx["destination"] = ctx["destination"] or derived.get("destination", "") or ""

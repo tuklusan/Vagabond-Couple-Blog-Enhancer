@@ -36,7 +36,7 @@ def run(node_factory, name):
     reason = str(outcome.get("reason", "")).lower()
     # Broadened outage skip (TICKET-0084): any provider unavailability/outage/rate
     # limit that escalated -- not just the exact 'writer_unavailable' string.
-    outage = any(k in reason for k in ("unavailable", "outage", "rate", "429", "timed out", "timeout", "failed"))
+    outage = any(k in reason for k in ("unavailable", "outage", "rate", "429", "timed out", "timeout"))
     if status == "ESCALATE" and outage:
         print(_ascii("SKIP " + name + ": provider outage/rate-limit (" + reason[:60] + ")"))
         return None, outcome
