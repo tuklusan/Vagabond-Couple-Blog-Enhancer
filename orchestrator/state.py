@@ -40,8 +40,10 @@ def _sanitize_run_id(run_id: str) -> str:
 
 def _atomic_write_text(path: Path, text: str):
     """Write via a temp file + atomic replace so a crash mid-write never leaves a
-    truncated/partial file for a concurrent reader (TICKET-0019/0020)."""
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    truncated/partial file for a concurrent reader (TICKET-0019/0020). The temp name
+    includes the pid so concurrent writers don't clobber each other's temp file
+    (TICKET-0075)."""
+    tmp = path.with_suffix(path.suffix + "." + str(os.getpid()) + ".tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
 
@@ -60,6 +62,11 @@ class RunState:
     def create(cls, source_html: str, run_id: str = None):
         run_id = run_id or datetime.now().strftime("%Y%m%dT%H%M%S")
         self = cls(run_id)
+        if self.status_path.exists():
+            # Reusing a run_id re-initialises it; warn so an accidental collision
+            # doesn't silently discard a prior run's artifacts (TICKET-0077).
+            print("[state] warning: run_id '" + run_id + "' already exists at "
+                  + str(self.dir) + " -- reinitialising (prior status/artifacts overwritten)")
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         self.working_html_path.write_text(source_html, encoding="utf-8")
         self._write_status({"run_id": run_id, "current_node": None, "nodes": {}})
@@ -132,7 +139,9 @@ class RunState:
     def node_complete(self, node_id: str) -> bool:
         st = self._read_status()
         rec = st.get("nodes", {}).get(node_id)
-        return bool(rec and rec.get("complete") and rec.get("gates_ok", True))
+        # Missing gates_ok -> treat as NOT verified (re-check) rather than complete
+        # (TICKET-0076); every record we write sets it explicitly.
+        return bool(rec and rec.get("complete") and rec.get("gates_ok", False))
 
     # ---- log -------------------------------------------------------------
     def log(self, event: str, data=None):

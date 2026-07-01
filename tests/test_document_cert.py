@@ -50,6 +50,8 @@ def main():
     state.save_artifact("1C_media_inventory", validators.media_inventory(html))
     cert = review_loop.run_document_certification(state, run_reviewer=False)
     check("cert_has_keys", "certified" in cert and "pass2_deterministic" in cert)
+    # value, not just presence: with the reviewer skipped, certified == pass2.ok (0083)
+    check("cert_matches_pass2", cert["certified"] == cert["pass2_deterministic"]["ok"])
     check("cert_pass1_skipped", cert["pass1_reviewer"] is None)
     check("cert_artifact_saved", state.has_artifact("phase5_certification"))
 

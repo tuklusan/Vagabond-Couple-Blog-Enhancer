@@ -167,7 +167,14 @@ def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
                     continue
                 raise last_err
             return text
+        except requests.exceptions.HTTPError as e:
+            # Non-transient client/server errors (400/401/403/404 etc.) are not
+            # worth retrying -- 429/503 were already handled above. Fail fast so a
+            # bad request (e.g. an unsupported param) surfaces immediately instead
+            # of burning the backoff budget (TICKET-0080).
+            raise
         except requests.exceptions.RequestException as e:
+            # Connectivity/timeout errors ARE transient -> retry with backoff.
             last_err = e
             if attempt < max_retries:
                 time.sleep(2 ** attempt)

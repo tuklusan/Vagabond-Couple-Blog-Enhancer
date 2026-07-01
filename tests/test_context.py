@@ -58,6 +58,16 @@ def main():
     check("sections_extracted", len(ctx["sections"]) >= 10, len(ctx["sections"]))
     check("etr_extracted", ctx["etr_minutes"] >= 1, ctx["etr_minutes"])
     check("existing_facts", len(ctx["existing_facts"]) > 50)
+    # content correctness, not just counts (TICKET-0082): every stop/waypoint/section
+    # is a real non-empty string, and known fixture entities are present.
+    check("stops_are_nonempty_strings",
+          all(isinstance(s, str) and s.strip() for s in ctx["stops"]))
+    check("sections_are_nonempty_strings",
+          all(isinstance(s, str) and s.strip() for s in ctx["sections"]))
+    check("waypoints_are_nonempty_strings",
+          all(isinstance(s, str) and s.strip() for s in ctx["waypoints"]))
+    joined = " ".join(ctx["stops"] + ctx["waypoints"]) + " " + ctx["landmarks"]
+    check("known_entities_present", "Ashgabat" in joined and "Turkmenbashi" in joined, joined[:80])
 
     print()
     if FAILS:

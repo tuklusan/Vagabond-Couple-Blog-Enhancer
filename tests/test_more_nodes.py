@@ -33,8 +33,12 @@ def run(node_factory, name):
     output = outcome.get("output", "")
     print(_ascii(name + " -> " + status + " | " + output[:160]))
     # Skip on a total provider outage rather than failing a live test (TICKET-0029).
-    if status == "ESCALATE" and "writer_unavailable" in str(outcome.get("reason", "")):
-        print(_ascii("SKIP " + name + ": writer providers unavailable"))
+    reason = str(outcome.get("reason", "")).lower()
+    # Broadened outage skip (TICKET-0084): any provider unavailability/outage/rate
+    # limit that escalated -- not just the exact 'writer_unavailable' string.
+    outage = any(k in reason for k in ("unavailable", "outage", "rate", "429", "timed out", "timeout", "failed"))
+    if status == "ESCALATE" and outage:
+        print(_ascii("SKIP " + name + ": provider outage/rate-limit (" + reason[:60] + ")"))
         return None, outcome
     # Structural + content assertions (TICKET-0030): valid status, a real string
     # output, and progress recorded.

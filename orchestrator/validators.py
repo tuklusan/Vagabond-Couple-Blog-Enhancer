@@ -104,8 +104,10 @@ def scan_question_marks(text: str):
         s = max(0, m.start() - 25)
         findings.append({"type": "multi", "match": m.group(0),
                          "context": text[s:m.end() + 25]})
-    # single ? glued to a word character on either side (transliteration corruption)
-    for m in re.finditer(r"(?<=\w)\?|\?(?=\w)", text):
+    # single ? glued INSIDE a word (word char on BOTH sides = transliteration
+    # corruption like "Ashgab?t"); a trailing "What?" is legit punctuation and not
+    # flagged (TICKET-0079).
+    for m in re.finditer(r"(?<=\w)\?(?=\w)", text):
         s = max(0, m.start() - 25)
         snippet = text[s:m.end() + 25]
         if "??" in snippet:

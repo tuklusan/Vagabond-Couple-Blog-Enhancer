@@ -78,8 +78,8 @@ def build_haspart(context, html=""):
 
     # Bare named entities (waypoints/stops/landmarks) that are not already sections.
     landmarks = context.get("landmarks", "")
-    landmark_list = [s.strip() for s in landmarks.split(",")] if landmarks else []
-    for name in list(context.get("waypoints", []) or []) + list(context.get("stops", []) or []) + landmark_list:
+    landmark_list = [s.strip() for s in landmarks.split(",")] if isinstance(landmarks, str) and landmarks else []
+    for name in _as_str_list(context.get("waypoints")) + _as_str_list(context.get("stops")) + landmark_list:
         key = (name or "").strip().lower()
         if not name or key in seen:
             continue
@@ -89,11 +89,30 @@ def build_haspart(context, html=""):
     return parts
 
 
+def _as_str_list(v):
+    """Coerce a context field to a list of non-empty strings. A bare string becomes
+    a single-element list (NOT split into characters); None/other -> [] (TICKET-0074)."""
+    if isinstance(v, str):
+        return [v.strip()] if v.strip() else []
+    if isinstance(v, (list, tuple)):
+        return [str(x).strip() for x in v if x and str(x).strip()]
+    return []
+
+
+def _coerce_etr(v):
+    """Return a positive int ETR, or 0 if missing/non-numeric (TICKET-0074)."""
+    try:
+        n = int(v)
+        return n if n > 0 else 0
+    except (TypeError, ValueError):
+        return 0
+
+
 def _description(context):
-    origin = context.get("origin", "")
-    dest = context.get("destination", "")
+    origin = context.get("origin", "") or ""
+    dest = context.get("destination", "") or ""
     covers = (context.get("covers", "") or "").strip()
-    etr = context.get("etr_minutes", 0)
+    etr = _coerce_etr(context.get("etr_minutes", 0))
     base = covers or (origin + " to " + dest + ".")
     tail = " ETR: " + str(etr) + " min." if etr else ""
     # Keep the description reasonable; the search description (Step 2-F) is separate.

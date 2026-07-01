@@ -97,6 +97,10 @@ def test_splice_order():
     check("splice_order",
           out.find("FIRSTPARA") < out.find("ROUTEBOX") < out.find("Route at a Glance"),
           f"{out.find('FIRSTPARA')},{out.find('ROUTEBOX')},{out.find('Route at a Glance')}")
+    # body fragments must land AFTER <!--more-->, not in the intro (TICKET-0081)
+    pmore = out.find("<!--more-->")
+    check("fragments_after_more", pmore != -1 and out.find("FIRSTPARA") > pmore,
+          f"more={pmore} first={out.find('FIRSTPARA')}")
 
 
 def test_splice_separators():
