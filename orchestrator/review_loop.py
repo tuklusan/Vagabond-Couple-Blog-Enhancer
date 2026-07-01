@@ -189,7 +189,10 @@ def _document_review(html):
         "naturally and makes sense in chronological and geographical order, with no jarring "
         "transitions and one consistent authorial voice.\n" + _DOC_VERDICT_SHAPE
     )
-    verdict, _text, _sources = reviewer_client.certify(system, "Post body:\n" + html[:18000],
+    # Send the WHOLE post -- a mid-document cut makes the reviewer report false
+    # "truncated content / unclosed tag" findings (deepseek-v4-pro has a 1M-token
+    # context, so the generous cap only guards against pathological input).
+    verdict, _text, _sources = reviewer_client.certify(system, "Post body:\n" + html[:200000],
                                                        web_search=False, max_tokens=2048)
     return verdict
 
