@@ -31,6 +31,11 @@ from . import config, writer_client, reviewer_client, validators
 # model primary (cost) while guaranteeing convergence on tight-constraint nodes.
 WRITER_ESCALATE_AFTER = int(os.environ.get("ORCH_WRITER_ESCALATE_AFTER", "2"))
 
+# How many times to re-roll the (stochastic) reviewer on the SAME content when it
+# returns ESCALATE, before feeding the concern back for a content revision. Guards
+# against the web-less DeepSeek fallback's inconsistent over-escalation.
+REVIEWER_ESCALATE_REROLLS = int(os.environ.get("ORCH_REVIEWER_REROLLS", "2"))
+
 
 def run_generative_node(spec, context, max_rounds=None, verbose=True):
     """Run one generative node's writer<->reviewer loop. Returns an outcome dict."""
@@ -93,13 +98,38 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
                         "decision": decision, "reviewer": verdict.get("reviewer_provider"),
                         "sources": sources})
 
+        # A reviewer ESCALATE is often transient -- the web-less DeepSeek fallback
+        # over-escalates facts it could actually confirm from reliable knowledge and
+        # is inconsistent run-to-run. Re-roll the reviewer on the SAME (good) content
+        # a few times before accepting the escalation.
+        reroll = 0
+        while decision == "ESCALATE" and reroll < REVIEWER_ESCALATE_REROLLS:
+            reroll += 1
+            verdict, _rtext, sources = reviewer_client.certify(
+                rsys, ruser, web_search=spec.web_search, max_tokens=spec.review_max_tokens)
+            decision = str(verdict.get("decision", "ESCALATE")).upper()
+            log(f"round {rnd}: reviewer re-roll {reroll} -> {decision} "
+                f"(reviewer={verdict.get('reviewer_provider')})")
+
         if decision == "CERTIFIED":
             return {"status": "CERTIFIED", "output": output, "verdict": verdict,
                     "sources": sources, "rounds": rnd, "history": history}
         if decision == "ESCALATE":
-            return {"status": "ESCALATE", "output": output, "verdict": verdict,
-                    "sources": sources, "rounds": rnd, "history": history,
-                    "reason": "reviewer_escalated"}
+            # Still escalating after re-rolls. Don't halt yet: feed the concern back
+            # and let the next round refine, escalating terminally only once rounds
+            # are exhausted (handled after the loop).
+            if rnd >= max_rounds:
+                return {"status": "ESCALATE", "output": output, "verdict": verdict,
+                        "sources": sources, "rounds": rnd, "history": history,
+                        "reason": "reviewer_escalated"}
+            revision = ("The reviewer could not certify and raised: "
+                        + (verdict.get("revision_instructions")
+                           or json.dumps(verdict.get("criteria", {}), ensure_ascii=False)
+                           or "unable to verify the claims")
+                        + "\nKeep only claims that are clearly true and well-known; make the "
+                          "route and facts self-evident. Then resubmit.")
+            prior_output = output
+            continue
 
         # REVISE -> feed instructions back to the writer
         revision = (verdict.get("revision_instructions")
