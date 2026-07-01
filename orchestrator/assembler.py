@@ -135,6 +135,64 @@ def strip_body_inline_styles(html):
 
 
 # ---------------------------------------------------------------------------
+# Step 12 -- remediate forbidden AI-cliche words in EXISTING body prose
+# ---------------------------------------------------------------------------
+# Curated safe replacements: only forbidden descriptive/analytical/marketing words
+# that are effectively never proper nouns in travel prose, so a whole-word swap is
+# safe (unlike e.g. "Foster"/"Explore", which can be place/section names -- those
+# are left to the generative Step 12, TICKET-0057). Empty string = delete the word.
+_FORBIDDEN_SYNONYMS = {
+    "landscape": "scenery", "realm": "domain", "tapestry": "mix",
+    "delve": "dig", "comprehensive": "complete", "holistic": "overall",
+    "multifaceted": "varied", "nestled": "set", "nestling": "sitting",
+    "amplify": "boost", "propel": "push", "ignite": "spark",
+    "furthermore": "also", "consequently": "so", "substantially": "greatly",
+    "unwavering": "steady", "heartfelt": "sincere", "unprecedented": "rare",
+    "ponder": "consider",
+}
+
+
+def _match_case(original, replacement):
+    if not replacement:
+        return replacement
+    if original.isupper():
+        return replacement.upper()
+    if original[:1].isupper():
+        return replacement[:1].upper() + replacement[1:]
+    return replacement
+
+
+def remediate_forbidden_prose(html):
+    """Swap safe forbidden words in visible body text (not markup/urls). Returns
+    (html, replacements). Words not in the curated map are left for the generative
+    Step 12 pass."""
+    from bs4 import NavigableString
+    soup = BeautifulSoup(html, "html.parser")
+    count = 0
+
+    def _sub(text):
+        nonlocal count
+        def repl(m):
+            nonlocal count
+            count += 1
+            out = _match_case(m.group(0), _FORBIDDEN_SYNONYMS[m.group(0).lower()])
+            return out
+        for word in _FORBIDDEN_SYNONYMS:
+            text = re.sub(r"\b" + re.escape(word) + r"\b", repl, text, flags=re.IGNORECASE)
+        return text
+
+    for node in list(soup.find_all(string=True)):
+        parent = node.parent.name if node.parent else ""
+        if parent in ("script", "style"):
+            continue
+        new = _sub(str(node))
+        if new != str(node):
+            node.replace_with(NavigableString(new))
+    # collapse any double spaces a deletion may have left
+    return str(soup), count
+
+
+# ---------------------------------------------------------------------------
 # Rule G3 -- remove ?m=1 from internal links
 # ---------------------------------------------------------------------------
 def remove_m1_internal(html):
@@ -371,6 +429,7 @@ def assemble(html, fragments=None, context=None):
     html, _ = remove_m1_internal(html)
     html, _ = reemit_youtube(html)
     html, _ = strip_body_inline_styles(html)
+    html, _ = remediate_forbidden_prose(html)   # Step 12 (safe subset)
     html, _ = reapply_summary_block(html)
     if fragments:
         html = splice_fragments(html, fragments)
