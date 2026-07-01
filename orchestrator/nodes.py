@@ -556,20 +556,35 @@ def step3_summary_block() -> GenerativeNode:
 # ---------------------------------------------------------------------------
 def step7_route_summary_box() -> GenerativeNode:
     def writer(context, prior, revision):
+        stops = geographic_stops(context)
+        route_chain = " &rarr; ".join(stops) if stops else (
+            (context.get("origin") or "") + " &rarr; " + (context.get("destination") or ""))
         system = (
             "You fill a route summary box, EXACT template (tvc-route-summary class, no inline "
             "colour styles):\n"
-            '<div class="tvc-route-summary"><strong>Route:</strong> [stops]<br />'
-            '<strong>Method:</strong> [method]<br />'
-            '<strong>Distance / Time:</strong> Approx. [X] km / [Y] days<br />'
-            '<strong>Themes:</strong> [theme] - [theme]<br />'
-            '<strong>Vehicle:</strong> Shehzadi (2024 Toyota Tundra)</div>\n'
-            "Fill the bracketed fields from the context. No forbidden words. Output ONLY the div."
+            '<div class="tvc-route-summary"><strong>Route:</strong> [full stop chain]<br />'
+            '<strong>Method:</strong> [how they travelled, name the roads]<br />'
+            '<strong>Themes:</strong> [2-4 topical themes joined by ·]<br />'
+            '<strong>Vehicle:</strong> [vehicle]</div>\n'
+            "RULES: Route = the FULL stop chain given below with &rarr; between stops (do "
+            "NOT shorten to just the endpoints). Themes are TOPICS (e.g. 'Route 66', 'Punjabi "
+            "dhaba road food', 'desert geology') inferred from the section titles -- NOT a list "
+            "of the stops/towns. Include a 'Distance / Time:' line ONLY if a real figure is "
+            "given below; otherwise OMIT that line -- NEVER invent a distance or duration. No "
+            "forbidden words. Output ONLY the div."
         )
-        user = ("Route stops: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
+        vehicle = context.get("vehicle") or {}
+        if isinstance(vehicle, dict) and vehicle.get("name"):
+            veh = vehicle["name"] + (
+                " (" + " ".join(x for x in (vehicle.get("manufacturer"), vehicle.get("model")) if x) + ")"
+                if vehicle.get("model") else "")
+        else:
+            veh = str(vehicle) if vehicle else "Overland vehicle"
+        user = ("Full stop chain (use ALL, in order): " + route_chain +
                 "\nMethod: " + (context.get("method") or "overland") +
-                "\nThemes: " + (context.get("landmarks") or "") +
-                "\nApprox distance/days: " + (context.get("distance_time") or "(estimate)"))
+                "\nSection titles (infer themes from these): " + "; ".join(context.get("sections") or []) +
+                "\nVehicle: " + veh +
+                "\nReal distance/time (blank = omit the line): " + (context.get("distance_time") or ""))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:

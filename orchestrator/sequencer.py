@@ -406,6 +406,14 @@ def phase5_generate_node():
                         for it in fac["items"] if it.get("output")]
             if factoids:
                 fragments["factoids"] = factoids
+        # Feed the certified SEO title / search description into the schema so its
+        # name/description are keyword-rich, not the bare route (TICKET-0107).
+        title_art = sctx.state.read_artifact("gen_step1_title")
+        if title_art and title_art.get("status") == "CERTIFIED" and title_art.get("output"):
+            sctx.context["schema_name"] = title_art["output"].strip()
+        desc_art = sctx.state.read_artifact("gen_step2f_search_description")
+        if desc_art and desc_art.get("status") == "CERTIFIED" and desc_art.get("output"):
+            sctx.context["schema_description"] = desc_art["output"].strip()
         assembled = assembler.assemble(html, fragments or None, context=sctx.context)
         sctx.state.set_working_html(assembled)
         return {"complete": True, "note": "assembled HTML (" + str(len(fragments))

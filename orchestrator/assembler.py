@@ -154,6 +154,10 @@ _FORBIDDEN_SYNONYMS = {
     "furthermore": "also", "consequently": "so", "substantially": "greatly",
     "unwavering": "steady", "heartfelt": "sincere", "unprecedented": "rare",
     "ponder": "consider",
+    # explore family -> wander (travel voice; matches the human workflow). NOT
+    # 'explorer' (could be a Ford Explorer). TICKET-0114.
+    "exploring": "wandering", "explore": "wander", "explored": "wandered",
+    "exploration": "journey",
 }
 
 
@@ -299,10 +303,17 @@ def parse_summary_fragment(text):
         if not label and ("post summary" in low or clean.startswith("[") or low.startswith("label")):
             label = clean.strip("[]").split(":", 1)[-1].strip() if low.startswith("label") else clean.strip("[]").strip()
             continue
+        # a standalone format marker line -> skip it (TICKET-0111)
+        if low.rstrip(":") in ("rows", "narrative", "label"):
+            continue
         # anything else before the rows is narrative
         if not rows:
             body = clean.split(":", 1)[-1].strip() if low.startswith("narrative") else clean
-            narrative_parts.append(body)
+            # strip a trailing marker that leaked onto the narrative line
+            # ('...Grand Canyon itself. ROWS:')  (TICKET-0111)
+            body = re.sub(r"\s*\b(rows|narrative|label)\s*:?\s*$", "", body, flags=re.IGNORECASE).strip()
+            if body:
+                narrative_parts.append(body)
     narrative = " ".join(narrative_parts).strip()
     return label, narrative, rows
 
@@ -497,6 +508,28 @@ def splice_fragments(html, fragments):
     return html
 
 
+def normalize_characters(html):
+    """Normalize odd whitespace/hyphen code points that leak from LLM output:
+    non-breaking / figure hyphens -> plain '-', non-breaking spaces -> ' '
+    (TICKET-0115). En/em dashes are left intact (they are legitimate)."""
+    for ch in ("‑", "‐", "⁃"):   # non-breaking / hyphen / hyphen bullet
+        html = html.replace(ch, "-")
+    html = html.replace(" ", " ").replace(" ", " ")   # nbsp / narrow nbsp
+    return html
+
+
+def strip_empty_paragraphs(html):
+    """Remove truly-empty <p></p> (no text, no children) -- but keep <p><br/></p>,
+    which the author uses for intentional spacing (TICKET-0117)."""
+    soup = BeautifulSoup(html, "html.parser")
+    removed = 0
+    for p in soup.find_all("p"):
+        if not p.get_text(strip=True) and not p.find(True):
+            p.decompose()
+            removed += 1
+    return str(soup), removed
+
+
 # ---------------------------------------------------------------------------
 # Top-level assembly
 # ---------------------------------------------------------------------------
@@ -517,4 +550,6 @@ def assemble(html, fragments=None, context=None):
     if context:
         summary_frag = (fragments or {}).get("summary_block")
         html = apply_prefold(html, summary_frag, context)
+    html = normalize_characters(html)           # TICKET-0115
+    html, _ = strip_empty_paragraphs(html)       # TICKET-0117
     return html

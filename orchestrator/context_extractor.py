@@ -18,6 +18,34 @@ from bs4 import BeautifulSoup
 from . import validators
 
 
+import re
+
+_VEHICLE_MAKES = ("Toyota", "Ford", "Jeep", "Chevrolet|Chevy", "GMC", "Ram|Dodge",
+                  "Nissan", "Honda", "Subaru", "Land Rover", "Range Rover",
+                  "Mercedes", "BMW", "Tesla", "Volkswagen|VW", "Mitsubishi")
+
+
+def extract_vehicle(html):
+    """Best-effort structured vehicle from the prose, e.g. 'Shehzadi (our trusty
+    Toyota Tundra)' -> {name, manufacturer, model}. Empty dict if none (TICKET-0103)."""
+    from . import validators
+    text = validators.plain_text(html)
+    makes = "|".join(_VEHICLE_MAKES)
+    # A capitalized/named vehicle followed by a parenthetical make+model.
+    m = re.search(
+        r"([A-Z][A-Za-z']+)\s*\([^)]*?(?:(\d{4})\s+)?(" + makes + r")\s+([A-Z][A-Za-z0-9-]+)",
+        text)
+    if m:
+        make = m.group(3).split("|")[0]
+        return {"name": m.group(1), "manufacturer": make, "model": m.group(4)}
+    # Bare 'Make Model' with no nickname.
+    m = re.search(r"\b(" + makes + r")\s+([A-Z][A-Za-z0-9-]+)\b", text)
+    if m:
+        make = m.group(1).split("|")[0]
+        return {"name": make + " " + m.group(2), "manufacturer": make, "model": m.group(2)}
+    return {}
+
+
 def _schema_name(value):
     """Extract a place/instrument name from an ld+json value that may be a dict
     ({"name": ...}) OR a plain string per Schema.org (TICKET-0009)."""
@@ -107,6 +135,7 @@ def extract_context(html, allow_llm=False):
         "origin": "", "destination": "", "post_title": "", "method": "overland",
         "waypoints": [], "stops": [], "landmarks": "", "covers": "",
         "sections": [], "existing_facts": "", "etr_minutes": 0,
+        "vehicle": extract_vehicle(html),   # {name,manufacturer,model} or {} (TICKET-0103)
     }
 
     if schema:

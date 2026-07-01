@@ -18,6 +18,8 @@ TravelAction, and `author` is the constant Vagabond Couple Person.
 """
 import json
 
+import re
+
 from bs4 import BeautifulSoup
 
 # The author block is a rev-14 constant across every post (validators.author_ok
@@ -29,6 +31,66 @@ AUTHOR = {
 }
 
 _SKIP_H2 = {"route at a glance", "next stop", "route summary"}
+
+# US state abbreviations -> full name, for schema place normalization (TICKET-0108).
+_US_STATES = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
+    "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+    "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+    "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
+    "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
+    "WI": "Wisconsin", "WY": "Wyoming",
+}
+
+
+def _place_key(name):
+    """Dedup key = the leading place token before any comma, lowercased. Collapses
+    'Fresno, CA' and 'Fresno' to one entity (TICKET-0104)."""
+    return (name or "").split(",")[0].strip().lower()
+
+
+def _is_state_fragment(name):
+    """A bare 2-letter US state code that leaked from splitting 'City, ST'."""
+    n = (name or "").strip()
+    return len(n) == 2 and n.upper() in _US_STATES
+
+
+def _full_place_name(name):
+    """Expand a trailing 2-letter state and append USA -- 'Oakhurst, CA' ->
+    'Oakhurst, California, USA' (TICKET-0108). Leaves already-full names alone."""
+    n = (name or "").strip()
+    if not n:
+        return n
+    parts = [p.strip() for p in n.split(",") if p.strip()]
+    if len(parts) >= 2 and parts[-1].upper() in _US_STATES:
+        parts[-1] = _US_STATES[parts[-1].upper()]
+    full = ", ".join(parts)
+    if not re.search(r"\b(usa|u\.s\.a\.|united states)\b", full, re.IGNORECASE):
+        full += ", USA"
+    return full
+
+
+def _instrument(context):
+    """Build the Vehicle instrument from a structured context['vehicle'] -- NEVER
+    the method verb like 'drove' (TICKET-0103)."""
+    v = context.get("vehicle")
+    if isinstance(v, dict) and (v.get("name") or v.get("model")):
+        out = {"@type": "Vehicle", "name": v.get("name") or "Overland vehicle"}
+        if v.get("manufacturer"):
+            out["manufacturer"] = v["manufacturer"]
+        if v.get("model"):
+            out["model"] = v["model"]
+        return out
+    if isinstance(v, str) and v.strip():
+        return {"@type": "Vehicle", "name": v.strip()}
+    return {"@type": "Vehicle", "name": "Overland vehicle"}
 
 
 def _post_h2_sections(html):
@@ -76,17 +138,39 @@ def build_haspart(context, html=""):
             part["description"] = desc
         parts.append(part)
 
-    # Bare named entities (waypoints/stops/landmarks) that are not already sections.
-    landmarks = context.get("landmarks", "")
-    landmark_list = [s.strip() for s in landmarks.split(",")] if isinstance(landmarks, str) and landmarks else []
+    # Bare named entities (waypoints/stops/landmarks). Skip 2-letter state fragments
+    # that leaked from splitting 'City, ST', and dedupe by leading place token so
+    # 'Fresno, CA' and 'Fresno' collapse to one (TICKET-0104). Waypoints are stored
+    # as full 'City, ST' strings; landmarks is a comma-joined string of possibly
+    # 'City, ST' pairs, so re-pair split fragments before use.
+    landmarks_field = context.get("landmarks", "")
+    landmark_list = _rejoin_city_state(landmarks_field) if isinstance(landmarks_field, str) else []
     for name in _as_str_list(context.get("waypoints")) + _as_str_list(context.get("stops")) + landmark_list:
-        key = (name or "").strip().lower()
-        if not name or key in seen:
+        name = (name or "").strip()
+        if not name or _is_state_fragment(name):
+            continue
+        key = _place_key(name)
+        if key in seen:
             continue
         seen.add(key)
         parts.append({"@type": "Place", "name": name})
 
     return parts
+
+
+def _rejoin_city_state(csv):
+    """Split a comma-joined string but recombine 'City, ST' pairs so a 2-letter
+    state stays attached to its city instead of becoming its own item (TICKET-0104)."""
+    toks = [t.strip() for t in csv.split(",") if t.strip()]
+    out, i = [], 0
+    while i < len(toks):
+        if i + 1 < len(toks) and _is_state_fragment(toks[i + 1]):
+            out.append(toks[i] + ", " + toks[i + 1])
+            i += 2
+        else:
+            out.append(toks[i])
+            i += 1
+    return out
 
 
 def _as_str_list(v):
@@ -123,18 +207,21 @@ def build_travelaction_schema(context, html="", indent=2):
     """Return the ld+json TravelAction as a dict (see build_schema_script for HTML)."""
     origin = context.get("origin", "") or ""
     dest = context.get("destination", "") or ""
-    name = context.get("post_title", "") or (origin + " to " + dest)
-    method = context.get("method", "") or "overland"
+    # Prefer the certified Step-1 SEO title / Step-2F search description for the
+    # schema name/description (keyword-rich) over the bare route (TICKET-0107).
+    name = (context.get("schema_name") or context.get("post_title")
+            or (origin + " to " + dest))
+    description = context.get("schema_description") or _description(context)
 
     schema = {
         "@context": "https://schema.org",
         "@type": "TravelAction",
         "name": name,
-        "description": _description(context),
+        "description": description,
         "touristType": "Overlander",
-        "fromLocation": {"@type": "Place", "name": origin},
-        "toLocation": {"@type": "Place", "name": dest},
-        "instrument": {"@type": "Vehicle", "name": method},
+        "fromLocation": {"@type": "Place", "name": _full_place_name(origin)},
+        "toLocation": {"@type": "Place", "name": _full_place_name(dest)},
+        "instrument": _instrument(context),
         "author": dict(AUTHOR),
         "hasPart": build_haspart(context, html),
     }
