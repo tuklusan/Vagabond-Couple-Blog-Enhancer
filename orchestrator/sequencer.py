@@ -244,6 +244,72 @@ def generative_node(node_id, phase, spec_factory, optional=False):
     return SeqNode(node_id, phase, "generative", handler)
 
 
+def _section_items(sctx):
+    """Per-section items for Step 9-F: each top-level H2 (excluding nav headings)."""
+    html = sctx.state.get_working_html()
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    out = []
+    for h in soup.find_all("h2"):
+        t = h.get_text(strip=True)
+        if t and t.lower() not in ("route at a glance", "next stop", "route summary"):
+            out.append({"section_topic": t, "subject": t})
+    return out
+
+
+def _image_pair_items(sctx):
+    """Per-pair items for Step 13: each consecutive image pair, subject = its captions."""
+    html = sctx.state.get_working_html()
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    tables = soup.find_all("table", class_=lambda c: c and "tr-caption-container" in c)
+    caps = []
+    for tbl in tables:
+        cap = tbl.find("td", class_=lambda c: c and "tr-caption" in c)
+        caps.append(cap.get_text(" ", strip=True) if cap else "")
+    items = []
+    for pair in validators.consecutive_image_pairs(html):
+        i, j = pair["image_index"], pair["next_index"]
+        subj = " / ".join(x for x in (caps[i] if i < len(caps) else "",
+                                      caps[j] if j < len(caps) else "") if x)
+        items.append({"subject": subj or "the two adjacent photos",
+                      "section_topic": sctx.context.get("post_title", "")})
+    return items
+
+
+def iterating_generative_node(node_id, phase, spec_factory, items_fn):
+    """Run a generative node ONCE PER ITEM (Step 9-F per section, Step 13 per image
+    pair -- TICKET-0053). Each item builds its own per-item context; certified
+    outputs are collected. Items that cannot certify are skipped (workflow-sanctioned
+    for these optional enhancers), so the run never halts here."""
+    def handler(sctx):
+        if sctx.dry_generative:
+            return {"complete": True, "note": "[dry] iterating generative stubbed"}
+        items = items_fn(sctx)
+        outputs, per_item = [], []
+        for it in items:
+            spec = spec_factory()
+            ctx = dict(sctx.context)
+            ctx.update(it)
+            outcome = review_loop.run_generative_node(spec, ctx)
+            if outcome["status"] == "CERTIFIED" and outcome["output"].strip():
+                outputs.append(outcome["output"])
+                per_item.append({"item": it, "output": outcome["output"],
+                                 "rounds": outcome.get("rounds")})
+            else:
+                per_item.append({"item": it, "skipped": True,
+                                 "reason": outcome.get("reason", outcome["status"])})
+        sctx.state.save_artifact("gen_" + node_id, {
+            "status": "CERTIFIED" if outputs else "SKIP",
+            "output": "\n".join(outputs),
+            "outputs": outputs,
+            "items": per_item,
+        })
+        return {"complete": True, "output_ref": "gen_" + node_id,
+                "note": "certified " + str(len(outputs)) + "/" + str(len(items)) + " item(s)"}
+    return SeqNode(node_id, phase, "generative", handler)
+
+
 # Deterministic Phase-1 analysis passes (TICKET-0003). These audit the ORIGINAL
 # prose and produce structured findings for the Phase 4 summary + Step 12; they run
 # without an LLM (the DeepSeek-only reviewer can't web-verify, and rules/repetition/
@@ -329,8 +395,17 @@ def phase5_generate_node():
             if art and art.get("status") == "CERTIFIED" and art.get("output"):
                 fragments[frag_key] = art["output"]
         sep = sctx.state.read_artifact("gen_step13_separator")
-        if sep and sep.get("status") == "CERTIFIED" and sep.get("output"):
+        if sep and sep.get("outputs"):
+            fragments["separators"] = list(sep["outputs"])   # one per image pair (0053)
+        elif sep and sep.get("status") == "CERTIFIED" and sep.get("output"):
             fragments["separators"] = [sep["output"]]
+        # Section-closing factoids: one per section, placed at the end of its section.
+        fac = sctx.state.read_artifact("gen_step9f_factoid")
+        if fac and fac.get("items"):
+            factoids = [{"section": it["item"].get("section_topic", ""), "html": it["output"]}
+                        for it in fac["items"] if it.get("output")]
+            if factoids:
+                fragments["factoids"] = factoids
         assembled = assembler.assemble(html, fragments or None, context=sctx.context)
         sctx.state.set_working_html(assembled)
         return {"complete": True, "note": "assembled HTML (" + str(len(fragments))
@@ -362,6 +437,7 @@ def phase6_deliverables_node():
 def build_full_sequence():
     """The complete rev-18 canonical node order (G4 line 82)."""
     g, a, d = generative_node, analysis_node, deterministic_node
+    ig = iterating_generative_node
     n = node_specs
     return [
         precheck_node(),
@@ -386,12 +462,16 @@ def build_full_sequence():
         g("step6_first_body_paragraph", "Phase 3 / Step 6 - First body paragraph", n.step6_first_body_paragraph),
         g("step7_route_summary_box", "Phase 3 / Step 7 - Route summary box", n.step7_route_summary_box),
         g("step8_route_at_a_glance", "Phase 3 / Step 8 - Route at a Glance", n.step8_route_at_a_glance),
-        g("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids", n.step9f_factoid, optional=True),
+        # Step 9-F / Step 13 iterate PER ITEM: one factoid per H2 section, one
+        # separator per consecutive-image pair (TICKET-0053).
+        ig("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids",
+           n.step9f_factoid, _section_items),
         g("step10_journey_significance", "Phase 3 / Step 10 - Journey significance", n.step10_journey_significance),
-        # Step 12 resolves violations flagged by 1H/1I; with those passes stubbed there
-        # is nothing concrete to resolve, so it is optional (skips cleanly). See 0053.
+        # Step 12 resolves violations flagged by 1H/1I; kept optional (skips cleanly
+        # when there is nothing concrete to resolve).
         g("step12_resolve", "Phase 3 / Step 12 - Resolve repetition/rules", n.step12_resolve, optional=True),
-        g("step13_separator", "Phase 3 / Step 13 - Image separators", n.step13_separator, optional=True),
+        ig("step13_separator", "Phase 3 / Step 13 - Image separators",
+           n.step13_separator, _image_pair_items),
         # Phase 4 -- operator approval (blocks HTML generation)
         phase4_gate_node(),
         # Phase 5 -- HTML generation (assemble) then sanity cert (G2 two-pass;

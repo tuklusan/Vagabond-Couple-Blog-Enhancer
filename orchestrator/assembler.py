@@ -386,6 +386,36 @@ def insert_separators(html, separators):
     return str(soup), inserted
 
 
+def insert_factoids(html, factoids):
+    """Place each section-closing factoid at the END of its H2 section -- just before
+    the next <h2> (or the end of the body). factoids = list of {section, html}
+    (TICKET-0053)."""
+    if not factoids:
+        return html, 0
+    soup = BeautifulSoup(html, "html.parser")
+    h2s = soup.find_all("h2")
+    inserted = 0
+    for fac in factoids:
+        section, frag = fac.get("section", ""), fac.get("html", "")
+        if not frag:
+            continue
+        target = None
+        for idx, h in enumerate(h2s):
+            if h.get_text(strip=True) == section:
+                target = h
+                nxt = h2s[idx + 1] if idx + 1 < len(h2s) else None
+                break
+        node = BeautifulSoup(frag, "html.parser")
+        if target is None:
+            soup.append(node)                 # no matching heading -> end of body
+        elif nxt is not None:
+            nxt.insert_before(node)           # end of this section
+        else:
+            (target.parent or soup).append(node)
+        inserted += 1
+    return str(soup), inserted
+
+
 def splice_fragments(html, fragments):
     """
     Insert certified fragments. fragments keys (all optional):
@@ -407,6 +437,8 @@ def splice_fragments(html, fragments):
         _insert_after_more(soup, fragments[key])
 
     html = str(soup)
+    if fragments.get("factoids"):
+        html, _ = insert_factoids(html, fragments["factoids"])
     if fragments.get("separators"):
         html, _ = insert_separators(html, fragments["separators"])
     if fragments.get("journey_significance"):
