@@ -33,6 +33,15 @@ OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
+# OpenRouter reasoning control (OPT-IN, default off). NOTE: the `openrouter/free`
+# ROUTER rejects `reasoning.effort:"none"` with HTTP 400 ("Reasoning is mandatory
+# for this endpoint") and routes to a different (sometimes reasoning) model each
+# call. So "none" only works when OPENROUTER_MODEL is pinned to a specific
+# non-reasoning instruct model that accepts it. Leave empty for the free router.
+OPENROUTER_REASONING_EFFORT = os.environ.get("OPENROUTER_REASONING_EFFORT", "").strip()
+# Ask OpenRouter to include token/cost accounting in the response (opt-in).
+OPENROUTER_INCLUDE_USAGE = os.environ.get("OPENROUTER_INCLUDE_USAGE", "0") == "1"
+
 # Both configured writer models (openrouter/free and deepseek-v4-pro) are
 # reasoning models: they spend output tokens on internal reasoning BEFORE
 # emitting the visible answer. A small max_tokens can be fully consumed by
@@ -112,7 +121,7 @@ def _extract_content(resp_json):
 
 
 def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
-               extra_headers=None, max_retries=2):
+               extra_headers=None, max_retries=2, extra_payload=None):
     headers = {
         "Authorization": "Bearer " + api_key,
         "Content-Type": "application/json",
@@ -126,6 +135,8 @@ def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
         # Give reasoning models thinking headroom (see REASONING_TOKEN_FLOOR).
         "max_tokens": max(max_tokens, REASONING_TOKEN_FLOOR),
     }
+    if extra_payload:
+        payload.update(extra_payload)
     last_err = None
     for attempt in range(max_retries + 1):
         try:
@@ -175,9 +186,17 @@ def call_openrouter(messages, max_tokens=2048, temperature=0.1, model=None, time
         "HTTP-Referer": os.environ.get("OPENROUTER_REFERER", "https://localhost/vagabond-blog"),
         "X-Title": "Vagabond-Couple-Blog-Enhancer",
     }
+    body = {}
+    if OPENROUTER_REASONING_EFFORT:
+        # "none" -> no reasoning, answer directly in message.content (writer wants
+        # finished text, not chain-of-thought). Ignored by non-reasoning models.
+        body["reasoning"] = {"effort": OPENROUTER_REASONING_EFFORT}
+    if OPENROUTER_INCLUDE_USAGE:
+        body["usage"] = {"include": True}
     return _post_chat(
         OPENROUTER_BASE_URL + "/chat/completions", key, model or OPENROUTER_MODEL,
         messages, max_tokens, temperature, timeout, extra_headers=extra,
+        extra_payload=body or None,
     )
 
 

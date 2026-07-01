@@ -131,7 +131,21 @@ def test_youtube_caption_escaped():
     check("no_raw_script_injected", "<script>" not in out.lower(), out[:120])
 
 
+def test_prefold_without_more_marker():
+    # no <!--more--> in source: pre-fold content must land BEFORE the first section
+    # H2, not at the end of the post (TICKET-0090)
+    ctx = {"origin": "X, CA", "destination": "Y, AZ", "post_title": "T", "sections": ["Sec One"]}
+    html = ('<p>intro para one</p><h2>Sec One</h2><p>section body</p>')
+    frag = "[T - Post Summary]\n\nWe went from X to Y.\n\nA | Sec One - the leg"
+    out = assembler.apply_prefold(html, frag, ctx)
+    h2 = out.find("<h2>Sec One")
+    check("prefold_summary_before_section", -1 < out.find("Post Summary") < h2)
+    check("prefold_schema_before_section", -1 < out.find("application/ld+json") < h2)
+    check("prefold_more_before_section", -1 < out.find("<!--more-->") < h2)
+
+
 def main():
+    test_prefold_without_more_marker()
     test_youtube_caption_escaped()
     test_reference_transforms()
     test_strip_removes_body_style()

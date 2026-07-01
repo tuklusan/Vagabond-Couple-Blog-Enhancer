@@ -1,0 +1,8 @@
+# TICKET-0091: OpenRouter: pin a free instruct model + hold credits to cut variance/CoT/rate-limits
+Status: Open
+Priority: medium
+Type: improvement
+Created: 2026-07-01
+Description: Deep-read of OpenRouter docs + live tests revealed: (1) 'openrouter/free' is an auto-ROUTER that picks a DIFFERENT free model per call (observed qwen3-coder[deprecated 404], qwen3-next-80b, llama-3.2-3b) -- this IS the run-to-run variance we fought (empty/CoT/quality). (2) The free router MANDATES reasoning: reasoning.effort='none' returns HTTP 400 'Reasoning is mandatory for this endpoint'. (3) Free tier = 20 req/min, 50 req/DAY without credits (1000/day if >=10 credits held); we hit 429s. Recommended optimizations: (a) pin OPENROUTER_MODEL to a specific strong free INSTRUCT (non-reasoning) model (e.g. a llama/qwen '*-instruct:free') so content is clean+consistent and reasoning.effort='none' becomes usable (plumbing already added: OPENROUTER_REASONING_EFFORT/OPENROUTER_INCLUDE_USAGE, extra_payload in _post_chat); (b) hold >=10 OpenRouter credits to raise the daily cap 50->1000; (c) optionally use the 'models' array fallback or provider{sort:'throughput'/':nitro', max_price} routing; (d) preflight GET /api/v1/key to warn on low remaining quota. Left defaults OFF so the free router keeps working (no 400).
+Steps to Reproduce: 
+Notes: 

@@ -328,9 +328,21 @@ def apply_prefold(html, summary_fragment, context, schema_script=None):
     # Locate <!--more--> (canonical anchor for the pre-fold/body boundary).
     more = _find_more_comment(soup)
     if more is None:
-        # No fold marker: append one at the end of the pre-fold content we build.
+        # No fold marker: place one at the END OF THE PRE-FOLD ZONE, not the end of
+        # the whole post (TICKET-0090). Anchor = the first section <h2> (fold sits
+        # just before the first section); else after the intro paragraphs (the first
+        # 1-2 <p>); else append as a last resort.
         more = Comment("more")
-        soup.append(more)
+        first_h2 = soup.find("h2")
+        if first_h2 is not None:
+            first_h2.insert_before(more)
+        else:
+            paras = soup.find_all("p")
+            if paras:
+                anchor = paras[1] if len(paras) > 1 else paras[0]
+                anchor.insert_after(more)
+            else:
+                soup.append(more)
 
     # 1. Summary block -- insert a new one only if the post has none.
     _lbl, existing_block = _find_summary_block(soup)
