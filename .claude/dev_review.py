@@ -69,7 +69,8 @@ def classify(path):
     p = Path(path)
     name = p.name.lower()
     if p.suffix.lower() in CODE_EXT:
-        if name.startswith("test_") or "tests" in [part.lower() for part in p.parts]:
+        parts = [part.lower() for part in p.parts]
+        if name.startswith("test_") or "tests" in parts or "test" in parts:  # TICKET-0038
             return "test"
         return "code"
     if p.suffix.lower() in DOC_EXT:
@@ -179,7 +180,7 @@ def review_file(path):
         "messages": [
             {"role": "system", "content": _system_prompt(kind)},
             {"role": "user", "content": "Review this file (json output).\n\nFILE: "
-             + p.name + "\n\n" + text[:16000]},
+             + p.name + "\n\n" + text[:60000]},   # deepseek-v4-pro has room; avoid truncation (TICKET-0039)
         ],
         "temperature": TEMPERATURE,
         "max_tokens": 4096,

@@ -42,7 +42,10 @@ Requires a positive credit balance, or every call returns "credit balance too lo
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-### `nvidia-api-keys.txt` — Writer fallback (optional)
+### `nvidia-api-key.txt` — Writer fallback (optional)
+The env var is `NVIDIA_API_KEY_CODING` — a dedicated NVIDIA NIM key for the
+writer's code/text generation fallback. The legacy filename `nvidia-api-keys.txt`
+(plural) is still accepted.
 Get it at: <https://build.nvidia.com/>  (Get API Key)
 ```
 NVIDIA_API_KEY_CODING=nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -206,7 +206,7 @@ never committed)
 | `Config/_SECRETS/openrouter-api-key.txt` | OpenRouter |
 | `Config/_SECRETS/deepseek-api-key.txt` | DeepSeek |
 | `Config/_SECRETS/anthropic-api-key.txt` | Anthropic |
-| `Config/_SECRETS/nvidia-api-keys.txt` | NVIDIA NIM |
+| `Config/_SECRETS/nvidia-api-key.txt` (or legacy `-keys.txt`) | NVIDIA NIM |
 
 Each file may be either a **bare key**:
 ```
@@ -248,6 +248,8 @@ The pre-check halts with the exact missing filenames if any are absent.
 ## Install
 
 ```bash
+git clone https://github.com/tuklusan/Vagabond-Couple-Blog-Enhancer.git
+cd Vagabond-Couple-Blog-Enhancer
 pip install -r requirements.txt
 ```
 

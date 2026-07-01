@@ -82,7 +82,14 @@ def load_deepseek_key() -> str:
 
 
 def load_nvidia_key() -> str:
-    return _load_key("NVIDIA_API_KEY_CODING", "nvidia-api-keys.txt", "NVIDIA_API_KEY_CODING")
+    # Env var is NVIDIA_API_KEY_CODING (a dedicated NVIDIA NIM key for code/text
+    # generation). Accept the singular filename (preferred, consistent with the
+    # other key files) and the legacy plural for back-compat (TICKET-0043).
+    for fname in ("nvidia-api-key.txt", "nvidia-api-keys.txt"):
+        key = _load_key("NVIDIA_API_KEY_CODING", fname, "NVIDIA_API_KEY_CODING")
+        if key:
+            return key
+    return ""
 
 
 def _extract_content(resp_json):
