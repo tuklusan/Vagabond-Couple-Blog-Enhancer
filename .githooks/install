@@ -1,0 +1,5 @@
+#!/bin/sh
+# Point git at the tracked hooks dir so the DeepSeek dev-review push gate is active.
+git config core.hooksPath .githooks
+chmod +x .githooks/pre-push 2>/dev/null || true
+echo "core.hooksPath set to .githooks -- DeepSeek pre-push review gate is enabled."

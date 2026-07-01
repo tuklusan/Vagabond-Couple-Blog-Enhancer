@@ -1,0 +1,44 @@
+#!/bin/sh
+# DeepSeek dev-review push gate (TICKET/enforcement: reviewer-of-my-work).
+# Blocks a push when a changed file has an unaddressed Critical finding.
+# Fails OPEN if DeepSeek is unreachable. Bypass: `git push --no-verify` or
+# SKIP_DEEPSEEK_REVIEW=1.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# (or run: sh .githooks/install)
+
+if [ "${SKIP_DEEPSEEK_REVIEW:-0}" = "1" ]; then
+  echo "[dev-review] skipped (SKIP_DEEPSEEK_REVIEW=1)"
+  exit 0
+fi
+
+REPO=$(git rev-parse --show-toplevel)
+Z40=0000000000000000000000000000000000000000
+changed=""
+
+# pre-push feeds "<local ref> <local sha> <remote ref> <remote sha>" on stdin.
+while read local_ref local_sha remote_ref remote_sha; do
+  [ -z "$local_sha" ] && continue
+  [ "$local_sha" = "$Z40" ] && continue            # branch deletion, nothing to review
+  if [ "$remote_sha" = "$Z40" ]; then
+    base=$(git rev-parse origin/HEAD 2>/dev/null || echo "${local_sha}^")
+  else
+    base="$remote_sha"
+  fi
+  files=$(git diff --name-only "$base" "$local_sha" 2>/dev/null || true)
+  changed="$changed
+$files"
+done
+
+# reviewable = my code/docs/tests; exclude tickets + bundled reference docs.
+list=$(printf "%s\n" "$changed" | sort -u \
+        | grep -E '\.(py|md)$' \
+        | grep -vE '^Tickets/|^Config/workflow-docs/' || true)
+
+if [ -z "$list" ]; then
+  echo "[dev-review] no reviewable files in this push; allowing."
+  exit 0
+fi
+
+printf "%s\n" "$list" | python "$REPO/.githooks/_review_gate.py" -
+exit $?

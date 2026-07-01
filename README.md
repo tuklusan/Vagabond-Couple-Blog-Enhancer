@@ -401,6 +401,28 @@ Closing a ticket (`update … --status Closed`) is one of the project's three
 commit+push points (before review · after a defect ticket · after applying review
 fixes).
 
+### DeepSeek dev-review push gate
+
+A second-opinion reviewer (DeepSeek, via `.claude/dev_review.py`) is enforced at
+**push time** by a tracked git hook, so code/doc/test changes can't reach the
+remote without review. Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks   # or: sh .githooks/install
+```
+
+On `git push`, `.githooks/pre-push` reviews the changed `.py`/`.md` files (excluding
+`Tickets/` and the bundled `Config/workflow-docs/`). Policy:
+
+- **Blocks** the push on any unaddressed **Critical** finding — and files a ticket
+  for each so it's actionable.
+- **Fails open** (allows, with a warning) if DeepSeek is unreachable for every file,
+  so an API outage or missing key never permanently blocks pushes.
+- Warning/Info findings are advisory (don't block).
+
+Needs `DEEPSEEK_API_KEY` in the environment. Bypass for an emergency push with
+`git push --no-verify` or `SKIP_DEEPSEEK_REVIEW=1 git push`.
+
 > A GitHub Issues tracker is also available on the origin remote if you prefer a
 > hosted option.
 
