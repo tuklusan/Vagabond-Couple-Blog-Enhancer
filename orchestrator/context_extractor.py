@@ -54,7 +54,41 @@ def _summary_row_sections(html):
     return []
 
 
-def extract_context(html):
+def derive_route_from_prose(html, max_chars=9000):
+    """When the post has no schema, derive the route from the prose via the
+    writer model. Returns {origin, destination, waypoints, method} (best effort)."""
+    import json as _json
+    from . import validators, writer_client
+    text = validators.plain_text(html)[:max_chars]
+    # No example JSON in the prompt (weak models echo examples). Route to DeepSeek
+    # directly -- it is reliable for this structured extraction.
+    system = (
+        "You are a travel-route extractor. Read the blog post and output ONLY a compact "
+        "JSON object with exactly these keys and real values from the post: "
+        "origin (the place THIS post's journey begins, 'City, State'), "
+        "destination (where it ends, 'City, State'), "
+        "waypoints (array of the notable named stops in between), "
+        "method (how they travelled, e.g. 'drove'). "
+        "No commentary, no markdown, no code fences -- just the JSON object."
+    )
+    user = "POST:\n" + text
+    try:
+        out = writer_client.call_deepseek(
+            [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            max_tokens=400)
+    except Exception:
+        return {}
+    for cand in (out, out[out.find("{"):out.rfind("}") + 1] if "{" in out else ""):
+        try:
+            obj = _json.loads(cand)
+        except Exception:
+            continue
+        if isinstance(obj, dict) and (str(obj.get("origin", "")).strip() or str(obj.get("destination", "")).strip()):
+            return obj
+    return {}
+
+
+def extract_context(html, allow_llm=False):
     soup = BeautifulSoup(html, "html.parser")
     schema = parse_schema(html)
     ctx = {
@@ -103,6 +137,19 @@ def extract_context(html):
     if not ctx["post_title"]:
         h1 = soup.find("h1")
         ctx["post_title"] = h1.get_text(strip=True) if h1 else ""
+
+    # Schema-less posts: derive the route from the prose (LLM), when permitted.
+    if allow_llm and (not ctx["origin"] or not ctx["destination"]):
+        derived = derive_route_from_prose(html)
+        if derived:
+            ctx["origin"] = ctx["origin"] or derived.get("origin", "") or ""
+            ctx["destination"] = ctx["destination"] or derived.get("destination", "") or ""
+            if not ctx["waypoints"] and derived.get("waypoints"):
+                ctx["waypoints"] = derived["waypoints"][:5]
+            if ctx["method"] == "overland" and derived.get("method"):
+                ctx["method"] = derived["method"]
+            if not ctx["landmarks"] and derived.get("waypoints"):
+                ctx["landmarks"] = ", ".join(derived["waypoints"][:8])
 
     ctx["etr_minutes"] = validators.etr_minutes(html)["etr_minutes"]
     return ctx

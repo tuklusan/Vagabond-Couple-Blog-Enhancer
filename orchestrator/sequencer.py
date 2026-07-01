@@ -241,7 +241,8 @@ def context_extraction_node():
     """Derive the generative context (route, sections, stops, landmarks) from the
     source post -- deterministically, from its existing schema + structure."""
     def handler(sctx):
-        ctx = context_extractor.extract_context(sctx.state.get_working_html())
+        ctx = context_extractor.extract_context(sctx.state.get_working_html(),
+                                                allow_llm=not sctx.dry_generative)
         sctx.state.save_artifact("context", ctx)
         sctx.context.update(ctx)
         return {"complete": True,
