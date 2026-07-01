@@ -183,11 +183,14 @@ def _document_review(html):
     """G2 Pass 1 -- reviewer reads the whole post for the holistic criteria."""
     system = (
         "You are the final certifying reviewer for a travel blog post body. Read it as a "
-        "first-time human with no prior context. Certify: (c) HTML SANITY -- it reads as "
-        "clean, well-structured content with no broken/odd markup; (d) REPETITION -- no "
-        "idea, fact, or phrase repeats across sections; (e) SMOOTH READ -- it flows "
-        "naturally and makes sense in chronological and geographical order, with no jarring "
-        "transitions and one consistent authorial voice.\n" + _DOC_VERDICT_SHAPE
+        "first-time human with no prior context. Judge ONLY these three criteria: "
+        "(c) HTML SANITY -- it reads as clean, well-structured content with no broken/odd "
+        "markup; (d) REPETITION -- no idea, fact, or phrase repeats across sections; "
+        "(e) SMOOTH READ -- it flows naturally and makes sense in chronological and "
+        "geographical order, with no jarring transitions and one consistent authorial voice. "
+        "Do NOT fact-check individual claims here -- factual accuracy is handled in other "
+        "steps; ignore possible factual errors for this pass. Set decision to CERTIFIED if "
+        "and only if all three criteria pass.\n" + _DOC_VERDICT_SHAPE
     )
     # Send the WHOLE post -- a mid-document cut makes the reviewer report false
     # "truncated content / unclosed tag" findings (deepseek-v4-pro has a 1M-token
@@ -195,6 +198,23 @@ def _document_review(html):
     verdict, _text, _sources = reviewer_client.certify(system, "Post body:\n" + html[:200000],
                                                        web_search=False, max_tokens=2048)
     return verdict
+
+
+def _pass1_ok(pass1):
+    """Pass-1 (holistic) acceptance. Certified on an explicit CERTIFIED, OR when all
+    three IN-SCOPE criteria (html_sanity, repetition, smooth_read) pass -- this
+    absorbs the web-less reviewer's habit of returning REVISE over out-of-scope,
+    unverifiable factual asides even when its own holistic criteria all pass. Those
+    asides are preserved in the artifact as advisory, not blocking (facts are the
+    remit of Phase 1A / Step 12 and the per-node loops, not this pass)."""
+    if pass1 is None:
+        return True
+    if str(pass1.get("decision", "")).upper() == "CERTIFIED":
+        return True
+    crit = pass1.get("criteria") or {}
+    keys = ("html_sanity", "repetition", "smooth_read")
+    statuses = [(crit.get(k) or {}).get("status") for k in keys]
+    return bool(statuses) and all(s == "pass" for s in statuses)
 
 
 def run_document_certification(state, run_reviewer=True):
@@ -217,7 +237,7 @@ def run_document_certification(state, run_reviewer=True):
         except Exception as e:
             pass1 = {"decision": "ESCALATE", "note": "reviewer unavailable: " + str(e)[:140]}
 
-    p1_ok = pass1 is None or str(pass1.get("decision", "")).upper() == "CERTIFIED"
+    p1_ok = _pass1_ok(pass1)
     result = {"certified": bool(pass2["ok"] and p1_ok),
               "pass2_deterministic": pass2, "pass1_reviewer": pass1}
     state.save_artifact("phase5_certification", result)
