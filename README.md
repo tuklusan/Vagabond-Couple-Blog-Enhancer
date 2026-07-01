@@ -102,7 +102,8 @@ It will, for a given post:
   description.
 - Reapply the canonical summary-block CSS, strip noisy inline styles, re-emit
   YouTube embeds to the project template, and remove `?m=1` from internal links —
-  while preserving every original `href` byte-for-byte.
+  while preserving all **other** original `href`s byte-for-byte (the `?m=1`
+  stripping is the one intentional, audited href change).
 - Stop for **operator approval** before generating final HTML, then certify the
   assembled output with a two-pass check before delivery.
 

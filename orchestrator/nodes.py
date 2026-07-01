@@ -99,7 +99,9 @@ def route_items(context):
     may use -- the reviewer is DeepSeek-only (no web) and cannot catch invented
     geography, so grounding is enforced here in code (TICKET-0054)."""
     for key in ("sections", "stops", "waypoints"):
-        vals = [str(v).strip() for v in (context.get(key) or []) if str(v).strip()]
+        # `if v and ...` filters out None/"" so a None entry can't become a fake
+        # "None" stop (hallucinated place, TICKET-0068).
+        vals = [str(v).strip() for v in (context.get(key) or []) if v and str(v).strip()]
         if vals:
             return vals
     return []
@@ -111,11 +113,11 @@ def geographic_stops(context):
     origin -> waypoints/schema stops -> destination, deduped by leading place name."""
     seq = []
     if context.get("origin"):
-        seq.append(str(context["origin"]).strip())
-    seq += [str(v).strip() for v in (context.get("waypoints") or []) if str(v).strip()]
-    seq += [str(v).strip() for v in (context.get("stops") or []) if str(v).strip()]
+        seq.append(str(context.get("origin", "")).strip())
+    seq += [str(v).strip() for v in (context.get("waypoints") or []) if v and str(v).strip()]
+    seq += [str(v).strip() for v in (context.get("stops") or []) if v and str(v).strip()]
     if context.get("destination"):
-        seq.append(str(context["destination"]).strip())
+        seq.append(str(context.get("destination", "")).strip())
     out, seen = [], set()
     for s in seq:
         key = _first_place_token(s).lower()
@@ -190,8 +192,8 @@ def step6_first_body_paragraph() -> GenerativeNode:
             "Avoid all marketing/transition cliche words."
         )
         user = (
-            "Origin: " + context["origin"] + "\n"
-            "Destination: " + context["destination"] + "\n"
+            "Origin: " + context.get("origin", "") + "\n"
+            "Destination: " + context.get("destination", "") + "\n"
             "Waypoints: " + ", ".join(context.get("waypoints", [])) + "\n"
             "Method: " + context.get("method", "overland") + "\n"
             "What this post covers: " + context.get("covers", "")
@@ -320,7 +322,7 @@ def step1_title() -> GenerativeNode:
             "business brand names, no forbidden words. Output ONLY the title text on one line."
         )
         user = (
-            "Origin: " + context["origin"] + "\nDestination: " + context["destination"] +
+            "Origin: " + context.get("origin", "") + "\nDestination: " + context.get("destination", "") +
             "\nWaypoints/themes available: " + ", ".join(context.get("waypoints", [])) +
             "\nKnown high-value landmarks: " + context.get("landmarks", "")
         )
@@ -380,7 +382,7 @@ def step2f_search_description() -> GenerativeNode:
             "-- no preamble, no explanation, no quotes."
         )
         user = (
-            "Origin: " + context["origin"] + "\nDestination: " + context["destination"] +
+            "Origin: " + context.get("origin", "") + "\nDestination: " + context.get("destination", "") +
             "\nThemes/landmarks: " + context.get("landmarks", "") +
             "\nETR minutes: " + str(etr)
         )
@@ -424,7 +426,7 @@ def step10_journey_significance() -> GenerativeNode:
             "<p>...</p>."
         )
         user = (
-            "Post route: " + context["origin"] + " -> " + context["destination"] +
+            "Post route: " + context.get("origin", "") + " -> " + context.get("destination", "") +
             "\nThemes: " + context.get("landmarks", "") +
             "\nFacts already in the post (do not repeat):\n" + context.get("existing_facts", "(none)")
         )
@@ -513,7 +515,7 @@ def step3_summary_block() -> GenerativeNode:
             "Output EXACTLY one row per section listed below -- no more, no fewer."
         )
         user = ("Post title: " + context.get("post_title", "") +
-                "\nRoute: " + context["origin"] + " -> " + context["destination"] +
+                "\nRoute: " + context.get("origin", "") + " -> " + context.get("destination", "") +
                 "\nTop-level H2 sections (" + str(len(sections)) + " rows, one each):\n- " +
                 "\n- ".join(sections))
         if prior:
@@ -564,7 +566,7 @@ def step7_route_summary_box() -> GenerativeNode:
             '<strong>Vehicle:</strong> Shehzadi (2024 Toyota Tundra)</div>\n'
             "Fill the bracketed fields from the context. No forbidden words. Output ONLY the div."
         )
-        user = ("Route stops: " + context["origin"] + " -> " + context["destination"] +
+        user = ("Route stops: " + context.get("origin", "") + " -> " + context.get("destination", "") +
                 "\nMethod: " + context.get("method", "overland") +
                 "\nThemes: " + context.get("landmarks", "") +
                 "\nApprox distance/days: " + context.get("distance_time", "(estimate)"))

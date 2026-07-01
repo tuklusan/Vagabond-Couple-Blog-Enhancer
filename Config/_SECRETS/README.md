@@ -55,7 +55,11 @@ NVIDIA_API_KEY_CODING=nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ## Notes
 
-- A bare-key file (just the key on one line, no `NAME=`) also works.
+- A bare-key file (just the key on one line, no `NAME=`) also works: the key is
+  mapped to that file's default provider variable — `openrouter-api-key.txt` →
+  `OPENROUTER_AI_API_KEY`, `deepseek-api-key.txt` → `DEEPSEEK_API_KEY`,
+  `anthropic-api-key.txt` → `ANTHROPIC_API_KEY`, `nvidia-api-key.txt` →
+  `NVIDIA_API_KEY_CODING`. (`NAME=value` is equivalent and more explicit.)
 - **Do not commit real keys.** Only this README is tracked in `Config/_SECRETS/`;
   all `*.txt` / `*.json` files here stay ignored.
 - Legacy Google/Blogger credential files (`client_secrets.json`,

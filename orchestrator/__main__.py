@@ -77,7 +77,11 @@ def main():
         print(_ascii("warning: input is not valid UTF-8 (" + str(e)[:80]
                      + "); reading with replacement characters"))
         html = src.read_text(encoding="utf-8", errors="replace")
-    state = RunState.create(html, run_id=args.run_id)
+    try:
+        state = RunState.create(html, run_id=args.run_id)
+    except ValueError as e:                                  # bad --run-id (TICKET-0066)
+        print(_ascii("invalid --run-id: " + str(e)))
+        sys.exit(1)
     op = Operator(auto=args.auto)
     sctx = sequencer.StepContext(state=state, context={}, operator=op,
                                  mode="auto" if args.auto else "step",

@@ -271,6 +271,11 @@ def run_document_certification(state, run_reviewer=True):
     CERTIFIED. A reviewer outage yields ESCALATE, never a silent pass.
     """
     html = state.get_working_html()
+    if not html:
+        # Incomplete/empty working HTML -> not certified, don't crash (TICKET-0071).
+        return {"certified": False,
+                "pass2_deterministic": {"checks": {}, "ok": False, "failed": ["no_working_html"]},
+                "pass1_reviewer": None}
     inv = state.read_artifact("1C_media_inventory")
     original_hrefs = None
     if inv:

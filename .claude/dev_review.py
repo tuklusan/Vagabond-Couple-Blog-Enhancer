@@ -180,7 +180,7 @@ def review_file(path):
         "messages": [
             {"role": "system", "content": _system_prompt(kind)},
             {"role": "user", "content": "Review this file (json output).\n\nFILE: "
-             + p.name + "\n\n" + text[:60000]},   # deepseek-v4-pro has room; avoid truncation (TICKET-0039)
+             + p.name + "\n\n" + text[:200000]},   # generous cap; repo files are well under it (TICKET-0039/0062)
         ],
         "temperature": TEMPERATURE,
         "max_tokens": 4096,
