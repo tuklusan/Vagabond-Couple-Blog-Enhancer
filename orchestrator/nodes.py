@@ -91,6 +91,55 @@ def prose_paragraph_check(min_chars):
     return _check
 
 
+def route_items(context):
+    """The authoritative, grounded ordered route list for this post.
+
+    Prefer the real H2 sections (the post's actual structure), then schema stops,
+    then extracted waypoints. This is the ONLY source of place names a route node
+    may use -- the reviewer is DeepSeek-only (no web) and cannot catch invented
+    geography, so grounding is enforced here in code (TICKET-0054)."""
+    for key in ("sections", "stops", "waypoints"):
+        vals = [str(v).strip() for v in (context.get(key) or []) if str(v).strip()]
+        if vals:
+            return vals
+    return []
+
+
+def _first_place_token(name):
+    """Leading place name from a section/stop label (before a ' - '/':' descriptor)."""
+    return re.split(r"\s+[-:–—]\s+", name.strip())[0].strip()
+
+
+def grounded_route_check(output, context):
+    """Guard against hallucinated geography (the DeepSeek-only reviewer can't).
+
+    The output must reflect the grounded route list: at least 70% of the grounded
+    items must appear (by a significant token), catching wholesale invention like a
+    Scandinavian route substituted for a US one."""
+    findings = []
+    items = route_items(context)
+    if not items:
+        return findings
+    text = _plain(output).lower()
+
+    def _covered(item):
+        tok = _first_place_token(item).lower()
+        if tok and tok in text:
+            return True
+        # else: any distinctive word (>3 chars) from the item present
+        for w in re.findall(r"[A-Za-z][A-Za-z'-]{3,}", item):
+            if w.lower() in text and w.lower() not in ("the", "and", "our", "with", "from", "into"):
+                return True
+        return False
+
+    covered = sum(1 for it in items if _covered(it))
+    if covered < (len(items) * 7 + 9) // 10:  # ceil(0.7 * n)
+        findings.append("route content not grounded in the known stops "
+                        "(" + str(covered) + "/" + str(len(items)) + " covered) -- "
+                        "use ONLY the provided stops, do not invent places")
+    return findings
+
+
 _VERDICT_SHAPE = (
     'Output ONLY a JSON verdict (no prose outside it):\n'
     '{"decision":"CERTIFIED|REVISE|ESCALATE","criteria":{'
@@ -531,13 +580,17 @@ def step7_route_summary_box() -> GenerativeNode:
 # ---------------------------------------------------------------------------
 def step8_route_at_a_glance() -> GenerativeNode:
     def writer(context, prior, revision):
+        items = route_items(context)
         system = (
             "You write a 'Route at a Glance' navigation list: an <h2>Route at a Glance</h2> "
-            "followed by an ORDERED list <ol> with one <li> per named stop/leg in travel "
-            "order, each a brief descriptor. Use <ol>, never <ul>. No forbidden words. Output "
-            "ONLY the <h2> and the <ol>."
+            "followed by an ORDERED list <ol> with EXACTLY one <li> per stop listed below, "
+            "IN THE GIVEN ORDER, each with a brief descriptor. "
+            "CRITICAL: use ONLY the stops listed below -- never add, invent, rename, or "
+            "substitute any place; every place you name must be one of these. Use <ol>, "
+            "never <ul>. No forbidden words. Output ONLY the <h2> and the <ol>."
         )
-        user = ("Stops in travel order:\n- " + "\n- ".join(context.get("stops", [])))
+        user = ("Stops in travel order (use EXACTLY these, one <li> each, no others):\n- "
+                + "\n- ".join(items))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:
@@ -550,8 +603,14 @@ def step8_route_at_a_glance() -> GenerativeNode:
             findings.append("must use <ol> (ordered list)")
         if "<ul" in output.lower():
             findings.append("uses <ul> -- must be <ol>")
-        if "<li" not in output.lower():
+        li_count = output.lower().count("<li")
+        if li_count == 0:
             findings.append("no list items")
+        items = route_items(context)
+        if items and li_count != len(items):
+            findings.append("has " + str(li_count) + " list items; must be exactly "
+                            + str(len(items)) + " (one per grounded stop)")
+        findings += grounded_route_check(output, context)
         return (len(findings) == 0, findings)
 
     def review(output, det_findings, context):
