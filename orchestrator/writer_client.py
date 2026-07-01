@@ -77,7 +77,14 @@ def load_nvidia_key() -> str:
 
 
 def _extract_content(resp_json):
-    """Pull text from a chat completion, tolerating reasoning-only messages."""
+    """Pull the ANSWER text from a chat completion.
+
+    Only message.content is the answer. A reasoning model may leave content empty
+    and put its chain-of-thought in message.reasoning -- that internal monologue is
+    NOT the answer (returning it produces 4000-char "The user wants..." blobs as
+    blog copy). Treat empty content as failure so _post_chat retries and, on a
+    persistent empty, chat() fails over to a provider that emits real content.
+    """
     try:
         msg = resp_json["choices"][0]["message"]
     except (KeyError, IndexError, TypeError):
@@ -85,9 +92,6 @@ def _extract_content(resp_json):
     content = msg.get("content")
     if content and content.strip():
         return content
-    reasoning = msg.get("reasoning")
-    if reasoning and reasoning.strip():
-        return reasoning
     return ""
 
 

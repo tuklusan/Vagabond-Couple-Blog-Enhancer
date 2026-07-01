@@ -405,13 +405,16 @@ def step3_summary_block() -> GenerativeNode:
             "You write the TEXT content of a pre-fold summary block: (1) a small-caps label "
             "'[POST TITLE] - Post Summary'; (2) ONE narrative paragraph in the author's voice "
             "describing the full route arc; (3) one 'What's Covered' table row per top-level "
-            "H2 section (emoji + 'Section name - brief descriptor'). Narrator we/us, no "
-            "forbidden words. Output as: a LABEL: line, a NARRATIVE: paragraph, then ROWS: "
-            "one 'emoji | Section - descriptor' per line. One row per section, no more."
+            "H2 section (emoji + 'Section name - brief descriptor'). "
+            "NARRATOR IS 'The Vagabond Couple': use ONLY 'we'/'us'/'our'; NEVER write the "
+            "word 'I' or 'me' anywhere. No forbidden words. Output as: a LABEL: line, a "
+            "NARRATIVE: paragraph, then ROWS: one 'emoji | Section - descriptor' per line. "
+            "Output EXACTLY one row per section listed below -- no more, no fewer."
         )
         user = ("Post title: " + context.get("post_title", "") +
                 "\nRoute: " + context["origin"] + " -> " + context["destination"] +
-                "\nTop-level H2 sections (one row each):\n- " + "\n- ".join(sections))
+                "\nTop-level H2 sections (" + str(len(sections)) + " rows, one each):\n- " +
+                "\n- ".join(sections))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:
@@ -441,7 +444,7 @@ def step3_summary_block() -> GenerativeNode:
         id="step3_summary_block", label="Step 3 - Summary block content",
         build_writer_prompt=writer, deterministic_check=deterministic,
         build_review_prompt=review, web_search=False,
-        writer_max_tokens=900, review_max_tokens=1536,
+        writer_max_tokens=900, review_max_tokens=1536, temperature=0.2,
     )
 
 
