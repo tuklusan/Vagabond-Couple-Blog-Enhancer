@@ -356,7 +356,9 @@ def build_full_sequence():
         g("step8_route_at_a_glance", "Phase 3 / Step 8 - Route at a Glance", n.step8_route_at_a_glance),
         g("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids", n.step9f_factoid, optional=True),
         g("step10_journey_significance", "Phase 3 / Step 10 - Journey significance", n.step10_journey_significance),
-        g("step12_resolve", "Phase 3 / Step 12 - Resolve repetition/rules", n.step12_resolve),
+        # Step 12 resolves violations flagged by 1H/1I; with those passes stubbed there
+        # is nothing concrete to resolve, so it is optional (skips cleanly). See 0053.
+        g("step12_resolve", "Phase 3 / Step 12 - Resolve repetition/rules", n.step12_resolve, optional=True),
         g("step13_separator", "Phase 3 / Step 13 - Image separators", n.step13_separator, optional=True),
         # Phase 4 -- operator approval (blocks HTML generation)
         phase4_gate_node(),
