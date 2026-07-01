@@ -42,8 +42,11 @@ def run(node_factory, name):
         return None, outcome
     # Structural + content assertions (TICKET-0030): valid status, a real string
     # output, and progress recorded.
+    # Non-empty output is only guaranteed for CERTIFIED; REVISE/ESCALATE may
+    # legitimately carry empty output (TICKET-0085).
     ok = (status in ("CERTIFIED", "REVISE", "ESCALATE")
-          and isinstance(output, str) and len(output.strip()) > 0
+          and isinstance(output, str)
+          and (status != "CERTIFIED" or len(output.strip()) > 0)
           and isinstance(outcome.get("history"), list) and len(outcome["history"]) >= 1)
     return ok, outcome
 

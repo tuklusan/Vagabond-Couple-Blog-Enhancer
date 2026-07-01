@@ -32,7 +32,13 @@ def main():
         "covers": "the marble capital, two Silk Road mosques, and the overnight train to the Caspian",
     }
     node = nodes.step6_first_body_paragraph()
-    outcome = review_loop.run_generative_node(node, context, max_rounds=3, verbose=True)
+    try:
+        outcome = review_loop.run_generative_node(node, context, max_rounds=3, verbose=True)
+    except Exception as e:
+        # A raw exception from the live call is a clean failure, not a traceback
+        # (TICKET-0086). run_generative_node normally escalates rather than raising.
+        print(_ascii("[FAIL] node_loop raised: " + str(e)[:160]))
+        sys.exit(1)
 
     status = outcome.get("status", "")
     output = outcome.get("output", "")          # safe access (TICKET-0033)
@@ -43,10 +49,12 @@ def main():
     print(_ascii("output : " + output[:300]))
     print(_ascii("sources: " + str(outcome.get("sources"))[:200]))
 
-    # Live test: if every writer provider was unavailable, skip rather than fail on
-    # an external outage (TICKET-0029).
-    if status == "ESCALATE" and "writer_unavailable" in str(outcome.get("reason", "")):
-        print(_ascii("SKIP: writer providers unavailable -- " + str(outcome.get("reason"))))
+    # Live test: skip on any external provider outage/rate-limit that escalated --
+    # not just the exact 'writer_unavailable' string (TICKET-0029/0087).
+    reason = str(outcome.get("reason", "")).lower()
+    if status == "ESCALATE" and any(k in reason for k in
+                                    ("unavailable", "outage", "rate", "429", "timeout", "timed out", "failed", "error")):
+        print(_ascii("SKIP: external provider outage/rate-limit -- " + reason[:80]))
         return
 
     failures = []

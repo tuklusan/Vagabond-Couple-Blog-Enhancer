@@ -60,8 +60,9 @@ def main():
     hits = validators.scan_forbidden("We must leverage this nestled realm. In conclusion, naturally.")
     terms_found = {h["term"].lower() for h in hits}
     check("forbidden_detects_words", {"leverage", "nestled", "realm"} <= terms_found, str(sorted(terms_found)))
+    # BOTH planted phrases must be detected, not just one (TICKET-0088)
     check("forbidden_detects_phrases",
-          any("conclusion" in t for t in terms_found) or any("naturally" in t for t in terms_found),
+          any("conclusion" in t for t in terms_found) and any("naturally" in t for t in terms_found),
           str(sorted(terms_found)))
 
     # --- question-mark scan runs (reference may have ? in doc comment) ---
@@ -83,9 +84,10 @@ def main():
     empty = ""
     check("neg_more_empty", validators.count_more_tags(empty)["count"] == 0)
     check("neg_schema_absent", validators.validate_ld_json("<p>no schema</p>")["present"] is False)
-    check("neg_schema_malformed",
-          validators.validate_ld_json(
-              '<script type="application/ld+json">{bad json,}</script>')["valid_json"] is False)
+    _mal = validators.validate_ld_json('<script type="application/ld+json">{bad json,}</script>')
+    check("neg_schema_malformed", _mal["valid_json"] is False)
+    # a malformed schema is PRESENT (tag exists) but invalid -- not reported absent (0089)
+    check("neg_schema_malformed_present", _mal["present"] is True)
     check("neg_summary_absent", validators.summary_block("<p>nothing</p>")["present"] is False)
     check("neg_media_empty", validators.media_inventory(empty)["photographs"] == 0)
     check("neg_forbidden_clean", validators.scan_forbidden("A perfectly clean sentence.") == [])
