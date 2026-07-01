@@ -197,16 +197,102 @@ def reemit_youtube(html):
 
 
 # ---------------------------------------------------------------------------
+# Pre-fold zone: build a NEW summary block + schema for posts that lack them
+# ---------------------------------------------------------------------------
+def _find_more_comment(soup):
+    """The real fold marker is the comment whose content is exactly 'more' -- NOT
+    any doc-comment that merely mentions the word (e.g. the reference pre-fold's
+    header comment documents the <!--more--> rule)."""
+    from bs4 import Comment
+    for c in soup.find_all(string=lambda t: isinstance(t, Comment)):
+        if c.strip() == "more":
+            return c
+    return None
+
+
+def _looks_like_row(line):
+    return "|" in line
+
+
+def parse_summary_fragment(text):
+    """Parse the Step-3 writer fragment into (label, narrative, rows).
+
+    Tolerates the loose LLM shapes seen in practice: a bracketed/`LABEL:` title on
+    the first line, one narrative paragraph, then 'emoji | Section - descriptor'
+    rows. rows = list of (emoji, descriptor).
+    """
+    lines = [ln.strip() for ln in (text or "").replace("\r", "").split("\n")]
+    lines = [ln for ln in lines if ln]
+    label, narrative_parts, rows = "", [], []
+    for ln in lines:
+        clean = ln.strip().lstrip("*").rstrip("*").strip()
+        low = clean.lower()
+        if _looks_like_row(clean):
+            emoji, _, rest = clean.partition("|")
+            rows.append((emoji.strip(), rest.strip()))
+            continue
+        if not label and ("post summary" in low or clean.startswith("[") or low.startswith("label")):
+            label = clean.strip("[]").split(":", 1)[-1].strip() if low.startswith("label") else clean.strip("[]").strip()
+            continue
+        # anything else before the rows is narrative
+        if not rows:
+            body = clean.split(":", 1)[-1].strip() if low.startswith("narrative") else clean
+            narrative_parts.append(body)
+    narrative = " ".join(narrative_parts).strip()
+    return label, narrative, rows
+
+
+def _existing_ldjson(soup):
+    return soup.find("script", attrs={"type": "application/ld+json"})
+
+
+def apply_prefold(html, summary_fragment, context, schema_script=None):
+    """Ensure a canonical pre-fold zone: summary block + TravelAction schema, with
+    <!--more--> immediately after </script>.
+
+    - If the post already has a canonical summary block, it is left to
+      reapply_summary_block; otherwise we build one from the Step-3 fragment.
+    - The schema is (re)built from context and inserted so the order is
+      ... intro paragraphs, summary block, <script ld+json>, <!--more--> ...
+    """
+    from bs4 import Comment
+    from . import schema_builder
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Locate <!--more--> (canonical anchor for the pre-fold/body boundary).
+    more = _find_more_comment(soup)
+    if more is None:
+        # No fold marker: append one at the end of the pre-fold content we build.
+        more = Comment("more")
+        soup.append(more)
+
+    # 1. Summary block -- insert a new one only if the post has none.
+    _lbl, existing_block = _find_summary_block(soup)
+    if existing_block is None and summary_fragment:
+        label, narrative, rows = parse_summary_fragment(summary_fragment)
+        if not label:
+            label = (context.get("post_title", "") or
+                     (context.get("origin", "") + " to " + context.get("destination", ""))) + " - Post Summary"
+        block_html = canonical_summary_block(label, narrative, rows)
+        more.insert_before(BeautifulSoup(block_html, "html.parser"))
+
+    # 2. Schema -- drop any stale ld+json, then insert the freshly built one right
+    #    before <!--more--> so the fold sits immediately after </script>.
+    for stale in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        stale.decompose()
+    script_html = schema_script or schema_builder.build_schema_script(context, str(soup))
+    more.insert_before(BeautifulSoup(script_html, "html.parser"))
+
+    return str(soup)
+
+
+# ---------------------------------------------------------------------------
 # Fragment splicing (certified generated fragments -> canonical positions)
 # ---------------------------------------------------------------------------
 def _insert_after_more(soup, fragment_html):
     """Insert a fragment immediately after <!--more--> in document order."""
-    from bs4 import Comment
-    more = None
-    for c in soup.find_all(string=lambda t: isinstance(t, Comment)):
-        if "more" in c:
-            more = c
-            break
+    more = _find_more_comment(soup)
     node = BeautifulSoup(fragment_html, "html.parser")
     if more is not None:
         more.insert_after(node)
@@ -252,10 +338,9 @@ def splice_fragments(html, fragments):
     """
     soup = BeautifulSoup(html, "html.parser")
 
-    if fragments.get("summary_block"):
-        _label_p, block = _find_summary_block(soup)
-        if block:
-            block.replace_with(BeautifulSoup(fragments["summary_block"], "html.parser"))
+    # NOTE: the summary block (pre-fold) is handled by apply_prefold(), which parses
+    # the Step-3 fragment into the canonical block and inserts it with the schema --
+    # it is not spliced as raw text here.
 
     # body fragments, in reverse canonical order so each insert_after lands correctly
     ordered = [k for k in ("route_at_a_glance", "route_box", "first_paragraph")
@@ -276,12 +361,20 @@ def splice_fragments(html, fragments):
 # ---------------------------------------------------------------------------
 # Top-level assembly
 # ---------------------------------------------------------------------------
-def assemble(html, fragments=None):
-    """Run the deterministic transforms (and splice fragments if provided)."""
+def assemble(html, fragments=None, context=None):
+    """Run the deterministic transforms (and splice fragments if provided).
+
+    context (the extracted route/section context) enables pre-fold generation:
+    build the canonical summary block from the Step-3 fragment (when the source has
+    none) plus the TravelAction schema, with <!--more--> immediately after </script>.
+    """
     html, _ = remove_m1_internal(html)
     html, _ = reemit_youtube(html)
     html, _ = strip_body_inline_styles(html)
     html, _ = reapply_summary_block(html)
     if fragments:
         html = splice_fragments(html, fragments)
+    if context:
+        summary_frag = (fragments or {}).get("summary_block")
+        html = apply_prefold(html, summary_frag, context)
     return html

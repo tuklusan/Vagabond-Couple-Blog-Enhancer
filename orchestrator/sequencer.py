@@ -299,9 +299,10 @@ def phase5_generate_node():
         sep = sctx.state.read_artifact("gen_step13_separator")
         if sep and sep.get("status") == "CERTIFIED" and sep.get("output"):
             fragments["separators"] = [sep["output"]]
-        assembled = assembler.assemble(html, fragments or None)
+        assembled = assembler.assemble(html, fragments or None, context=sctx.context)
         sctx.state.set_working_html(assembled)
-        return {"complete": True, "note": "assembled HTML (" + str(len(fragments)) + " fragments spliced)"}
+        return {"complete": True, "note": "assembled HTML (" + str(len(fragments))
+                + " fragments spliced + pre-fold summary/schema)"}
     return SeqNode("phase5_generate", "Phase 5 - HTML generation (assemble fragments)", "deterministic", handler)
 
 
