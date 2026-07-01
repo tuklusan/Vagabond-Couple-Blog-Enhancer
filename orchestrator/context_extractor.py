@@ -46,6 +46,29 @@ def extract_vehicle(html):
     return {}
 
 
+def extract_series(html):
+    """Best-effort series/part identity, e.g. 'Trans-America Part 13' -- derived from
+    the part-number in prev/next blog-post links and the series name in the intro
+    (TICKET-0112). Returns a display string, or ''."""
+    soup = BeautifulSoup(html, "html.parser")
+    nums = []
+    for a in soup.find_all("a", href=True):
+        m = re.search(r"part[-_](\d+)", a["href"], re.IGNORECASE)
+        if m:
+            nums.append(int(m.group(1)))
+    part = (min(nums) + 1) if nums else None    # prev-post part is the min referenced
+    head = soup.get_text(" ", strip=True)[:800]
+    series = ""
+    m = re.search(r"\bTrans[\s#-]?America\b", head, re.IGNORECASE)
+    if m:
+        series = "Trans-America"
+    if series and part:
+        return series + " Part " + str(part)
+    if series:
+        return series
+    return ""
+
+
 def _schema_name(value):
     """Extract a place/instrument name from an ld+json value that may be a dict
     ({"name": ...}) OR a plain string per Schema.org (TICKET-0009)."""
@@ -179,9 +202,13 @@ def extract_context(html, allow_llm=False):
         sections = _summary_row_sections(html)
     ctx["sections"] = sections
 
+    # Series/part identity for the summary-block label (TICKET-0112).
+    ctx["series"] = extract_series(html)
     if not ctx["post_title"]:
         h1 = soup.find("h1")
         ctx["post_title"] = h1.get_text(strip=True) if h1 else ""
+    if not ctx["post_title"] and ctx["series"]:
+        ctx["post_title"] = ctx["series"]
 
     # Schema-less posts: derive the route from the prose (LLM), when permitted.
     # Never let an LLM/import error here crash extraction -- proceed with what we

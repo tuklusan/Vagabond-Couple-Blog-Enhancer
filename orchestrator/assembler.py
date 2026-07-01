@@ -358,10 +358,13 @@ def apply_prefold(html, summary_fragment, context, schema_script=None):
     # 1. Summary block -- insert a new one only if the post has none.
     _lbl, existing_block = _find_summary_block(soup)
     if existing_block is None and summary_fragment:
-        label, narrative, rows = parse_summary_fragment(summary_fragment)
-        if not label:
-            label = (context.get("post_title", "") or
-                     (context.get("origin", "") + " to " + context.get("destination", ""))) + " - Post Summary"
+        _lbl2, narrative, rows = parse_summary_fragment(summary_fragment)
+        # Prefer the series/part identity ('Trans-America Part 13') deterministically
+        # over the writer's label (which tends to be the ALL-CAPS route) -- TICKET-0112.
+        title = (context.get("series") or context.get("post_title") or _lbl2 or
+                 (context.get("origin", "") + " to " + context.get("destination", ""))).strip()
+        title = re.sub(r"\s*[-—]\s*post summary\s*$", "", title, flags=re.IGNORECASE)
+        label = title + " — Post Summary"
         block_html = canonical_summary_block(label, narrative, rows)
         more.insert_before(BeautifulSoup(block_html, "html.parser"))
 

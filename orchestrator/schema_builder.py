@@ -104,6 +104,52 @@ def _post_h2_sections(html):
     return out
 
 
+# Road designations and attraction suffixes for mining named entities from prose
+# (TICKET-0108).
+_ROAD_RE = re.compile(
+    r"\b(Interstate\s+\d+|I-\d+|Historic\s+Route\s+66|Route\s+66|US-\d+|U\.S\.\s+\d+|"
+    r"[A-Z]{2}-\d+|Highway\s+\d+)\b")
+_ATTRACTION_RE = re.compile(
+    r"\b([A-Z][A-Za-z'&]+(?:\s+[A-Z][A-Za-z'&]+){0,4}\s+"
+    r"(?:Resort|National\s+Preserve|National\s+Park|National\s+Forest|State\s+Park|"
+    r"Dunes|Monument|Museum|Caverns|Cafe|Railway))\b")
+
+
+def _section_terms(h2):
+    """Distinctive bold/link terms inside an H2 section (its siblings up to the next
+    H2). These proper nouns form a compact, POSTED-style fact-list description."""
+    out, seen = [], set()
+    for sib in h2.next_siblings:
+        if getattr(sib, "name", None) == "h2":
+            break
+        if hasattr(sib, "find_all"):
+            for t in sib.find_all(["b", "strong", "a"]):
+                txt = t.get_text(" ", strip=True)
+                k = txt.lower()
+                if txt and 1 < len(txt) < 60 and k not in seen:
+                    seen.add(k)
+                    out.append(txt)
+    return out[:12]
+
+
+def _mine_roads_and_attractions(html):
+    """Return (roads, attractions) proper-noun lists mined from the post prose."""
+    text = BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
+    roads, seen_r = [], set()
+    for m in _ROAD_RE.finditer(text):
+        v = re.sub(r"\s+", " ", m.group(1)).strip()
+        if v.lower() not in seen_r:
+            seen_r.add(v.lower())
+            roads.append(v)
+    attractions, seen_a = [], set()
+    for m in _ATTRACTION_RE.finditer(text):
+        v = re.sub(r"\s+", " ", m.group(1)).strip()
+        if v.lower() not in seen_a:
+            seen_a.add(v.lower())
+            attractions.append(v)
+    return roads[:8], attractions[:8]
+
+
 def _facts_lookup(existing_facts):
     """Map 'Name: description' lines (from context.existing_facts) by lowercased name."""
     lookup = {}
@@ -126,6 +172,15 @@ def build_haspart(context, html=""):
     parts = []
     seen = set()
 
+    # Map H2 element -> its distinctive terms, for section-leg descriptions (0108).
+    soup = BeautifulSoup(html, "html.parser") if html else None
+    h2_terms = {}
+    if soup is not None:
+        for h in soup.find_all("h2"):
+            t = h.get_text(strip=True)
+            if t and t.lower() not in _SKIP_H2:
+                h2_terms[t.strip().lower()] = _section_terms(h)
+
     sections = _post_h2_sections(html) or context.get("sections", []) or []
     for name in sections:
         key = name.strip().lower()
@@ -133,7 +188,13 @@ def build_haspart(context, html=""):
             continue
         seen.add(key)
         part = {"@type": "Place", "name": name}
+        # description: source facts if we have them, else the section's proper-noun
+        # fact list (TICKET-0108).
         desc = lookup.get(key)
+        if not desc:
+            terms = h2_terms.get(key) or []
+            if terms:
+                desc = ", ".join(terms)
         if desc:
             part["description"] = desc
         parts.append(part)
@@ -154,6 +215,19 @@ def build_haspart(context, html=""):
             continue
         seen.add(key)
         parts.append({"@type": "Place", "name": name})
+
+    # Roads + landmark attractions mined from the prose (TICKET-0108).
+    roads, attractions = _mine_roads_and_attractions(html) if html else ([], [])
+    for name in attractions:
+        key = _place_key(name)
+        if key not in seen:
+            seen.add(key)
+            parts.append({"@type": "TouristAttraction", "name": name})
+    for name in roads:
+        key = name.strip().lower()
+        if key not in seen:
+            seen.add(key)
+            parts.append({"@type": "Road", "name": name})
 
     return parts
 
