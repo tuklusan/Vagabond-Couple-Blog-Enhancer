@@ -15,6 +15,12 @@ an SEO-remediated post — an enhanced HTML body plus a new SEO title and a new
 > **License:** proprietary, **view-only**. See [`LICENSE`](LICENSE). You may read
 > and evaluate the source; you may **not** execute, modify, redistribute, use it
 > in production, or use it to train/fine-tune/validate any AI model.
+>
+> **Note on the sections below.** The Install, Usage, and related instructions in
+> this README are provided **for reference — to explain how the software is
+> structured and how it operates**. They are **not** a grant of permission to
+> execute, build, deploy, or otherwise use the software. Any actual use is
+> governed solely by the [`LICENSE`](LICENSE), which is view-only.
 
 ---
 
@@ -262,6 +268,10 @@ python -c "from orchestrator import config; print('missing:', config.missing_doc
 ---
 
 ## Usage
+
+> **Descriptive only.** The commands below document how the software operates.
+> Running it is governed by the view-only [`LICENSE`](LICENSE) — this is not a
+> grant to execute or deploy.
 
 ```bash
 python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--run-id NAME]
