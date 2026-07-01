@@ -1,0 +1,264 @@
+<!--
+=============================================================================
+TVC REFERENCE: PRE-FOLD ZONE — CANONICAL CORRECT EXAMPLE
+Post: Turkmenistan Part 1 | Ashgabat to Turkmenbashi
+Processed: 2026-06-16 (workflow rev-08 smoke-test)
+Patched: 2026-06-21 (workflow rev-14 — added schema `author` field)
+=============================================================================
+
+PURPOSE
+This file is the reference architecture for the pre-fold zone of a correctly
+processed TVC blog post. It demonstrates every structural and styling element
+that must be present above <!--more--> in every processed post.
+
+USE IN THE WORKFLOW
+- Step 3 (summary block): verify canonical CSS matches this file exactly
+- Step 4 (schema): verify hasPart structure and field names against this file,
+  including the `author` field (rev-14) positioned after `instrument`
+- Phase 1F (audit): compare source post summary block against this example
+- Any time the workflow rule is ambiguous about pre-fold structure: this file
+  is the ground truth
+
+WHAT THIS FILE SHOWS (in order)
+1. Hero image — tr-caption-container table, first element, no inline style
+2. Intro/context paragraphs (1-2) — author voice, link to prior post, no CSS
+3. Canonical summary block — correct CSS (border-radius, font-family Georgia,
+   saddlebrown header text with NO dark background, no alternating row colors,
+   single right-column descriptor format, 14 data rows matching 14 H2 sections)
+4. TravelAction ld+json schema — correct field names, valid JSON, ETR in desc,
+   `author` field present (Person, "The Vagabond Couple", sameAs blog root —
+   rev-14 requirement, constant across all posts)
+5. <!--more--> — exactly once, immediately after </script>
+
+WHAT WAS WRONG IN THE SOURCE POST (fixed here)
+- Summary block header row had background: rgb(139, 69, 19) on <tr>, making
+  text unreadable in light and dark modes (dark text on dark brown background)
+- Summary block used two-column layout with "Highlights" header — non-canonical
+- Summary block had alternating background: #fef5e7 on data rows — dark mode conflict
+- Summary block was missing border-radius: 8px and font-family: Georgia, serif
+- Schema ETR was 40 min; correct value based on word count is 43 min
+- Body paragraph was atmosphere-first, not route-first (fixed below <!--more-->)
+- Schema was missing the `author` field (added 2026-06-21 per rev-14)
+=============================================================================
+-->
+
+<table cellpadding="0" cellspacing="0" class="tr-caption-container">
+	<tbody>
+		<tr>
+			<td><a href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhXw-y8-vjf23FDepX0ig1Vi4VTyRO-GFwxKlpxAp6aNYg1MSy5VnHnrmtvpetTd7L1AKp3WPsnbOowyhP3lMtZGyxu0OzBWeanFW1ev8__JBaD3yLh6AN2I3kcGuPDIzxnx0xlxIZLp6F68SVg2p46v3-qHtpud3oUHmQmxks3ghutCK2JfqQfMpybdG6j/s4096/IMG_0723.JPG"><img alt="Ashgabat - Turkmenbashi Train, Ashgabat Railway Station, Turkmenistan" border="0" data-original-height="3072" data-original-width="4096" height="480" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhXw-y8-vjf23FDepX0ig1Vi4VTyRO-GFwxKlpxAp6aNYg1MSy5VnHnrmtvpetTd7L1AKp3WPsnbOowyhP3lMtZGyxu0OzBWeanFW1ev8__JBaD3yLh6AN2I3kcGuPDIzxnx0xlxIZLp6F68SVg2p46v3-qHtpud3oUHmQmxks3ghutCK2JfqQfMpybdG6j/w640-h480/IMG_0723.JPG" width="640" /></a></td>
+		</tr>
+		<tr>
+			<td class="tr-caption">Our Ashgabat - Turkmenbashi overnight sleeper train at Ashgabat Railway Station</td>
+		</tr>
+	</tbody>
+</table>
+<p>We had a little bit of experience in Central Asia when we visited <a href="https://thevagabondcouple.blogspot.com/2024/10/mongolia-2017.html">Mongolia</a>&nbsp;at its eastern end previously. When we started talking about the other end of Central Asia, i.e. Turkmenistan, they said this was a mysterious, closed-off and untouched country. They weren't wrong. But they forgot to add: "<i>utterly magical.</i>"</p>
+<p>After 10 days exploring (<a href="https://www.google.com/maps/d/u/0/edit?mid=1pkuNHTM-QvnnWRWiV1D2Vvsyg5fRIl4&amp;usp=sharing" target="_blank">MAP</a>) this surreal Central Asian nation where ancient Silk Road ruins collide with Soviet-era oddities, marble-clad cities and a literal <b>Gates of Hell</b>, we can confidently say: <b>Turkmenistan is one of the world’s most fascinating, bizarre and criminally underrated travel destinations</b>.</p>
+<p>From the gleaming white emptiness of Ashgabat to the echoing ruins of Merv, the fiery spectacle of Darwaza, the timelessness of Dayahatyn Caravanserai and the legendary Amu Darya (Oxus) river, plus an unexpectedly luxurious overnight train to Turkmenbashi, every moment felt like stepping into a dream (or sometimes, a slightly dystopian novel). Here’s the first episode of the full story of our Turkmenistan adventure, with plenty of history, humor and <i>what-the-heck</i> moments along the way.</p>
+<div style="background: #fdf8f2; border: 2px solid rgb(139, 69, 19); border-radius: 8px; padding: 18px 22px; margin: 1.5em 0; font-family: Georgia, serif;">
+  <p style="font-variant: small-caps; font-size: 0.85em; color: saddlebrown; letter-spacing: 0.08em; margin: 0 0 10px 0;">Turkmenistan Part 1 — Post Summary</p>
+  <p style="margin: 0 0 14px 0;">This first episode of our 10-day Turkmenistan journey covers the nation&#39;s marble-clad capital, Ashgabat — a city of world records, golden statues, surreal monuments and Soviet grandeur — along with two sacred mosques outside the city, the legendary Turkmen Alabai dogs, the world-record-holding TV Tower and our nocturnal tour of the neon-lit city. It ends with an overnight journey on the historic Trans-Caspian Railway across the Karakum Desert to Turkmenbashi on the Caspian Sea, gateway to the rest of our Turkmenistan adventure.</p>
+  <table style="width: 100%; border-collapse: collapse; font-size: 0.92em;">
+    <tbody>
+      <tr style="border-top: 1px solid rgb(139, 69, 19);">
+        <td style="padding: 6px 8px; color: saddlebrown; font-weight: bold; white-space: nowrap;">What&#39;s Covered</td>
+        <td style="padding: 6px 8px;"></td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">✈️</td>
+        <td style="padding: 6px 8px;">Ashgabat International Airport — falcon-shaped marble terminal, 4 AM arrival</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🏛️</td>
+        <td style="padding: 6px 8px;">Ashgabat: The Marble Capital — White City, Olympic Complex, monuments, government district</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🧶</td>
+        <td style="padding: 6px 8px;">Carpet Museum of Ashgabat — world&#39;s largest handwoven carpet, Guinness World Record</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🛒</td>
+        <td style="padding: 6px 8px;">Gulistan Bazaar (Russian Bazaar) — Soviet-Turkmen market atmosphere</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🎨</td>
+        <td style="padding: 6px 8px;">Artbazar Showroom — contemporary Turkmen art and crafts gallery</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🏪</td>
+        <td style="padding: 6px 8px;">Altyn Asyr Bazaar (Grand Bazaar) — Turkmenistan&#39;s largest market, 200+ hectares</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🍢</td>
+        <td style="padding: 6px 8px;">Traditional Turkmen Kabob House — floor seating, jeren kabob, plov, manti, Central Asian feast</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🕌</td>
+        <td style="padding: 6px 8px;">Seyit Jemaleddin Mosque — 1456 Timurid ruins in Anau, Silk Road heritage</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🕌</td>
+        <td style="padding: 6px 8px;">Turkmenbashi Ruhy Mosque — 10,000-capacity, Gypjak, Turkmenbashi mausoleum</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🐕</td>
+        <td style="padding: 6px 8px;">Legendary Turkmen Alabai Dogs — 4,000-year-old breed, local dog park and rescue shelter</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">📡</td>
+        <td style="padding: 6px 8px;">Ashgabat TV Tower — 211m tall, world&#39;s largest architectural star (Guinness)</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🌃</td>
+        <td style="padding: 6px 8px;">Ashgabat at Night — LED neon panoramas from Kopet Dag foothills</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">🚂</td>
+        <td style="padding: 6px 8px;">Trans-Caspian Railway — overnight sleeper from Ashgabat to Turkmenbashi</td>
+      </tr>
+      <tr style="border-top: 1px solid #e8d5b7;">
+        <td style="padding: 6px 8px; color: saddlebrown;">⚓</td>
+        <td style="padding: 6px 8px;">Turkmenbashi: Gateway to the Caspian — Caspian Sea port, Silk Road nexus</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TravelAction",
+  "name": "Ashgabat to Turkmenbashi: Marble Capital, Silk Road Mosques and the Trans-Caspian Railway — Turkmenistan Part 1",
+  "description": "Ashgabat to Turkmenbashi: marble city monuments, Silk Road bazaars, Timurid mosques, Guinness records &amp; overnight Trans-Caspian Railway. ETR: 43 min.",
+  "touristType": "Overlander",
+  "fromLocation": {
+    "@type": "Place",
+    "name": "Ashgabat, Turkmenistan"
+  },
+  "toLocation": {
+    "@type": "Place",
+    "name": "Turkmenbashi, Turkmenistan",
+    "containedInPlace": {
+      "@type": "Place",
+      "name": "Balkan Province, Turkmenistan"
+    }
+  },
+  "instrument": {
+    "@type": "Vehicle",
+    "name": "Guided tour vehicle and Turkmen Railways sleeper train"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "The Vagabond Couple",
+    "sameAs": "https://thevagabondcouple.blogspot.com/"
+  },
+  "hasPart": [
+    {
+      "@type": "Place",
+      "name": "Ashgabat International Airport to Hotel Mizan",
+      "description": "Turkish Airlines 2 AM arrival, falcon-shaped terminal, marble interiors, visa on arrival, guide Guljeren of Trawelco, Hotel Mizan"
+    },
+    {
+      "@type": "Place",
+      "name": "Ashgabat Olympic Complex",
+      "description": "45,000-seat stadium shaped like Akhal-Teke horse, Guinness World Record Akhal-Teke horse statue (57m), velodrome, Olympic metro rail, aquatics center, tennis center, Olympic Hotel, State Committee for Physical Culture and Sports"
+    },
+    {
+      "@type": "Place",
+      "name": "Ashgabat Monument District",
+      "description": "Independence Monument (118m, yurt base), Magtymguly Pyragy statue, Ruhnama Monument, Saparmurat Niyazov statue, Neutrality Arch (95m, relocated 2010), Ylym Science Monument (2020), Zemin Monument, Prosperity Monument"
+    },
+    {
+      "@type": "Place",
+      "name": "Archabil Highway Government District",
+      "description": "Maslahat Kosgi Palace, Mejlisler Markezi (Parliament), Ministry of Finance and Economy, Ministry of Foreign Affairs (globe roof), Ministry of Education (book-shaped), Ministry of Defense, Ministry of Health, Ministry of Energy, Ministry of Agriculture, Ministry of Motor Transport, Ministry of Industry, State Customs Service"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Alem Entertainment Center",
+      "description": "World's largest indoor Ferris wheel, 95m tall building, panoramic views of Ashgabat marble skyline"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Carpet Museum of Ashgabat",
+      "description": "World's largest handwoven carpet (Guinness World Record), rolled-carpet shaped building, Turkmen weaving heritage"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Museum of Fine Arts and National Museum of Turkmenistan",
+      "description": "Turkmen carpets, Parthian and Margiana archaeology, Tekke carpets, national history, panoramic city views"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Halk Hakydasy Memorial Park",
+      "description": "1948 earthquake memorial (bronze bull), WWII fallen soldiers memorial, Battle of Geok Tepe 1881 memorial"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Gulistan Bazaar (Russian Bazaar)",
+      "description": "Soviet-Turkmen market, Russian imports, fresh produce, Turkmen textiles, Soviet memorabilia"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Artbazar Showroom and Altyn Asyr Bazaar",
+      "description": "Contemporary Turkmen art gallery; Turkmenistan's largest bazaar (200+ hectares), cow market, handicrafts, spices"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Traditional Turkmen Kabob House (Behist)",
+      "description": "Floor seating, low table, jeren kabob, plov, manti, nan, gurt, Turkmen hospitality on outskirts of Ashgabat"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Seyit Jemaleddin Mosque, Anau",
+      "description": "1456 Timurid mosque ruins built by Abu'l-Kasim Babur, Silk Road heritage, portal fragments, 1948 earthquake damage"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Turkmenbashi Ruhy Mosque, Gypjak",
+      "description": "Completed 2004, 10,000-capacity, 91m minarets, Turkmenbashi mausoleum, Ruhnama inscriptions, French-designed"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Turkmen Alabai Dog Park",
+      "description": "4,000-year-old Central Asian Shepherd breed, local breeder park and rescue shelter near Ashgabat"
+    },
+    {
+      "@type": "TouristAttraction",
+      "name": "Ashgabat TV Tower",
+      "description": "211 meters tall, Guinness World Record largest architectural star in the world, eight-pointed star, Kopet Dag foothills"
+    },
+    {
+      "@type": "Place",
+      "name": "Ashgabat at Night",
+      "description": "LED neon panoramas, synchronized fountain shows, Yyldyz Hotel, Akhal-Teke horse statue glow, views from Kopet Dag"
+    },
+    {
+      "@type": "Place",
+      "name": "Ashgabat Railway Station to Turkmenbashi",
+      "description": "Trans-Caspian Railway overnight sleeper, 4-berth couchette, Karakum Desert crossing, dawn approach to Caspian Sea, Turkmenbashi Railway Station"
+    },
+    {
+      "@type": "Place",
+      "name": "Turkmenbashi and Caspian Sea Port",
+      "description": "Caspian Sea port, Gates of Central Asia monument, Belt and Road Initiative transit hub, historic Silk Road maritime gateway"
+    },
+    { "@type": "Place", "name": "Ashgabat" },
+    { "@type": "Place", "name": "Anau" },
+    { "@type": "Place", "name": "Gypjak" },
+    { "@type": "Place", "name": "Karakum Desert" },
+    { "@type": "Place", "name": "Turkmenbashi" },
+    { "@type": "Place", "name": "Kopet Dag Mountains" },
+    { "@type": "LakeBodyOfWater", "name": "Caspian Sea" },
+    { "@type": "TouristAttraction", "name": "Gates of Central Asia Monument, Turkmenbashi" },
+    { "@type": "TouristAttraction", "name": "Akhal-Teke Horse Statue, Ashgabat Olympic Complex" },
+    { "@type": "TouristAttraction", "name": "Independence Monument, Ashgabat" },
+    { "@type": "TouristAttraction", "name": "Neutrality Arch, Ashgabat" },
+    { "@type": "TouristAttraction", "name": "Wedding Palace (Saylyk Kosgi), Ashgabat" },
+    { "@type": "Road", "name": "Trans-Caspian Railway" },
+    { "@type": "Road", "name": "Archabil Highway (Arcabil sayoly)" },
+    { "@type": "Road", "name": "M37 Highway" }
+  ]
+}
+</script>
+<!--more-->

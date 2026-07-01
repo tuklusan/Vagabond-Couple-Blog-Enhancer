@@ -1,0 +1,86 @@
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TravelAction",
+  "name": "China Overland Part 3: Golmud to Shigatse via the Qinghai-Tibet Highway, Tanggula Pass & Nagqu",
+  "description": "China Overland Part 3: Golmud to Shigatse via G109, Qinghai-Tibet Highway, Tanggula Pass, Nagqu & Tashi Lhunpo. ETR: 50 min.",
+  "touristType": "Overlander",
+  "fromLocation": {
+    "@type": "Place",
+    "name": "Golmud, Qinghai, China"
+  },
+  "toLocation": {
+    "@type": "Place",
+    "name": "Shigatse, Tibet, China",
+    "containedInPlace": {
+      "@type": "Place",
+      "name": "Tibet"
+    }
+  },
+  "instrument": {
+    "@type": "Vehicle",
+    "name": "Shehzadi",
+    "manufacturer": "Toyota",
+    "model": "Tundra"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "The Vagabond Couple",
+    "sameAs": "https://thevagabondcouple.blogspot.com/"
+  },
+  "hasPart": [
+    {
+      "@type": "Place",
+      "name": "Golmud to Xidatan via G109, Nanshankou, Wuji Longfeng Palace",
+      "description": "G109, Nanshankou, Qinghai-Tibet Highway climb, eastern Kunlun foothills, Wuji Longfeng Palace, Kunlun mythology, Mukezhai Restaurant, Huacheng Oxygen Hotel"
+    },
+    {
+      "@type": "Place",
+      "name": "Xidatan to Kunlun Pass and Wudaoliang",
+      "description": "Eastern Kunlun snow peaks, Yuzhu Peak road country, high plateau flats, wet red ground, road damage, truck traffic, mud, wash bays, Haolaiwu Business Hotel"
+    },
+    {
+      "@type": "Place",
+      "name": "Wudaoliang to Fenghuoshan, Hoh Xil edge country, and Tuotuohe",
+      "description": "Fenghuoshan high road, Hoh Xil edge country, prayer flags, wildlife warning country, Tibetan antelope, wild ass, petrol‑in‑diesel rescue, Tuotuohe overnight"
+    },
+    {
+      "@type": "Place",
+      "name": "Tuotuohe to Tuotuohe Railway Station, Yangtze source memorial, Bu Qu, and Yanshiping",
+      "description": "Tuotuohe Railway Station, Qinghai-Tibet Railway engineering, Yangtze source memorials, Tuotuo River channels, Bu Qu, ecological route signs, yak pasture, G109 roadwork, Yanshiping road stop"
+    },
+    {
+      "@type": "Place",
+      "name": "Yanshiping to Tanggula Pass and Amdo",
+      "description": "Cold rain, Tibetan antelope, yak crossings, Tanggula Mountains, permafrost roadwork, snow, prayer flags, 5,235‑meter pass, descent to Amdo Wisdom Hotel"
+    },
+    {
+      "@type": "Place",
+      "name": "Amdo to Nagqu",
+      "description": "Amdo County Fine Car Wash, G109 pasture country, Naqu headwaters, Changtang pastoral life, yaks, Nagqu horse‑racing memory, Master Potato, Xiehe Auto Service, 0W‑30 oil substitution, Naqu Yongcheng Grand Hotel"
+    },
+    {
+      "@type": "Place",
+      "name": "Nagqu to Shigatse",
+      "description": "G6 Beijing‑Lhasa Expressway, Qinghai‑Tibet Railway bridge, Lhasa‑side bypass, Kyi Chu and Yarlung Tsangpo river country, G4218 toward Shigatse, Sangzhuzi District, Hilton Shigatse, market streets, khata welcome, Tashi Lhunpo Monastery"
+    },
+    { "@type": "Place", "name": "Xidatan" },
+    { "@type": "Place", "name": "Kunlun Pass" },
+    { "@type": "Place", "name": "Wudaoliang" },
+    { "@type": "Place", "name": "Fenghuoshan" },
+    { "@type": "Place", "name": "Hoh Xil" },
+    { "@type": "Place", "name": "Tuotuohe" },
+    { "@type": "Place", "name": "Yangtze Headwaters" },
+    { "@type": "Place", "name": "Yanshiping" },
+    { "@type": "Place", "name": "Tanggula Pass" },
+    { "@type": "Place", "name": "Amdo" },
+    { "@type": "Place", "name": "Nagqu" },
+    { "@type": "Place", "name": "Sangzhuzi District" },
+    { "@type": "Place", "name": "Yarlung Tsangpo" },
+    { "@type": "TouristAttraction", "name": "Tashi Lhunpo Monastery" },
+    { "@type": "Road", "name": "G109 Qinghai-Tibet Highway" },
+    { "@type": "Road", "name": "G6 Beijing-Lhasa Expressway" },
+    { "@type": "Road", "name": "G4218 Lhasa-Shigatse corridor" }
+  ]
+}
+</script>

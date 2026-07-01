@@ -19,13 +19,15 @@ SECRETS_DIR = PROJECT_ROOT / "Config" / "_SECRETS"
 RUN_ROOT = Path(os.environ.get("ORCH_RUN_ROOT", str(PROJECT_ROOT / "Output" / "runs")))
 
 # ---------------------------------------------------------------------------
-# Required Project Documents (rev-18 hard stop). They live OUTSIDE this repo.
-# Point ORCH_DOCS_DIR elsewhere if the canonical folder moves.
+# Required Project Documents (rev-18 hard stop). They are now bundled INSIDE the
+# repo under Config/workflow-docs/ so the orchestrator is self-contained. Set
+# ORCH_DOCS_DIR to override (e.g. to a private canonical folder); resolution then
+# tries the override first and falls back to the bundled copies.
 # ---------------------------------------------------------------------------
-DOCS_DIR = Path(os.environ.get(
-    "ORCH_DOCS_DIR",
-    r"H:\My Documents\BLOG_STUFF\BLOG-FIX-OLD-BLOGS\OLD-BLOG-FIXER\REQUIRED-PROJECT-DOCUMENTS-FOR-WORKFLOW",
-))
+BUNDLED_DOCS_DIR = PROJECT_ROOT / "Config" / "workflow-docs"
+DOCS_DIR = Path(os.environ.get("ORCH_DOCS_DIR", str(BUNDLED_DOCS_DIR)))
+# Ordered search path: the configured DOCS_DIR first, then the bundled copies.
+DOCS_SEARCH_DIRS = [DOCS_DIR] + ([BUNDLED_DOCS_DIR] if DOCS_DIR != BUNDLED_DOCS_DIR else [])
 
 # Logical name -> filename (or glob for the timestamped theme XML).
 REQUIRED_DOCS = {
@@ -39,13 +41,21 @@ REQUIRED_DOCS = {
 
 
 def resolve_doc(logical_name: str):
-    """Return the Path to a required document, or None if absent."""
+    """Return the Path to a required document, or None if absent.
+
+    Searches DOCS_SEARCH_DIRS in order (configured override first, bundled copies
+    second) so a partial override still falls back to the shipped defaults."""
     pattern = REQUIRED_DOCS[logical_name]
-    if "*" in pattern:
-        matches = sorted(DOCS_DIR.glob(pattern))
-        return matches[-1] if matches else None
-    path = DOCS_DIR / pattern
-    return path if path.exists() else None
+    for base in DOCS_SEARCH_DIRS:
+        if "*" in pattern:
+            matches = sorted(base.glob(pattern))
+            if matches:
+                return matches[-1]
+        else:
+            path = base / pattern
+            if path.exists():
+                return path
+    return None
 
 
 def missing_docs():

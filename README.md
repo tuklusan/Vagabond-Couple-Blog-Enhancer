@@ -224,14 +224,13 @@ OPENROUTER_AI_API_KEY=sk-or-v1-................................................
 
 ## Required Project Documents
 
-The workflow is a hard-stop if any of these six are missing. By default the
-orchestrator looks for them in:
-
-```
-H:\My Documents\BLOG_STUFF\BLOG-FIX-OLD-BLOGS\OLD-BLOG-FIXER\REQUIRED-PROJECT-DOCUMENTS-FOR-WORKFLOW
-```
-
-Point `ORCH_DOCS_DIR` somewhere else if your copy lives elsewhere.
+These six ship **bundled inside the repo** at `Config/workflow-docs/`, so the
+orchestrator is self-contained and runs out of the box. Set `ORCH_DOCS_DIR` to
+override with your own canonical copies; resolution tries that folder first and
+falls back to the bundled copies. The run **hard-stops at startup** if any are
+missing (only possible if you removed them or pointed `ORCH_DOCS_DIR` at an
+incomplete folder), printing each missing logical name, its expected filename,
+and the exact folder to drop it into.
 
 | Logical name | Filename (pattern) |
 |---|---|
@@ -348,7 +347,7 @@ All optional; sensible defaults shown.
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `ORCH_DOCS_DIR` | the path above | Where the six required documents live. |
+| `ORCH_DOCS_DIR` | `Config/workflow-docs/` (bundled) | Override folder for the six required documents; falls back to the bundled copies. |
 | `ORCH_RUN_ROOT` | `Output/runs` | Where run state is written. |
 | `ORCH_MAX_NODE_ROUNDS` | `6` | Writer↔reviewer rounds per node before escalating to the operator. |
 | `ORCH_GATE_FAIL_CLOSED` | `0` | `1` = block on a total review outage instead of failing open. |

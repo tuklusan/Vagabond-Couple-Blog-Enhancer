@@ -16,13 +16,35 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import sequencer
+from . import config, sequencer
 from .operator import Operator
 from .state import RunState
 
 
 def _ascii(x):
     return str(x).encode("ascii", "replace").decode("ascii")
+
+
+def check_required_support_files():
+    """Hard-stop at startup if any Required Project Document is missing, telling the
+    user exactly which files to drop into the docs folder. These ship bundled in
+    Config/workflow-docs/, so this only trips if they were removed or ORCH_DOCS_DIR
+    points at an incomplete folder."""
+    missing = config.missing_docs()
+    if not missing:
+        return
+    print(_ascii("=" * 72))
+    print(_ascii("STARTUP HALT -- required support files are missing"))
+    print(_ascii("=" * 72))
+    print(_ascii("The orchestrator needs these files. Drop the missing ones into:"))
+    print(_ascii("    " + str(config.DOCS_DIR)))
+    print(_ascii("(or set ORCH_DOCS_DIR to a folder that contains them.)"))
+    print(_ascii("-" * 72))
+    for name in missing:
+        print(_ascii("  MISSING  " + name + "  ->  expected filename: "
+                     + config.REQUIRED_DOCS[name]))
+    print(_ascii("=" * 72))
+    sys.exit(3)
 
 
 def main():
@@ -35,6 +57,9 @@ def main():
                     help="auto-operator: grant the Phase 4 approval gate (test/CI opt-in; real runs approve interactively)")
     ap.add_argument("--run-id", default=None, help="reuse/name a run id")
     args = ap.parse_args()
+
+    # Hard-stop before doing anything if required support files are missing.
+    check_required_support_files()
 
     src = Path(args.input)
     if not src.exists():

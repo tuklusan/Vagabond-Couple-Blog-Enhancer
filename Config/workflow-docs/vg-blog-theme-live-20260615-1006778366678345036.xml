@@ -1,0 +1,1451 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<!-- Custom Blogger Theme designed by Supratim Sanyal of the Vagabond Couple --><html expr:dir='data:blog.languageDirection' expr:lang='data:blog.languageCode' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+	<head>
+		<meta content='(C) SUPRATIM SANYAL / The Vagabond Couple Travel Blog / #VagabondCouple' name='copyright'/>
+		<meta content='e0a226bfffa476ed' name='yandex-verification'/>
+		<meta content='blogarama-f82ec658-0fef-4f49-9373-acb6161d0815' name='blogarama-site-verification'/>
+
+		<meta charset='utf-8'/>
+		<meta content='width=device-width, initial-scale=1' name='viewport'/>
+		<meta content='blogger' name='generator'/>
+		<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+		<link href='https://www.blogger.com/openid-server.g' rel='openid.server'/>
+		<link expr:href='data:blog.homepageUrl' rel='openid.delegate'/>
+		<link expr:href='data:blog.canonicalUrl' rel='canonical'/>
+
+		<b:if cond='data:blog.url == data:blog.homepageUrl'>
+			<title>The Vagabond Couple | Overland Travel Blog</title>
+			<b:else/>
+			<b:if cond='data:blog.searchLabel'>
+				<title><data:blog.searchLabel/> Travel Posts | <data:blog.title/></title>
+				<b:else/>
+				<b:if cond='data:blog.pageType == &quot;archive&quot;'>
+					<title>Travel Archives | <data:blog.title/></title>
+					<b:else/>
+					<b:if cond='data:blog.pageType == &quot;error_page&quot;'>
+						<title>Page Not Found | <data:blog.title/></title>
+						<b:else/>
+						<b:if cond='data:blog.pageName'>
+							<title><data:blog.pageName/> | <data:blog.title/></title>
+							<b:else/>
+							<title><data:blog.pageTitle/></title>
+						</b:if>
+					</b:if>
+				</b:if>
+			</b:if>
+		</b:if>
+		<b:if cond='data:blog.pageType == &quot;error_page&quot;'>
+			<meta content='noindex,nofollow' name='robots'/>
+			<b:else/>
+			<b:if cond='data:blog.searchQuery'>
+				<meta content='noindex,follow' name='robots'/>
+				<b:else/>
+				<b:if cond='data:blog.pageType == &quot;archive&quot;'>
+					<meta content='noindex,follow' name='robots'/>
+					<b:else/>
+					<meta content='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
+				</b:if>
+			</b:if>
+		</b:if>
+		<b:if cond='data:blog.pageType != &quot;error_page&quot;'>
+			<b:if cond='data:blog.metaDescription'>
+				<meta expr:content='data:blog.metaDescription + &quot; #VagabondCouple&quot;' name='description'/>
+				<b:else/>
+				<b:if cond='data:blog.url == data:blog.homepageUrl'>
+					<meta content='The Vagabond Couple is an overland travel blog covering real road journeys, route stories, border crossings, maps, photos, and practical travel notes from around the world. #VagabondCouple' name='description'/>
+					<b:else/>
+					<meta expr:content='data:blog.pageTitle + &quot; | The Vagabond Couple overland travel blog. #VagabondCouple&quot;' name='description'/>
+				</b:if>
+			</b:if>
+		</b:if>
+		<meta content='The Vagabond Couple' name='author'/>
+		<meta content='The Vagabond Couple' name='application-name'/>
+		<meta content='light dark' name='color-scheme'/>
+		<meta content='#ffffff' media='(prefers-color-scheme: light)' name='theme-color'/>
+		<meta content='#101010' media='(prefers-color-scheme: dark)' name='theme-color'/>
+		<meta content='#ffffff' id='vc-theme-color' name='theme-color'/>
+		<link expr:href='data:blog.homepageUrl + &quot;feeds/posts/default&quot;' expr:title='data:blog.title + &quot; - Atom&quot;' rel='alternate' type='application/atom+xml'/>
+		<link expr:href='data:blog.homepageUrl + &quot;feeds/posts/default?alt=rss&quot;' expr:title='data:blog.title + &quot; - RSS&quot;' rel='alternate' type='application/rss+xml'/>
+		<link expr:href='&quot;https://www.blogger.com/feeds/&quot; + data:blog.blogId + &quot;/posts/default&quot;' expr:title='data:blog.title + &quot; - Atom&quot;' rel='alternate' type='application/atom+xml'/>
+		<b:if cond='data:blog.pageType == &quot;item&quot;'>
+			<b:if cond='data:blog.postImageThumbnailUrl'>
+				<link expr:href='data:blog.postImageThumbnailUrl' rel='image_src'/>
+			</b:if>
+		</b:if>
+		<link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+		<meta content='general' name='rating'/>
+		<meta content='id' name='geo.country'/>
+
+		<meta expr:content='data:blog.pageTitle' property='og:title'/>
+		<b:if cond='data:blog.pageType == &quot;item&quot;'>
+			<meta content='article' property='og:type'/>
+			<b:else/>
+			<meta content='website' property='og:type'/>
+		</b:if>
+		<meta expr:content='data:blog.canonicalUrl' property='og:url'/>
+		<b:if cond='data:blog.postImageUrl'>
+			<meta expr:content='data:blog.postImageUrl' property='og:image'/>
+			<meta expr:content='data:blog.pageTitle' property='og:image:alt'/>
+			<b:else/>
+			<b:if cond='data:blog.postImageThumbnailUrl'>
+				<meta expr:content='data:blog.postImageThumbnailUrl' property='og:image'/>
+				<meta expr:content='data:blog.pageTitle' property='og:image:alt'/>
+				<b:else/>
+				<meta expr:content='data:blog.blogspotFaviconUrl' property='og:image'/>
+				<meta content='The Vagabond Couple logo' property='og:image:alt'/>
+			</b:if>
+		</b:if>
+		<b:if cond='data:blog.metaDescription'>
+			<meta expr:content='data:blog.metaDescription + &quot; #VagabondCouple&quot;' property='og:description'/>
+			<meta expr:content='data:blog.metaDescription + &quot; #VagabondCouple&quot;' name='twitter:description'/>
+			<b:else/>
+			<meta content='The Vagabond Couple overland travel blog. #VagabondCouple' property='og:description'/>
+			<meta content='The Vagabond Couple overland travel blog. #VagabondCouple' name='twitter:description'/>
+		</b:if>
+		<meta expr:content='data:blog.title' property='og:site_name'/>
+		<meta content='en_US' property='og:locale'/>
+		<meta content='summary_large_image' name='twitter:card'/>
+		<meta expr:content='data:blog.pageTitle' name='twitter:title'/>
+		<meta content='@vagabond_couple' name='twitter:site'/>
+		<meta content='@vagabond_couple' name='twitter:creator'/>
+		<b:if cond='data:blog.postImageUrl'>
+			<meta expr:content='data:blog.postImageUrl' name='twitter:image'/>
+			<meta expr:content='data:blog.pageTitle' name='twitter:image:alt'/>
+			<b:else/>
+			<b:if cond='data:blog.postImageThumbnailUrl'>
+				<meta expr:content='data:blog.postImageThumbnailUrl' name='twitter:image'/>
+				<meta expr:content='data:blog.pageTitle' name='twitter:image:alt'/>
+			</b:if>
+		</b:if>
+		<link href='https://fonts.googleapis.com' rel='preconnect'/>
+		<link crossorigin='anonymous' href='https://fonts.gstatic.com' rel='preconnect'/>
+		<link href='https://blogger.googleusercontent.com' rel='preconnect'/>
+		<link as='style' crossorigin='anonymous' href='https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&amp;display=optional' rel='preload'/>
+		<link href='https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&amp;display=optional' rel='stylesheet'/>
+		<link href='https://cdn.jsdelivr.net' rel='preconnect'/>
+		<link href='https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/css/all.min.css' rel='stylesheet'/>
+
+		<script>
+		//<![CDATA[
+		(function(){
+		  var t='system';
+		  try {
+		    t = localStorage.getItem('tvc-theme') || 'system';
+		  } catch(e) {
+		    t = 'system';
+		  }
+		  if(!/^(system|light|dark)$/.test(t)) t='system';
+		  var systemDark = false;
+		  try {
+		    systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+		  } catch(e) {
+		    systemDark = false;
+		  }
+		  var resolved = t === 'dark' ? 'dark' : (t === 'light' ? 'light' : (systemDark ? 'dark' : 'light'));
+		  document.documentElement.setAttribute('data-theme', resolved);
+		  document.documentElement.setAttribute('data-theme-choice', t);
+		  document.documentElement.style.colorScheme = resolved;
+		  var vcThemeMeta = document.getElementById('vc-theme-color');
+		  if(vcThemeMeta) vcThemeMeta.setAttribute('content', resolved === 'dark' ? '#101010' : '#ffffff');
+		})();
+		//
+
+]]>
+		</script>
+		<b:skin><![CDATA[:root{color-scheme:light dark;--bg:#f9f9f9;--surface:#fff;--text:#343434;--muted:#777;--soft:#eee;--line:#e8e8e8;--accent:#DAB264;--button-bg:#111;--button-text:#fff;--focus:#DAB264;--link:#3367D6;--heading:#303030;--max:1160px;--radius:10px;--shadow:0 10px 30px rgba(0,0,0,.06);--body:"Libre Franklin",Arial,Helvetica,sans-serif;--display:"Newsreader",Georgia,"Times New Roman",serif;--page-bg:#f9f9f9;--surface-soft:#f7f7f7;--text-soft:#777;--border:#e8e8e8;--space-xs:6px;--space-sm:10px;--space-md:16px;--space-lg:26px;--space-xl:42px;--space-xxl:64px}html[data-theme="light"]{color-scheme:light}html[data-theme="dark"]{color-scheme:dark}#navigation-wrapper li.theme-control{display:inline-flex;align-items:center;justify-content:center;height:42px;margin-left:14px;padding:0;vertical-align:top}#navigation-wrapper .theme-switch{position:relative;display:inline-flex;align-items:center;justify-content:center;width:46px;height:24px;padding:0;border:1px solid var(--line);border-radius:999px;background:var(--surface-soft);color:var(--muted);cursor:pointer;box-shadow:inset 0 1px 3px rgba(0,0,0,.10);transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease}#navigation-wrapper .theme-switch-track{position:relative;display:block;width:100%;height:100%;border-radius:inherit}#navigation-wrapper .theme-switch-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 2px 7px rgba(0,0,0,.22);transform:translateX(0);transition:transform .2s ease,background-color .2s ease;z-index:2}#navigation-wrapper .theme-switch-icon{position:absolute;top:50%;transform:translateY(-50%);z-index:1;font-size:10px;line-height:1;color:var(--muted);opacity:.75;pointer-events:none}#navigation-wrapper .theme-switch-sun{left:7px}#navigation-wrapper .theme-switch-moon{right:7px}#navigation-wrapper .theme-switch[data-effective="dark"]{background:#15243a;border-color:rgba(218,178,100,.55);box-shadow:0 0 12px rgba(218,178,100,.16),inset 0 1px 4px rgba(0,0,0,.35)}#navigation-wrapper .theme-switch[data-effective="dark"] .theme-switch-thumb{transform:translateX(22px);background:var(--focus)}#navigation-wrapper .theme-switch[data-effective="dark"] .theme-switch-moon,#navigation-wrapper .theme-switch[data-effective="light"] .theme-switch-sun{color:var(--button-bg);opacity:.95}#navigation-wrapper .theme-switch:hover,#navigation-wrapper .theme-switch:focus-visible{border-color:var(--focus);box-shadow:0 0 0 3px rgba(218,178,100,.20)}@media(max-width:720px){#navigation-wrapper li.theme-control{display:flex;justify-content:center;height:auto;margin:10px 0 0;padding:10px 0 2px}#navigation-wrapper .theme-switch{width:48px;height:24px}#navigation-wrapper .theme-switch-thumb{width:20px;height:20px}#navigation-wrapper .theme-switch[data-effective="dark"] .theme-switch-thumb{transform:translateX(24px)}}.theme-switch-mobile{display:none}@media(max-width:720px){#navigation{position:sticky}.theme-switch-mobile{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;width:48px;height:24px;padding:0;border:1px solid var(--line);border-radius:999px;background:var(--surface-soft);color:var(--muted);cursor:pointer;box-shadow:inset 0 1px 2px rgba(0,0,0,.10);transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease;z-index:3}.theme-switch-mobile .theme-switch-track{position:relative;display:block;width:100%;height:100%;border-radius:inherit}.theme-switch-mobile .theme-switch-thumb{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 2px 7px rgba(0,0,0,.22);transform:translateX(0);transition:transform .2s ease,background-color .2s ease;z-index:2}.theme-switch-mobile .theme-switch-icon{position:absolute;top:50%;transform:translateY(-50%);z-index:1;font-size:9px;line-height:1;color:var(--muted);opacity:.75;pointer-events:none}.theme-switch-mobile .theme-switch-sun{left:7px}.theme-switch-mobile .theme-switch-moon{right:7px}.theme-switch-mobile[data-effective="dark"]{background:#15243a;border-color:rgba(218,178,100,.55);box-shadow:0 0 12px rgba(218,178,100,.16),inset 0 1px 4px rgba(0,0,0,.35)}.theme-switch-mobile[data-effective="dark"] .theme-switch-thumb{transform:translateX(24px);background:var(--focus)}.theme-switch-mobile[data-effective="dark"] .theme-switch-moon,.theme-switch-mobile[data-effective="light"] .theme-switch-sun{color:var(--button-bg);opacity:.95}.theme-switch-mobile:hover,.theme-switch-mobile:focus-visible{border-color:var(--focus);box-shadow:0 0 0 3px rgba(218,178,100,.20)}#navigation-wrapper li.theme-control{display:none}}html{font-size-adjust:0.52}body,button,input,textarea,select{font-size-adjust:0.52}h1,h2,h3,.post-title,.entry-title,.index-post-title,.carousel-title,.related-post-title,.post-body h2,.post-body h3{font-size-adjust:0.47}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.65;transition:background-color .2s ease,color .2s ease;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}a{color:var(--link);text-decoration:none}a:hover{color:var(--heading);text-decoration:underline}img{max-width:100%;height:auto}iframe{max-width:100%}.clear{clear:both}.container{width:min(var(--max),calc(100% - 40px));margin-inline:auto}.skip-to-content{position:absolute;left:12px;top:-60px;z-index:9999;background:#111;color:#fff !important;padding:10px 14px;border-radius:4px}.skip-to-content:focus{top:12px}.sr-only{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #111;outline-offset:3px}#navigation{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;box-shadow:0 2px 16px rgba(0,0,0,.035)}#navigation-wrapper{min-height:42px;text-align:center}#navigation-wrapper ul{margin:0;padding:0;list-style:none}#navigation-wrapper li{display:inline-block;position:relative}#navigation-wrapper a,#navigation-wrapper .widget-content a{display:inline-block;padding:13px 15px;color:#333;text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:700}#navigation-wrapper a:hover{text-decoration:none;color:#000;background:#f7f7f7}.menu-mobile{display:none;cursor:pointer;padding:12px 18px;text-align:center;text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:700}.header-top{background:#fff;padding:28px 0 22px}.header-top .container{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}#header{grid-column:2;text-align:center}#logo h1,.logo_h{margin:0}#logo img{display:block;width:min(640px,100%);height:auto;margin:auto}.logo_h__txt{font-family:var(--display);font-size:clamp(32px,5vw,55px);font-weight:400;text-align:center;color:#777}.logo_tagline{text-align:center;color:#777;margin:.25rem 0 0}.header-top #top-social{grid-column:1;grid-row:1}.header-top #top-social a{color:var(--text-soft);font-size:12px;text-transform:uppercase;letter-spacing:.07em}.header-top #top-social a:hover{color:#000}.smg-label{display:inline-block}#top-search{grid-column:3;justify-self:end}.rst-search-form{display:flex;align-items:center;gap:0;border:1px solid var(--line);background:#fff;border-radius:999px;overflow:hidden}.rst-search-form input{border:0;padding:10px 12px;min-width:190px;font:inherit}.rst-search-form button{border:0;background:var(--button-bg);color:var(--button-text);padding:10px 14px;cursor:pointer}.main-slider{background:#fff;border-bottom:1px solid var(--line);padding:22px 0}.featured-posts{width:min(var(--max),calc(100% - 40px));margin:auto;display:block;overflow:hidden;position:relative}.featured-card a{color:inherit}.featured-card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}.featured-card-body{padding:16px}.featured-card h3{font:700 21px/1.08 var(--display);letter-spacing:-.014em;margin:0 0 10px;color:var(--heading)}.featured-card p{font-size:14px;line-height:1.55;margin:0;color:var(--text-soft)}.container.sp_sidebar{display:grid;grid-template-columns:minmax(0,1fr)300px;gap:34px;align-items:start;padding:34px 0}#main{min-width:0}.post,.hentry,article{background:#fff;margin:0 0 34px;border:1px solid var(--line);box-shadow:var(--shadow)}.post-header,.post-title,.entry-title{text-align:center}.post h1,.post h2,.post-title,.entry-title{font-family:var(--display);font-weight:700;color:var(--heading);line-height:1.07;letter-spacing:-.016em}.post-title,.entry-title{font-size:clamp(28px,3.5vw,42px);margin:24px 26px 14px}.post-title a,.entry-title a{color:var(--heading)}.post-title a:hover,.entry-title a:hover{color:#777;text-decoration:none}.date-header,.post-meta,.entry-meta{color:#999;text-align:center;text-transform:uppercase;letter-spacing:.08em;font-size:12px}.post-body,.entry-content,.post-entry{padding:0 30px 30px}.post-body p,.post-entry p{font-size:17px;line-height:1.75;margin:0 0 1.25em}.post-body h2,.post-body h3,.post-entry h2,.post-entry h3{font-family:var(--display);line-height:1.14;letter-spacing:-.012em;color:var(--heading);margin:2.05em 0 .65em}.post-body h2{font-size:30px}.post-body h3{font-size:24px}.post-body blockquote{margin:1.5em 0;padding:1em 1.25em;border-left:4px solid var(--accent);background:#fafafa;color:var(--text-soft)}.post img,.post-body img{border-radius:2px}.post table.tr-caption-container,.post-body table.tr-caption-container{margin:1.5em auto !important;max-width:100%;border:0}.tr-caption{font-size:14px;line-height:1.5;color:#666;text-align:center;padding-top:8px}.separator{text-align:center}.post-footer{padding:18px 30px;border-top:1px solid var(--line);color:#777}.sharebox,.post-share1,.social-share-buttons{font-size:13px;text-align:center}.blog-pager,.pagination{display:flex;justify-content:space-between;gap:18px;margin:24px 0 36px}.blog-pager a,.pager-heading{display:inline-block;background:#fff;border:1px solid var(--line);padding:10px 16px;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:700}.blog-pager a:hover,.pager-heading:hover{text-decoration:none;background:#f7f7f7;color:#111}#sidebar{min-width:0}.widget{margin:0 0 28px}.widget-content{word-wrap:break-word}.widget h2,.widget-title,#sidebar .title{font:700 14px/1.3 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#333;border-bottom:1px solid var(--line);padding-bottom:10px;margin:0 0 14px}.widget ul{list-style:none;margin:0;padding:0}.widget li{border-bottom:1px solid #f0f0f0;padding:8px 0}.widget li a{color:#444}.widget img{height:auto}.Label a,.label-size a{display:inline-block;margin:3px 5px 3px 0;padding:4px 8px;border:1px solid var(--line);background:#fff;color:var(--text-soft);font-size:12px;border-radius:999px}.post-tag{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;justify-content:center;margin:8px 0 10px}.post-tag a{display:inline-block;margin:0;padding:2px 0;line-height:1.35}.post-header .post-tag a+a{margin-left:0}.PopularPosts img{border-radius:4px}.followit--follow-form-container .form-preview{box-shadow:var(--shadow)!important;border-color:var(--line)!important}.rst-copyright,#Instagram{background:#fff;border-top:1px solid var(--line);padding:20px 0;text-align:center;color:#666}.rst-copyright .container{display:block}.logo-footer,.copyright{margin:auto}.status-msg-wrap{background:#fff;border:1px solid var(--line);padding:14px 18px;margin-bottom:24px}.comments{padding:0 30px 30px}.comment-form iframe{max-width:100%}.related-posts,.item-related{display:grid;gap:14px}.home-link,.newer-link,.older-link{color:#333}.mobile-nav-open #navigation-wrapper{display:block}.admin-actions,.quickedit{font-size:12px}@media(max-width:960px){.header-top .container{display:block;text-align:center}.header-top #top-social .widget-content{justify-content:center;margin:12px 0}#top-search{margin:14px auto 0;display:flex;justify-content:center}.container.sp_sidebar{grid-template-columns:1fr}.post-body,.entry-content,.post-entry{padding-left:22px;padding-right:22px}#sidebar{display:block}}@media(max-width:720px){body.mobile-nav-open{overflow:hidden}body.mobile-nav-open #navigation-wrapper{display:block}.container{width:calc(100% - 28px)}#navigation-wrapper{display:none;text-align:left;padding:4px 0 12px}#navigation-wrapper li{display:block}#navigation-wrapper a,#navigation-wrapper .widget-content a{display:block;padding:12px 18px}.menu-mobile{display:block}.header-top{padding:20px 0}.rst-search-form input{min-width:0;width:190px}.post,.hentry,article{margin-bottom:24px}.post-title,.entry-title{font-size:28px;margin:20px 18px 10px}.post-body p,.post-entry p{font-size:15.5px;line-height:1.62}.post-body h2{font-size:25px;line-height:1.10}.post-body h3{font-size:21.5px;line-height:1.14}.post-body h4{font-size:13.5px;line-height:1.35;letter-spacing:.08em;margin-top:1.25em;margin-bottom:.55em}.blog-pager,.pagination{display:block}.blog-pager a{margin:6px 0}.to-top{right:12px;bottom:12px}}.post-share,.post-share1{display:flex;justify-content:center;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}.post-share a,.post-share1 a{display:inline-block;color:var(--text-soft)}.post-share .sharebox,.post-share1 .sharebox{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--text-soft);transition:background .2s ease,color .2s ease,border-color .2s ease}.post-share .sharebox:hover,.post-share1 .sharebox:hover{background:#111;color:#fff;border-color:#111}.post-share .sharebox .fa,.post-share1 .sharebox .fa{font-size:18px;line-height:1}.post-share .sharebox span,.post-share1 .sharebox span{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.featured-posts-track{display:flex;gap:18px;transition:transform .6s ease;will-change:transform}.featured-carousel-btn{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.92);color:#333;box-shadow:var(--shadow);cursor:pointer}.featured-carousel-btn:hover,.featured-carousel-btn:focus{background:#111;color:#fff}.featured-carousel-prev{left:10px}.featured-carousel-next{right:10px}.featured-posts.is-single .featured-carousel-btn{display:none}.featured-card{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;flex:0 0 calc((100% - 36px)/3)}.featured-card a:hover{text-decoration:none}.attribution-bottom{background:#fff;border-top:1px solid var(--line);padding:12px 0;text-align:center;color:#666;font-size:13px}.attribution-bottom .widget{margin:0}.Attribution{display:none !important}.attribution-bottom .bottom-attribution .Attribution,.attribution-bottom .bottom-attribution .widget.Attribution,.attribution-bottom #bottom-attribution .Attribution,.attribution-bottom #Attribution1{display:block !important}@media(max-width:960px){.featured-card{flex-basis:calc((100% - 18px)/2)}}@media(max-width:720px){.featured-card{flex-basis:100%}}.rst-social-menu a[href*="instagram"]:before{content:"\f16d"}.header-top #top-social .widget-content{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-start}#footer-social .socialzz{margin-top:8px}.sharebox{font-size:0 !important;line-height:1 !important;overflow:hidden !important;position:relative}.sharebox span{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0,0,0,0)!important;white-space:nowrap !important;border:0 !important}.sharebox .fa-brands,.sharebox .fa-solid{font-size:18px !important;line-height:1 !important}body>.Attribution,body>.widget.Attribution,body>div.Attribution,body>section.Attribution,.header-top .Attribution,#navigation .Attribution,#outer-wrapper>.Attribution{display:none !important}#top-social .widget-content,#top-social .LinkList .widget-content,#footer-social .socialzz,.rst-social-menu .widget-content,.rst-social-menu .socialzz{display:flex !important;gap:10px !important;align-items:center !important;justify-content:center !important;flex-wrap:wrap !important}#top-social a,#footer-social a,.rst-social-menu a{display:inline-grid !important;place-items:center !important;width:34px !important;height:34px !important;min-width:34px !important;max-width:34px !important;border:1px solid var(--line)!important;border-radius:50% !important;background:#fff !important;color:#555 !important;font-size:0 !important;line-height:1 !important;text-decoration:none !important;letter-spacing:0 !important;text-transform:none !important;padding:0 !important;overflow:hidden !important;white-space:nowrap !important}#top-social a:hover,#footer-social a:hover,.rst-social-menu a:hover{background:#111 !important;color:#fff !important;border-color:#111 !important;text-decoration:none !important}#top-social a .smg-label,#top-social a span,#top-social a i,#footer-social a .smg-label,#footer-social a span,#footer-social a i,.rst-social-menu a .smg-label,.rst-social-menu a span,.rst-social-menu a i{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap !important;border:0 !important}#top-social a:before,#footer-social a:before,.rst-social-menu a:before{font-family:"Font Awesome 7 Brands" !important;font-size:16px !important;line-height:1 !important;font-weight:normal !important;text-rendering:auto !important;-webkit-font-smoothing:antialiased !important}.to-top{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:50%;background:#111;color:#fff !important;display:grid;place-items:center;box-shadow:var(--shadow);opacity:.9;font-size:24px !important;text-decoration:none !important;font-family:Arial,Helvetica,sans-serif !important;line-height:1 !important}.to-top:before,.to-top .fa,.to-top .fa-solid,.to-top .fa-brands{content:none !important;display:none !important}.to-top .to-top-arrow{position:static !important;width:auto !important;height:auto !important;margin:0 !important;padding:0 !important;overflow:visible !important;clip:auto !important;clip-path:none !important;white-space:normal !important;border:0 !important;display:block !important;color:#fff !important;font:700 24px/1 Arial,Helvetica,sans-serif !important;transform:translateY(-1px)}#main article.post.index-card{padding:0;margin:0 0 34px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}#main article.post.index-card .index-summary{display:block !important}#main article.post.index-card .post-header{padding:18px 30px 10px;text-align:center}#main article.post.index-card .post-header h2{font-family:var(--display);font-weight:700;font-size:clamp(26px,3vw,34px);line-height:1.22;color:var(--heading);max-width:760px;margin:14px auto 12px}#main article.post.index-card .post-header h2 a{color:var(--heading);text-decoration:none}#main article.post.index-card .post-header h2 a:hover{color:#777;text-decoration:none}#main article.post.index-card .post-header .meta-date{color:#333;text-align:center;letter-spacing:0;text-transform:none;font-size:15px;margin:0 auto 8px}#main article.post.index-card .post-tag{justify-content:center;gap:8px 10px;margin:0 auto 10px;max-width:760px}#main article.post.index-card .post-tag a{display:inline-block;line-height:1.35;margin:0;color:var(--link)}#main article.post.index-card .post-image iframe{display:block;width:min(100%,760px);aspect-ratio:16/9;margin:0 auto;border:0}.post-body iframe,.post-entry iframe,.entry-content iframe{display:block;width:100% !important;max-width:100% !important;margin:1.5em auto;border:0}.post-body iframe[src*="google.com/maps"],.post-body iframe[src*="google.com/maps/d"],.post-entry iframe[src*="google.com/maps"],.post-entry iframe[src*="google.com/maps/d"]{height:min(60vh,520px)!important;min-height:320px}.post-body iframe[src*="youtube.com"],.post-body iframe[src*="youtube-nocookie.com"],.post-body iframe[src*="youtu.be"],.post-entry iframe[src*="youtube.com"],.post-entry iframe[src*="youtube-nocookie.com"],.post-entry iframe[src*="youtu.be"]{aspect-ratio:16/9;height:auto !important;min-height:0}@media(max-width:720px){.post-body iframe[src*="google.com/maps"],.post-body iframe[src*="google.com/maps/d"],.post-entry iframe[src*="google.com/maps"],.post-entry iframe[src*="google.com/maps/d"]{height:360px !important;min-height:280px}}#main article.post.index-card .post-entry{max-width:760px;margin:0 auto;padding:0 30px 28px;text-align:left}#main article.post.index-card .post-entry p{font-size:17px;line-height:1.75;margin:0 0 1.2em;color:var(--text)}#main article.post.index-card .more-link{display:inline-block;margin-top:4px;font-size:16px;color:var(--link)}#main article.post.index-card .post-meta{border-top:1px solid var(--line);padding:18px 30px 8px;margin:0;text-align:center}@media(max-width:720px){#main article.post.index-card .post-header{padding:16px 18px 8px}#main article.post.index-card .post-image{padding:0 18px 12px}#main article.post.index-card .post-entry{padding:0 18px 24px}#main article.post.index-card .post-header h2{font-size:26px}}#main .vc-post,#main article.post.index-card,#main article.post.vc-static-page,#main article.post.vc-item-post{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);margin:0 0 34px;overflow:hidden}#main .vc-post .post-header,#main article.post.index-card .post-header,#main article.post.vc-static-page .post-header,#main article.post.vc-item-post .post-header{padding:24px 30px 14px;text-align:center}#main .vc-post .post-header h1,#main .vc-post .post-header h2,#main article.post.index-card .post-header h2,#main article.post.vc-static-page .post-header h1,#main article.post.vc-item-post .post-header h1{font-family:var(--display)!important;font-weight:700 !important;font-size:clamp(30px,3.35vw,42px)!important;line-height:1.07 !important;color:var(--heading)!important;max-width:780px !important;margin:14px auto 12px !important;text-align:center !important;text-transform:none !important;letter-spacing:-.016em !important}#main article.post.index-card .post-header h2 a,#main .vc-post .post-header h1 a,#main .vc-post .post-header h2 a{color:var(--heading)!important;text-decoration:none !important}#main article.post.index-card .post-header h2 a:hover,#main .vc-post .post-header h1 a:hover,#main .vc-post .post-header h2 a:hover{color:#777 !important;text-decoration:none !important}#main .vc-post .post-tag,#main article.post.index-card .post-tag{justify-content:center !important;gap:8px 10px !important;max-width:780px !important;margin:0 auto 10px !important}#main .vc-post .post-tag a,#main article.post.index-card .post-tag a{display:inline-block !important;color:var(--link)!important;line-height:1.35 !important;margin:0 !important;padding:0 !important}#main .vc-post .meta-date,#main article.post.index-card .meta-date{color:#333 !important;text-align:center !important;letter-spacing:-.016em !important;text-transform:none !important;font-size:15px !important;margin:0 auto 10px !important}#main .vc-post .post-entry,#main article.post.index-card .post-entry,#main article.post.vc-static-page .post-entry,#main article.post.vc-item-post .post-entry{max-width:780px !important;margin:0 auto !important;padding:0 30px 32px !important;text-align:left !important}#main .vc-post .post-entry p,#main article.post.index-card .post-entry p,#main article.post.vc-static-page .post-entry p,#main article.post.vc-item-post .post-entry p{font-size:17px !important;line-height:1.75 !important;margin:0 0 1.25em !important;color:var(--text)!important}#main .vc-post .post-entry>.separator,#main .vc-post .post-entry table.tr-caption-container,#main .vc-post .post-entry .tr-caption-container,#main article.post.index-card .post-image{margin:1.45em auto !important;text-align:center !important}#main .vc-post .post-entry img,#main .vc-post .post-entry table.tr-caption-container img,#main article.post.index-card .post-image img{display:block !important;max-width:100% !important;width:auto !important;height:auto !important;margin-left:auto !important;margin-right:auto !important;border-radius:2px !important}#main article.post.index-card .post-image img{display:block;max-width:min(100%,760px);width:auto;height:auto;margin:0 auto;border-radius:2px;max-width:100% !important}#main .vc-post .post-share,#main .vc-post .post-share1,#main article.post.index-card .post-meta{border-top:1px solid var(--line)!important;padding:18px 30px 10px !important;margin:0 !important;text-align:center !important}#main .vc-static-page .post-share{border-top:1px solid var(--line)!important;padding-bottom:22px !important}#main .vc-post .post-entry iframe,#main article.post.index-card .post-image iframe{display:block !important;width:100% !important;max-width:100% !important;margin:1.5em auto !important;border:0 !important}#main .vc-post .post-entry iframe[src*="google.com/maps"],#main .vc-post .post-entry iframe[src*="google.com/maps/d"]{height:min(60vh,520px)!important;min-height:320px !important}#main .vc-post .post-entry iframe[src*="youtube.com"],#main .vc-post .post-entry iframe[src*="youtube-nocookie.com"],#main .vc-post .post-entry iframe[src*="youtu.be"]{aspect-ratio:16/9 !important;height:auto !important;min-height:0 !important}@media(max-width:720px){#main .vc-post .post-header,#main article.post.index-card .post-header,#main article.post.vc-static-page .post-header,#main article.post.vc-item-post .post-header{padding:18px 18px 10px !important}#main .vc-post .post-header h1,#main .vc-post .post-header h2,#main article.post.index-card .post-header h2,#main article.post.vc-static-page .post-header h1,#main article.post.vc-item-post .post-header h1{font-size:28px !important;line-height:1.08 !important;letter-spacing:-.015em !important}#main .vc-post .post-entry,#main article.post.index-card .post-entry,#main article.post.vc-static-page .post-entry,#main article.post.vc-item-post .post-entry{padding:0 18px 26px !important}#main article.post.index-card .post-image{padding:0 18px 12px !important}#main .vc-post .post-entry p,#main article.post.index-card .post-entry p{font-size:16px !important;line-height:1.72 !important}#main .vc-post .post-entry iframe[src*="google.com/maps"],#main .vc-post .post-entry iframe[src*="google.com/maps/d"]{height:360px !important;min-height:280px !important}}#main .post-body,#main .entry-content,#main .post-entry,#main article.post.index-card .post-entry,#main article.post.vc-static-page .post-entry,#main article.post.vc-item-post .post-entry{max-width:760px !important;margin-left:auto !important;margin-right:auto !important;padding-left:30px !important;padding-right:30px !important;text-align:left !important;color:var(--text)!important;font-family:var(--body)!important}#main .post-body p,#main .entry-content p,#main .post-entry p,#main article.post.index-card .post-entry p,#main article.post.vc-static-page .post-entry p,#main article.post.vc-item-post .post-entry p,#main .post-body li,#main .entry-content li,#main .post-entry li{font-family:var(--body)!important;font-size:17px !important;line-height:1.75 !important;color:var(--text)!important;letter-spacing:0 !important;text-transform:none !important}#main .post-body p,#main .entry-content p,#main .post-entry p,#main article.post.index-card .post-entry p,#main article.post.vc-static-page .post-entry p,#main article.post.vc-item-post .post-entry p{margin-top:0 !important;margin-bottom:1.25em !important}#main .post-body h2,#main .entry-content h2,#main .post-entry h2,#main .post-body h3,#main .entry-content h3,#main .post-entry h3,#main .post-body h4,#main .entry-content h4,#main .post-entry h4{font-family:var(--display)!important;color:var(--heading)!important;font-weight:700 !important;line-height:1.14 !important;text-align:left !important;letter-spacing:-.012em !important;text-transform:none !important;border-bottom:0 !important;padding-bottom:0 !important}#main .post-body h2,#main .entry-content h2,#main .post-entry h2{font-size:30px !important;line-height:1.12 !important;margin:2.1em 0 .65em !important}#main .post-body h3,#main .entry-content h3,#main .post-entry h3{font-size:24px !important;line-height:1.18 !important;letter-spacing:-.008em !important;margin:1.8em 0 .55em !important}#main .post-body h4,#main .entry-content h4,#main .post-entry h4{font-family:var(--body)!important;font-size:15px !important;line-height:1.45 !important;letter-spacing:.10em !important;text-transform:uppercase !important;margin:1.5em 0 .8em !important}#main .post-body ul,#main .entry-content ul,#main .post-entry ul,#main .post-body ol,#main .entry-content ol,#main .post-entry ol{margin:0 0 1.3em 1.25em !important;padding:0 !important}#main .post-body li,#main .entry-content li,#main .post-entry li{margin:0 0 .45em !important;border-bottom:0 !important;padding:0 !important}#main .post-body strong,#main .entry-content strong,#main .post-entry strong,#main .post-body b,#main .entry-content b,#main .post-entry b{color:#222 !important;font-weight:700 !important}#main .post-body hr,#main .entry-content hr,#main .post-entry hr{border:0 !important;border-top:1px solid var(--line)!important;margin:1.6em 0 !important}#main .post-body blockquote,#main .entry-content blockquote,#main .post-entry blockquote{margin:1.5em 0 !important;padding:1em 1.25em !important;border-left:4px solid var(--accent)!important;background:#fafafa !important;color:#555 !important}#main .post-body>.separator,#main .entry-content>.separator,#main .post-entry>.separator,#main .post-body table.tr-caption-container,#main .entry-content table.tr-caption-container,#main .post-entry table.tr-caption-container{max-width:100% !important;margin:1.5em auto !important;text-align:center !important}#main .post-body img,#main .entry-content img,#main .post-entry img,#main .post-body table.tr-caption-container img,#main .entry-content table.tr-caption-container img,#main .post-entry table.tr-caption-container img{display:block !important;max-width:100% !important;height:auto !important;margin-left:auto !important;margin-right:auto !important;border-radius:2px !important}#main .post-body .tr-caption,#main .entry-content .tr-caption,#main .post-entry .tr-caption{font-family:var(--body)!important;font-size:14px !important;line-height:1.45 !important;color:var(--text-soft)!important;text-align:center !important;padding-top:6px !important;padding-bottom:26px !important}#main article.post.index-card .post-header,#main article.post.vc-static-page .post-header,#main article.post.vc-item-post .post-header{padding:24px 30px 14px !important}#main article.post.index-card .post-header h2,#main article.post.vc-static-page .post-header h1,#main article.post.vc-item-post .post-header h1{font-family:var(--display)!important;font-size:clamp(30px,3.35vw,42px)!important;line-height:1.07 !important;max-width:780px !important;margin:14px auto 12px !important;letter-spacing:-.016em !important;text-transform:none !important;text-align:center !important}#main article.post.index-card .post-image{padding:0 30px 14px;text-align:center;margin:0 auto;max-width:760px !important;padding:0 30px 14px !important;margin:0 auto 1.3em !important;padding-left:30px !important;padding-right:30px !important;text-align:center !important}#main article.post.index-card .post-image img,#main article.post.index-card .post-image iframe{max-width:100% !important;margin-left:auto !important;margin-right:auto !important}@media(max-width:720px){#main .post-body,#main .entry-content,#main .post-entry,#main article.post.index-card .post-entry,#main article.post.vc-static-page .post-entry,#main article.post.vc-item-post .post-entry,#main article.post.index-card .post-image{padding-left:18px !important;padding-right:18px !important}#main .post-body p,#main .entry-content p,#main .post-entry p,#main .post-body li,#main .entry-content li,#main .post-entry li{font-size:15.5px !important;line-height:1.62 !important}#main .post-body h2,#main .entry-content h2,#main .post-entry h2{font-size:25px !important;line-height:1.10 !important;margin-top:1.85em !important;margin-bottom:.50em !important}#main .post-body h3,#main .entry-content h3,#main .post-entry h3{font-size:21.5px !important;line-height:1.14 !important;margin-top:1.55em !important;margin-bottom:.45em !important}#main .post-body h4,#main .entry-content h4,#main .post-entry h4{font-size:13.5px !important;line-height:1.35 !important;letter-spacing:.08em !important;margin-top:1.25em !important;margin-bottom:.55em !important}}@media print{#navigation,.header-top,#sidebar,.main-slider,.to-top,.post-footer,.comments{display:none !important}.container.sp_sidebar{display:block}.post{box-shadow:none;border:0}.post-body{padding:0}a{color:#000;text-decoration:underline}}.vc-post .blog-pager,.post .blog-pager,#blog-pager{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px !important;align-items:stretch;margin:30px 30px 36px !important;padding:24px 0 0 !important;border-top:1px solid var(--line)}#blog-pager-newer-link,#blog-pager-older-link{display:flex !important;min-width:0}#blog-pager-newer-link{justify-content:flex-start}#blog-pager-older-link{justify-content:flex-end}#blog-pager a.blog-pager-newer-link,#blog-pager a.blog-pager-older-link,.blog-pager a.blog-pager-newer-link,.blog-pager a.blog-pager-older-link{position:relative;display:flex !important;align-items:center;gap:12px;width:100%;min-height:74px;padding:15px 18px !important;border:1px solid var(--line)!important;border-radius:12px;background:#fff !important;color:var(--heading)!important;box-shadow:0 10px 26px rgba(0,0,0,.045);font-family:var(--body);font-size:13px !important;font-weight:700;letter-spacing:.08em;line-height:1.35;text-transform:uppercase;text-decoration:none !important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,color .18s ease}#blog-pager a.blog-pager-newer-link:hover,#blog-pager a.blog-pager-older-link:hover,.blog-pager a.blog-pager-newer-link:hover,.blog-pager a.blog-pager-older-link:hover{transform:translateY(-2px);border-color:#d8d8d8 !important;box-shadow:0 16px 34px rgba(0,0,0,.075);color:#000 !important}.blog-mobile-link{grid-column:1 / -1;text-align:center}.post-related{margin:32px 30px 38px !important;padding:30px 0 0 !important;border-top:1px solid var(--line);display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.post-related .post-box{grid-column:1 / -1;text-align:center;margin:0 0 4px}.post-related .related-results{display:contents}.post-related .post-box-title{display:inline-block;margin:0 auto 10px !important;padding:0 0 12px;border-bottom:2px solid var(--accent);color:var(--heading);font:700 18px/1.25 var(--body);letter-spacing:.16em;text-transform:uppercase}.post-related .item-related,.post-related .related-journey-card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.045);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.post-related .item-related:hover,.post-related .related-journey-card:hover{transform:translateY(-2px);border-color:#d8d8d8;box-shadow:0 16px 34px rgba(0,0,0,.075)}.post-related .item-related>a:first-child,.post-related .related-thumb{display:block;overflow:hidden;background:#f5f5f5}.post-related .item-related img,.post-related .related-thumb img{display:block;width:100% !important;height:auto !important;aspect-ratio:16 / 9;object-fit:cover;border-radius:0 !important}.post-related .related-body{padding:14px 15px 16px}.post-related .item-related h3,.post-related .related-body h3{margin:0 0 10px !important;padding:0 !important;font:700 18px/1.1 var(--display)!important;letter-spacing:-.012em !important;text-align:left}.post-related .item-related h3 a,.post-related .related-body h3 a{color:var(--heading)!important;text-decoration:none !important}.post-related .item-related h3 a:hover,.post-related .related-body h3 a:hover{color:var(--link)!important}.post-related .related-read{display:inline-block;color:var(--link)!important;font-size:13px;font-weight:700;letter-spacing:.04em;text-decoration:none !important}.post-related .related-read:hover{color:#111 !important;text-decoration:underline !important}@media(max-width:960px){.post-related{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.vc-post .blog-pager,.post .blog-pager,#blog-pager{grid-template-columns:1fr;margin-left:22px !important;margin-right:22px !important}#blog-pager-older-link,#blog-pager-newer-link{justify-content:stretch}#blog-pager a.blog-pager-older-link,.blog-pager a.blog-pager-older-link{text-align:left;justify-content:space-between}.post-related{grid-template-columns:1fr;margin-left:22px !important;margin-right:22px !important}}#blog-pager a.blog-pager-newer-link:before,.blog-pager a.blog-pager-newer-link:before,#blog-pager a.blog-pager-older-link:after,.blog-pager a.blog-pager-older-link:after{content:"" !important;display:none !important}#blog-pager .pager-arrow,.blog-pager .pager-arrow{flex:0 0 38px;width:38px;height:38px;border-radius:50%;display:inline-grid !important;place-items:center;background:#111;color:#fff !important;font:700 21px/1 Arial,Helvetica,sans-serif !important;letter-spacing:0 !important;text-transform:none !important;box-shadow:0 8px 18px rgba(0,0,0,.10)}#blog-pager .pager-label,.blog-pager .pager-label{display:inline-block;min-width:0}#blog-pager a.blog-pager-newer-link,.blog-pager a.blog-pager-newer-link{justify-content:flex-start !important}#blog-pager a.blog-pager-older-link,.blog-pager a.blog-pager-older-link{text-align:right;justify-content:flex-end;justify-content:flex-end !important}.post-tag,.entry-tags,.post-comment-link,.comment-link,.comment_count,.comments,.post-comments,#comments,#comment-holder,.comment-form,.comment-footer,.cmt_iframe_holder,.mobile-index-comment,.feed-links,#comment-popup{display:none !important}.post-author,.author-info,.author-profile,.byline,.vcard.author,.meta-date a[rel="author"],a[rel="author"][title="author profile"]{display:none !important}#top-social a:before,#footer-social a:before,.rst-social-menu a:before{font-family:"Font Awesome 7 Brands" !important;font-size:16px !important;line-height:1 !important;font-weight:400 !important;text-rendering:auto !important;-webkit-font-smoothing:antialiased !important}#top-social a[href*="facebook"]:before,#footer-social a[href*="facebook"]:before,.rst-social-menu a[href*="facebook"]:before{content:"\f39e" !important}#top-social a[href*="youtube"]:before,#footer-social a[href*="youtube"]:before,.rst-social-menu a[href*="youtube"]:before{content:"\f167" !important}#top-social a[href*="twitter"]:before,#top-social a[href*="x.com"]:before,#footer-social a[href*="twitter"]:before,#footer-social a[href*="x.com"]:before,.rst-social-menu a[href*="twitter"]:before,.rst-social-menu a[href*="x.com"]:before{content:"\e61f" !important}#top-social a[href*="instagram"]:before,#footer-social a[href*="instagram"]:before,.rst-social-menu a[href*="instagram"]:before{content:"\f16d" !important}#top-social a[href*="pinterest"]:before,#footer-social a[href*="pinterest"]:before,.rst-social-menu a[href*="pinterest"]:before{content:"\f231" !important}.featured-carousel-btn .fa-solid,.rst-search-form button .fa-solid{font-family:"Font Awesome 7 Free" !important;font-weight:900 !important}.sharebox .fa-brands{font-family:"Font Awesome 7 Brands" !important;font-weight:400 !important}.sharebox .fa-solid{font-family:"Font Awesome 7 Free" !important;font-weight:900 !important}.rst-search-form{height:44px;min-height:44px;max-height:44px;display:flex;align-items:stretch}.rst-search-form input{height:44px;min-height:44px;box-sizing:border-box;line-height:20px;padding:0 12px}.rst-search-form button{width:44px;height:44px;min-width:44px;min-height:44px;box-sizing:border-box;padding:0;display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:13px}.rst-search-form button i,.rst-search-form button .fa-solid{display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em;line-height:1}@media(max-width:720px){#main .post-body p,#main .entry-content p,#main .post-entry p,#main .post-body li,#main .entry-content li,#main .post-entry li{font-size:15.5px !important;line-height:1.62 !important}#main .post-body h2,#main .entry-content h2,#main .post-entry h2{font-size:25px !important;line-height:1.10 !important;margin-top:1.85em !important;margin-bottom:.50em !important}#main .post-body h3,#main .entry-content h3,#main .post-entry h3{font-size:21.5px !important;line-height:1.14 !important;margin-top:1.55em !important;margin-bottom:.45em !important}#main .post-body h4,#main .entry-content h4,#main .post-entry h4{font-size:13.5px !important;line-height:1.35 !important;letter-spacing:.08em !important;margin-top:1.25em !important;margin-bottom:.55em !important}}html[data-theme="dark"]{--bg:#101010;--page-bg:#101010;--surface:#171717;--surface-soft:#202020;--text:#eee;--text-soft:#b8b8b8;--muted:#b8b8b8;--soft:#2a2a2a;--line:#333;--border:#333;--heading:#f4f1ea;--link:#d9c17f;--accent:#d9b45f;--button-bg:#f4f1ea;--button-text:#101010;--focus:#d9b45f;--shadow:0 10px 30px rgba(0,0,0,.34)}html[data-theme="dark"] body{background:var(--bg);color:var(--text)}html[data-theme="dark"] a{color:var(--link)}html[data-theme="dark"] a:hover{color:var(--heading)}html[data-theme="dark"] .skip-to-content{background:var(--button-bg);color:var(--button-text)!important}html[data-theme="dark"] #navigation,html[data-theme="dark"] .header-top,html[data-theme="dark"] .post,html[data-theme="dark"] .hentry,html[data-theme="dark"] article,html[data-theme="dark"] .featured-card,html[data-theme="dark"] .featured-card-body,html[data-theme="dark"] #sidebar .widget,html[data-theme="dark"] .widget,html[data-theme="dark"] .blog-pager a,html[data-theme="dark"] .pager-heading,html[data-theme="dark"] .post-related .item-related,html[data-theme="dark"] .post-related .related-journey-card,html[data-theme="dark"] .post-box,html[data-theme="dark"] .static_page .post,html[data-theme="dark"] .footer,html[data-theme="dark"] #footer,html[data-theme="dark"] .logo-footer,html[data-theme="dark"] .attribution-bottom,html[data-theme="dark"] .rst-search-form,html[data-theme="dark"] .rst-search-form input{background:var(--surface)!important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] #navigation{box-shadow:0 2px 16px rgba(0,0,0,.32)}html[data-theme="dark"] #navigation-wrapper a,html[data-theme="dark"] #navigation-wrapper .widget-content a,html[data-theme="dark"] .menu-mobile,html[data-theme="dark"] .widget-content a,html[data-theme="dark"] .post h1,html[data-theme="dark"] .post h2,html[data-theme="dark"] .post h3,html[data-theme="dark"] .post-title,html[data-theme="dark"] .entry-title,html[data-theme="dark"] .index-post-title,html[data-theme="dark"] .carousel-title,html[data-theme="dark"] .related-post-title,html[data-theme="dark"] .featured-card h3,html[data-theme="dark"] .post-related .item-related h3 a,html[data-theme="dark"] .post-related .related-body h3 a,html[data-theme="dark"] .widget h2,html[data-theme="dark"] .widget-title,html[data-theme="dark"] #sidebar .title{color:var(--heading)!important}html[data-theme="dark"] #navigation-wrapper a:hover,html[data-theme="dark"] #navigation-wrapper .widget-content a:hover,html[data-theme="dark"] .widget-content a:hover,html[data-theme="dark"] .blog-pager a:hover,html[data-theme="dark"] .pager-heading:hover,html[data-theme="dark"] .post-related .item-related:hover,html[data-theme="dark"] .post-related .related-journey-card:hover{background:var(--surface-soft)!important;color:var(--heading)!important;border-color:#474747 !important}html[data-theme="dark"] .post-meta,html[data-theme="dark"] .entry-meta,html[data-theme="dark"] .post-date,html[data-theme="dark"] .featured-card p,html[data-theme="dark"] .post-snippet,html[data-theme="dark"] .index-post-summary,html[data-theme="dark"] .post-card-summary,html[data-theme="dark"] .related-post-snippet,html[data-theme="dark"] .tr-caption,html[data-theme="dark"] .post-body figcaption,html[data-theme="dark"] .post-body .caption,html[data-theme="dark"] .entry-content figcaption,html[data-theme="dark"] .entry-content .caption,html[data-theme="dark"] .copyright,html[data-theme="dark"] .logo-footer,html[data-theme="dark"] .post-footer{color:var(--text-soft)!important}html[data-theme="dark"] .post-body,html[data-theme="dark"] .entry-content,html[data-theme="dark"] .post-entry,html[data-theme="dark"] .post-body p,html[data-theme="dark"] .entry-content p,html[data-theme="dark"] .post-body li,html[data-theme="dark"] .entry-content li{color:var(--text)!important}html[data-theme="dark"] blockquote,html[data-theme="dark"] .post-body blockquote,html[data-theme="dark"] .entry-content blockquote{background:var(--surface-soft)!important;color:var(--text)!important;border-left-color:var(--accent)!important}html[data-theme="dark"] input,html[data-theme="dark"] textarea,html[data-theme="dark"] select,html[data-theme="dark"] .rst-search-form input{background:#121212 !important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#9a9a9a !important}html[data-theme="dark"] .rst-search-form button,html[data-theme="dark"] .featured-carousel-btn:hover,html[data-theme="dark"] .featured-carousel-btn:focus,html[data-theme="dark"] .to-top,html[data-theme="dark"] #top-social a:hover,html[data-theme="dark"] #footer-social a:hover,html[data-theme="dark"] .rst-social-menu a:hover,html[data-theme="dark"] .sharebox a:hover,html[data-theme="dark"] .post-related .related-read:hover{background:var(--button-bg)!important;color:var(--button-text)!important;border-color:var(--button-bg)!important}html[data-theme="dark"] .featured-carousel-btn,html[data-theme="dark"] #top-social a,html[data-theme="dark"] #footer-social a,html[data-theme="dark"] .rst-social-menu a,html[data-theme="dark"] .sharebox a,html[data-theme="dark"] .post-related .related-read{background:var(--surface)!important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] .featured-posts,html[data-theme="dark"] .post-related,html[data-theme="dark"] .item-related,html[data-theme="dark"] .comments,html[data-theme="dark"] .post-footer,html[data-theme="dark"] .blog-pager,html[data-theme="dark"] .pagination{border-color:var(--line)!important}html[data-theme="dark"] .post-related .related-thumb,html[data-theme="dark"] .featured-card img,html[data-theme="dark"] .post-related .item-related img,html[data-theme="dark"] .post-related .related-thumb img{background:var(--surface-soft)!important}html[data-theme="dark"] .separator,html[data-theme="dark"] figure,html[data-theme="dark"] .tr-caption-container{background:transparent !important}html[data-theme="dark"] .followit--follow-form-container .form-preview{background-color:var(--surface)!important;border-color:var(--line)!important;color:var(--text)!important}html[data-theme="dark"] .followit--follow-form-container .preview-heading,html[data-theme="dark"] .followit--follow-form-container .preview-heading h5,html[data-theme="dark"] .followit--follow-form-container .powered-by-line{color:var(--text)!important}html[data-theme="dark"] .followit--follow-form-container .preview-input-field input{background-color:var(--surface-soft)!important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] .followit--follow-form-container .preview-input-field input::placeholder{color:#9a9a9a !important}html[data-theme="dark"] .followit--follow-form-container .preview-submit-button button{background-color:var(--button-bg)!important;color:var(--button-text)!important;border-color:var(--button-bg)!important}html[data-theme="dark"] .main-slider,html[data-theme="dark"] .section.main-slider,html[data-theme="dark"] .main-slider .featured-posts{background:var(--bg)!important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] #blog-pager a.blog-pager-newer-link,html[data-theme="dark"] #blog-pager a.blog-pager-older-link,html[data-theme="dark"] .blog-pager a.blog-pager-newer-link,html[data-theme="dark"] .blog-pager a.blog-pager-older-link{background:var(--surface)!important;color:var(--heading)!important;border-color:var(--line)!important;box-shadow:var(--shadow)!important}html[data-theme="dark"] #blog-pager a.blog-pager-newer-link:hover,html[data-theme="dark"] #blog-pager a.blog-pager-older-link:hover,html[data-theme="dark"] .blog-pager a.blog-pager-newer-link:hover,html[data-theme="dark"] .blog-pager a.blog-pager-older-link:hover{background:var(--surface-soft)!important;color:var(--heading)!important;border-color:#474747 !important}html[data-theme="dark"] #blog-pager .pager-arrow,html[data-theme="dark"] .blog-pager .pager-arrow{background:var(--button-bg)!important;color:var(--button-text)!important;box-shadow:0 8px 18px rgba(0,0,0,.30)!important}html[data-theme="dark"] .rst-copyright,html[data-theme="dark"] #Instagram,html[data-theme="dark"] .attribution-bottom,html[data-theme="dark"] #footer-social,html[data-theme="dark"] .rst-social-menu#footer-social,html[data-theme="dark"] #footer-social .socialzz{background:var(--surface)!important;color:var(--text-soft)!important;border-color:var(--line)!important}html[data-theme="dark"] .post-body div[style*="background"],html[data-theme="dark"] .post-body section[style*="background"],html[data-theme="dark"] .post-body table[style*="background"],html[data-theme="dark"] .post-body td[style*="background"],html[data-theme="dark"] .entry-content div[style*="background"],html[data-theme="dark"] .entry-content section[style*="background"],html[data-theme="dark"] .entry-content table[style*="background"],html[data-theme="dark"] .entry-content td[style*="background"]{background:var(--surface-soft)!important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] .post-body div[style*="background"]:not(a),html[data-theme="dark"] .post-body section[style*="background"]:not(a),html[data-theme="dark"] .post-body table[style*="background"]:not(a),html[data-theme="dark"] .entry-content div[style*="background"]:not(a),html[data-theme="dark"] .entry-content section[style*="background"]:not(a),html[data-theme="dark"] .entry-content table[style*="background"]:not(a){color:var(--text)!important}html[data-theme="dark"] .date-header,html[data-theme="dark"] .date-header span,html[data-theme="dark"] .post-meta,html[data-theme="dark"] .entry-meta,html[data-theme="dark"] .post-date,html[data-theme="dark"] .meta-date,html[data-theme="dark"] .post-timestamp,html[data-theme="dark"] .timestamp-link,html[data-theme="dark"] .published,html[data-theme="dark"] .updated{color:var(--text-soft)!important}html[data-theme="dark"] #sidebar .Label li,html[data-theme="dark"] #sidebar .list-label-widget-content li,html[data-theme="dark"] #sidebar .cloud-label-widget-content span,html[data-theme="dark"] .Label li,html[data-theme="dark"] .list-label-widget-content li{border-color:var(--line)!important;color:var(--text)!important}html[data-theme="dark"] #sidebar .Label a,html[data-theme="dark"] #sidebar .label-size a,html[data-theme="dark"] .Label a,html[data-theme="dark"] .label-size a{background:var(--surface-soft)!important;color:var(--heading)!important;border-color:var(--line)!important}html[data-theme="dark"] #sidebar .Label a:hover,html[data-theme="dark"] #sidebar .label-size a:hover,html[data-theme="dark"] .Label a:hover,html[data-theme="dark"] .label-size a:hover{background:var(--button-bg)!important;color:var(--button-text)!important;border-color:var(--button-bg)!important}html[data-theme="dark"] #sidebar .Label .label-count,html[data-theme="dark"] #sidebar .Label li>span,html[data-theme="dark"] .Label .label-count,html[data-theme="dark"] .Label li>span{color:var(--text)!important}html[data-theme="dark"] #main .post-body details,html[data-theme="dark"] #main .post-body summary,html[data-theme="dark"] #main .entry-content details,html[data-theme="dark"] #main .entry-content summary{color:var(--text)!important}html[data-theme="dark"] #main .post-body [style*="color"]:not(a),html[data-theme="dark"] #main .entry-content [style*="color"]:not(a){color:var(--text)!important}html[data-theme="dark"] #main .post-body a[style*="color"],html[data-theme="dark"] #main .entry-content a[style*="color"]{color:var(--accent)!important}html[data-theme="dark"] #main .post-body [style*="background"] td,html[data-theme="dark"] #main .post-body [style*="background"] th,html[data-theme="dark"] #main .post-body [style*="background"] li,html[data-theme="dark"] #main .post-body [style*="background"] summary,html[data-theme="dark"] #main .entry-content [style*="background"] td,html[data-theme="dark"] #main .entry-content [style*="background"] th,html[data-theme="dark"] #main .entry-content [style*="background"] li,html[data-theme="dark"] #main .entry-content [style*="background"] summary{color:var(--text)!important}html[data-theme="dark"] #main .post-body,html[data-theme="dark"] #main .entry-content,html[data-theme="dark"] #main .post-entry{color:var(--text)!important}html[data-theme="dark"] #main .post-body p,html[data-theme="dark"] #main .post-body li,html[data-theme="dark"] #main .post-body span,html[data-theme="dark"] #main .post-body div,html[data-theme="dark"] #main .post-body strong,html[data-theme="dark"] #main .post-body b,html[data-theme="dark"] #main .post-body em,html[data-theme="dark"] #main .post-body i,html[data-theme="dark"] #main .post-body small,html[data-theme="dark"] #main .post-body summary,html[data-theme="dark"] #main .post-body details,html[data-theme="dark"] #main .post-body td,html[data-theme="dark"] #main .post-body th,html[data-theme="dark"] #main .entry-content p,html[data-theme="dark"] #main .entry-content li,html[data-theme="dark"] #main .entry-content span,html[data-theme="dark"] #main .entry-content div,html[data-theme="dark"] #main .entry-content strong,html[data-theme="dark"] #main .entry-content b,html[data-theme="dark"] #main .entry-content em,html[data-theme="dark"] #main .entry-content i,html[data-theme="dark"] #main .entry-content small,html[data-theme="dark"] #main .entry-content summary,html[data-theme="dark"] #main .entry-content details,html[data-theme="dark"] #main .entry-content td,html[data-theme="dark"] #main .entry-content th{color:inherit !important}html[data-theme="dark"] #main .post-body h1,html[data-theme="dark"] #main .post-body h2,html[data-theme="dark"] #main .post-body h3,html[data-theme="dark"] #main .post-body h4,html[data-theme="dark"] #main .post-body h5,html[data-theme="dark"] #main .post-body h6,html[data-theme="dark"] #main .entry-content h1,html[data-theme="dark"] #main .entry-content h2,html[data-theme="dark"] #main .entry-content h3,html[data-theme="dark"] #main .entry-content h4,html[data-theme="dark"] #main .entry-content h5,html[data-theme="dark"] #main .entry-content h6{color:var(--heading)!important}html[data-theme="dark"] #main .post-body a,html[data-theme="dark"] #main .entry-content a{color:var(--accent)!important}html[data-theme="dark"] #main .post-body .tr-caption,html[data-theme="dark"] #main .entry-content .tr-caption,html[data-theme="dark"] #main .post-body figcaption,html[data-theme="dark"] #main .entry-content figcaption{color:var(--text-soft)!important}html[data-theme="dark"] a:focus-visible,html[data-theme="dark"] button:focus-visible,html[data-theme="dark"] input:focus-visible,html[data-theme="dark"] textarea:focus-visible,html[data-theme="dark"] select:focus-visible{outline-color:var(--focus)}html[data-theme="dark"] .to-top{background:var(--button-bg)!important;color:var(--button-text)!important;border:2px solid var(--focus)!important;opacity:1 !important;box-shadow:0 10px 26px rgba(0,0,0,.45)!important}html[data-theme="dark"] .to-top .to-top-arrow{color:var(--button-text)!important}html[data-theme="dark"] .to-top:hover,html[data-theme="dark"] .to-top:focus-visible{background:var(--focus)!important;color:var(--button-text)!important;border-color:var(--focus)!important;box-shadow:0 12px 30px rgba(0,0,0,.55)!important}html[data-theme="dark"] .to-top:hover .to-top-arrow,html[data-theme="dark"] .to-top:focus-visible .to-top-arrow{color:var(--button-text)!important}html[data-theme="dark"]::selection{background:rgba(217,180,95,.35);color:var(--heading)}:root{--vc-logo-light-url:"https://blogger.googleusercontent.com/img/a/AVvXsEhpuoqWPunqT2G8FZ-bee53TsfGPItivlFKOJnGopUUpx7HK1gOkVRsuC-bG9AR9zRovRhfQUBUzHRrkhuvLBhzi7QBeqSeqeuGiKkSQO8JRZNyqYXp6-AjCCridYf4lbLwI8Z59dihVPOvGGGevUDLtGJ0IHStGMcuhCDegwZ629QeLK3hzODQSJvMhDX5=s16000";--vc-logo-dark-url:"https://blogger.googleusercontent.com/img/a/AVvXsEiNrtgXbLtQB9CzItrxMJD9CTAg6cTSSEMyV9pPBpZs4yW7OmtaZ1uTCzPiY_GrFMqKOu3LbvwWsq2Lw_CIIvyNoJw4_v4p4nmo5GEZRa5VRTpCAwipFn36Pgn1sjZlBSQc4TZqKLlmFvneJmzA67bqrhWLeHsPMuEPVTs0QLE7XLZBLp6Ft7ZHqP5ReFx5=s16000"}#logo img,.logo_h img{aspect-ratio:778 / 332;object-fit:contain;width:170px !important;max-width:170px !important;height:auto !important;display:block}.header-top .container{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:24px}#header{grid-column:1;grid-row:1;justify-self:start;text-align:left;min-width:0}#logo,.logo_h{margin:0;text-align:left;min-width:0}#top-social,.header-top #top-social,.header-top .rst-social-menu{grid-column:2;grid-row:1;justify-self:end;align-self:center;margin:0}#top-search{grid-column:3;grid-row:1;justify-self:end;margin:0}#top-search .rst-search-form{width:210px;max-width:210px;height:40px}#top-search .rst-search-form input{height:40px;font-size:14px;padding:0 13px}#top-search .rst-search-form button{width:46px;height:40px}html:not([data-theme="dark"])#top-search .rst-search-form,html[data-theme="light"] #top-search .rst-search-form{background:#fff;border-color:#e8e8e8}html:not([data-theme="dark"])#top-search .rst-search-form input,html[data-theme="light"] #top-search .rst-search-form input{background:#fff;color:#343434}html:not([data-theme="dark"])#top-search .rst-search-form input::placeholder,html[data-theme="light"] #top-search .rst-search-form input::placeholder{color:#999}html:not([data-theme="dark"])#top-search .rst-search-form button,html[data-theme="light"] #top-search .rst-search-form button{background:#111;color:#fff}html:not([data-theme="dark"])#logo,html:not([data-theme="dark"])#logo img,html:not([data-theme="dark"]).logo_h img{opacity:1}.mobile-search-trigger,.mobile-search-back,.mobile-search-close{display:none}.to-top:focus-visible{outline:3px solid var(--focus);outline-offset:2px}@media(max-width:720px){.header-top{padding:9px 12px 9px !important}.header-top .container{position:relative !important;display:grid !important;grid-template-columns:auto auto 1fr !important;column-gap:7px !important;row-gap:0 !important;align-items:center !important}#header{grid-column:1 !important;grid-row:1 !important;justify-self:start !important;align-self:center !important;text-align:left !important}#logo,.logo_h{margin:0 !important;text-align:left !important}#logo img,.logo_h img{width:min(29vw,98px)!important;max-width:98px !important;min-width:84px !important;margin:0 !important}#top-social,.header-top #top-social,.header-top .rst-social-menu{grid-column:2 !important;grid-row:1 !important;justify-self:start !important;align-self:center !important;margin:0 !important}#top-social .widget-content,#top-social .socialzz,.header-top .rst-social-menu .widget-content,.header-top .rst-social-menu .socialzz{display:flex !important;gap:5px !important;align-items:center !important;justify-content:flex-start !important}#top-social a,.header-top .rst-social-menu a{width:24px !important;height:24px !important;line-height:24px !important;font-size:9.5px !important}#top-search{grid-column:3 !important;grid-row:1 !important;justify-self:end !important;align-self:center !important;width:auto !important;margin:0 !important}.mobile-search-trigger{display:inline-flex !important;align-items:center !important;justify-content:center !important;width:30px !important;height:30px !important;border:1px solid var(--line)!important;border-radius:50% !important;background:var(--surface)!important;color:var(--text)!important;box-shadow:0 2px 8px rgba(0,0,0,.08)!important;cursor:pointer !important;padding:0 !important}.mobile-search-trigger .fa-solid{font-size:13px !important;line-height:1 !important}#top-search .header-right{display:contents !important}#top-search .rst-search-form{display:none !important;position:absolute !important;z-index:20 !important;left:0 !important;right:0 !important;top:50% !important;transform:translateY(-50%)!important;width:100% !important;max-width:none !important;height:32px !important;margin:0 !important;border:1px solid var(--line)!important;border-radius:999px !important;background:var(--surface)!important;box-shadow:0 8px 24px rgba(0,0,0,.12)!important;overflow:hidden !important}body.vc-mobile-search-open #top-search .rst-search-form{display:flex !important;align-items:center !important}body.vc-mobile-search-open #header,body.vc-mobile-search-open #top-social,body.vc-mobile-search-open .mobile-search-trigger{display:none !important}body.vc-mobile-search-open .header-top .container{grid-template-columns:1fr !important}body.vc-mobile-search-open #top-search{grid-column:1 !important;grid-row:1 !important;justify-self:stretch !important;width:100% !important}#top-search .rst-search-form input{flex:1 1 auto !important;min-width:0 !important;height:30px !important;font-size:12.5px !important;line-height:30px !important;padding:0 8px !important;border:0 !important;background:transparent !important;color:var(--text)!important}#top-search .rst-search-form>button{flex:0 0 auto !important;width:30px !important;height:30px !important;min-height:30px !important;border:0 !important;border-radius:0 !important;background:transparent !important;color:var(--text)!important;box-shadow:none !important;padding:0 !important}#top-search .rst-search-form>button[type="submit"]{background:var(--button-bg)!important;color:var(--button-text)!important}.mobile-search-back,.mobile-search-close{display:inline-flex !important;align-items:center !important;justify-content:center !important}#top-search .rst-search-form button .fa-solid,#top-search .rst-search-form button i{font-size:12px !important;line-height:1 !important}#navigation-wrapper{max-height:calc(100vh - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch}body.item #main .post,body.item #main article.post,body.item #main .post-outer,body.item #main .post.h-entry{padding:18px 16px 30px !important;box-shadow:none !important}body.item #main .post-header,body.item #main .entry-header,body.item #main .post-head{text-align:left !important;margin:0 0 18px !important;padding:0 !important}body.item #main .post-title,body.item #main h1.entry-title,body.item #main .entry-title,body.item #main .post h1,body.item #main article h1{text-align:left !important;font-size:clamp(28px,7.9vw,33px)!important;line-height:1.06 !important;letter-spacing:-0.021em !important;margin:0 0 14px !important;max-width:none !important}body.item #main .date-header,body.item #main .post-date,body.item #main .meta-date,body.item #main time.dt-published{display:block !important;text-align:left !important;font-size:13px !important;line-height:1.35 !important;margin:0 0 22px !important;color:var(--muted)!important}body.item #main .post-body,body.item #main .entry-content,body.item #main .post-entry,body.item #main .post-body p,body.item #main .entry-content p,body.item #main .post-entry p,body.item #main .post-body li,body.item #main .entry-content li,body.item #main .post-entry li{font-size:16.5px !important;line-height:1.56 !important;text-align:left !important}body.item #main .post-body a,body.item #main .entry-content a,body.item #main .post-entry a{font-size:inherit !important;line-height:inherit !important}body.item #main .post-body h2,body.item #main .entry-content h2,body.item #main .post-entry h2{text-align:left !important;font-size:clamp(25px,6vw,30px)!important;line-height:1.10 !important;letter-spacing:-0.014em !important;margin-top:1.65em !important;margin-bottom:.55em !important}body.item #main .post-body h3,body.item #main .entry-content h3,body.item #main .post-entry h3{text-align:left !important;font-size:clamp(21px,5vw,25px)!important;line-height:1.14 !important;letter-spacing:-0.01em !important;margin-top:1.45em !important;margin-bottom:.45em !important}body.item #main .tr-caption,body.item #main figcaption,body.item #main .caption{text-align:left !important;font-size:14px !important;line-height:1.36 !important;color:var(--muted)!important;margin:7px 0 24px !important}}@media(max-width:420px){.header-top{padding:8px 10px 8px !important}.header-top .container{column-gap:5px !important}#logo img,.logo_h img{width:min(28vw,92px)!important;max-width:92px !important;min-width:78px !important}#top-social a,.header-top .rst-social-menu a{width:23px !important;height:23px !important;line-height:23px !important;font-size:9px !important}.mobile-search-trigger{width:29px !important;height:29px !important}}@media(min-width:721px){#top-search .mobile-search-trigger,#top-search .mobile-search-back,#top-search .mobile-search-close{display:none !important;visibility:hidden !important}#top-search .rst-search-form{display:flex !important;align-items:center !important}#top-search .rst-search-form>button[type="submit"]{display:inline-flex !important;visibility:visible !important;align-items:center !important;justify-content:center !important}.header-top{padding-top:22px !important;padding-bottom:22px !important}.header-top .container{min-height:0 !important}.main-slider{padding-top:14px !important;padding-bottom:26px !important}.featured-posts{margin-top:0 !important}}@media(max-width:720px){.main-slider{padding-top:10px !important}}@media(min-width:721px){.header-top .container{align-items:center !important}#header,#top-social,#top-search{align-self:center !important}#top-search .rst-search-form{display:flex !important;align-items:center !important;height:34px !important;width:210px !important;max-width:210px !important;border-radius:999px !important;overflow:hidden !important;background:var(--surface)!important;border:1px solid var(--line)!important}#top-search .rst-search-form input{flex:1 1 auto !important;min-width:0 !important;height:32px !important;line-height:32px !important;font-size:13px !important;padding:0 10px !important;border:0 !important;background:transparent !important}#top-search .rst-search-form>button[type="submit"]{display:inline-flex !important;visibility:visible !important;align-items:center !important;justify-content:center !important;flex:0 0 38px !important;width:38px !important;height:34px !important;min-height:34px !important;margin:0 !important;border:0 !important;border-radius:0 999px 999px 0 !important;background:var(--button-bg)!important;color:var(--button-text)!important;box-shadow:none !important;padding:0 !important}#top-search .rst-search-form>button[type="submit"] .fa-solid,#top-search .rst-search-form>button[type="submit"] i{display:inline-block !important;font-size:12px !important;line-height:1 !important}#top-search .rst-search-form>button:not([type="submit"]){display:none !important;visibility:hidden !important}}@media(max-width:720px){.header-top .container{align-items:center !important}#header,#top-social,#top-search{align-self:center !important}#logo img,.logo_h img{display:block !important}.mobile-search-trigger{align-self:center !important;margin:0 !important;transform:translateY(0)!important}}@media(min-width:721px){.header-top .container{display:grid !important;grid-template-columns:auto 1fr auto !important;align-items:center !important;column-gap:24px !important}#header{grid-column:1 !important;grid-row:1 !important;justify-self:start !important;align-self:center !important;margin:0 !important}#top-social{grid-column:2 !important;grid-row:1 !important;justify-self:end !important;align-self:center !important;margin:0 !important}#top-search{grid-column:3 !important;grid-row:1 !important;justify-self:end !important;align-self:center !important;margin:0 !important;display:flex !important;align-items:center !important}#top-search .header-right{display:flex !important;align-items:center !important}}@media(max-width:720px){.header-top{padding:8px 12px 8px !important}.header-top .container{position:relative !important;display:grid !important;grid-template-columns:auto auto 1fr !important;align-items:center !important;column-gap:6px !important;row-gap:0 !important;min-height:32px !important}#header{grid-column:1 !important;grid-row:1 !important;justify-self:start !important;align-self:center !important;margin:0 !important;line-height:0 !important}#logo,.logo_h{margin:0 !important;padding:0 !important;line-height:0 !important;text-align:left !important}#logo img,.logo_h img{display:block !important;margin:0 !important;vertical-align:middle !important}#top-social,.header-top #top-social,.header-top .rst-social-menu{grid-column:2 !important;grid-row:1 !important;justify-self:start !important;align-self:center !important;margin:0 !important;line-height:0 !important}#top-social .widget-content,#top-social .socialzz,.header-top .rst-social-menu .widget-content,.header-top .rst-social-menu .socialzz{display:flex !important;align-items:center !important;justify-content:flex-start !important;gap:5px !important;margin:0 !important;line-height:0 !important}#top-search{grid-column:3 !important;grid-row:1 !important;justify-self:end !important;align-self:center !important;margin:0 !important;width:auto !important;height:30px !important;display:flex !important;align-items:center !important;line-height:0 !important}.mobile-search-trigger{display:inline-flex !important;align-items:center !important;justify-content:center !important;width:29px !important;height:29px !important;min-width:29px !important;min-height:29px !important;margin:0 !important;padding:0 !important;line-height:1 !important;transform:none !important;vertical-align:middle !important}.mobile-search-trigger .fa-solid,.mobile-search-trigger i{display:block !important;font-size:12px !important;line-height:1 !important;margin:0 !important}#top-search .header-right{display:contents !important}#top-search .rst-search-form{display:none !important;position:absolute !important;z-index:30 !important;left:0 !important;right:0 !important;top:50% !important;transform:translateY(-50%)!important;width:100% !important;max-width:none !important;height:32px !important;margin:0 !important}body.vc-mobile-search-open .header-top .container{grid-template-columns:1fr !important}body.vc-mobile-search-open #top-search{grid-column:1 !important;grid-row:1 !important;justify-self:stretch !important;align-self:center !important;width:100% !important;height:32px !important}body.vc-mobile-search-open #top-search .rst-search-form{display:flex !important;align-items:center !important}body.vc-mobile-search-open #header,body.vc-mobile-search-open #top-social,body.vc-mobile-search-open .mobile-search-trigger{display:none !important}}@media(max-width:420px){.header-top{padding:8px 10px 8px !important}.header-top .container{column-gap:5px !important;min-height:30px !important}#top-search{height:29px !important}.mobile-search-trigger{width:28px !important;height:28px !important;min-width:28px !important;min-height:28px !important}}@media(min-width:721px){#top-social,#top-search{height:34px !important;line-height:0 !important;display:flex !important;align-items:center !important}#top-social .widget-content,#top-social .socialzz,.header-top .rst-social-menu .widget-content,.header-top .rst-social-menu .socialzz{height:34px !important;line-height:0 !important;display:flex !important;align-items:center !important}#top-search .header-right,#top-search .rst-search-form{height:34px !important;line-height:0 !important;display:flex !important;align-items:center !important}#top-search{transform:translateY(-6px)!important}}@media(max-width:720px){#top-social,#top-search{height:29px !important;line-height:0 !important;display:flex !important;align-items:center !important}#top-social .widget-content,#top-social .socialzz,.header-top .rst-social-menu .widget-content,.header-top .rst-social-menu .socialzz{height:29px !important;line-height:0 !important;display:flex !important;align-items:center !important}.mobile-search-trigger{transform:translateY(-1px)!important}body.vc-mobile-search-open #top-search{transform:none !important}}@media(min-width:721px){.header-top .container{align-items:stretch !important}#header{display:flex !important;align-items:center !important;line-height:0 !important;height:auto !important;align-self:stretch !important}#logo,.logo_h{display:flex !important;align-items:center !important;line-height:0 !important;margin:0 !important}#logo img,.logo_h img{display:block !important;margin:0 !important;vertical-align:middle !important}#top-social,.header-top .rst-social-menu{display:flex !important;align-items:center !important;line-height:0 !important;height:100% !important;align-self:stretch !important}#top-social .widget-content,#top-social .socialzz,.header-top .rst-social-menu .widget-content,.header-top .rst-social-menu .socialzz{display:flex !important;align-items:center !important;line-height:0 !important;height:100% !important}#top-social a,.header-top .rst-social-menu a{display:inline-flex !important;align-items:center !important;justify-content:center !important;width:34px !important;height:34px !important;line-height:1 !important;margin-top:0 !important;margin-bottom:0 !important}#top-search{display:flex !important;align-items:center !important;line-height:0 !important;height:100% !important;align-self:stretch !important;transform:none !important}#top-search .header-right{display:flex !important;align-items:center !important;line-height:0 !important;height:100% !important}#top-search .rst-search-form{display:flex !important;align-items:center !important;height:34px !important;line-height:0 !important;margin-top:0 !important;margin-bottom:0 !important}#top-search .rst-search-form input{height:32px !important;line-height:32px !important;margin:0 !important;vertical-align:middle !important}#top-search .rst-search-form>button[type="submit"]{height:34px !important;line-height:34px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;margin:0 !important;vertical-align:middle !important}}@media(max-width:720px){.header-top .container{align-items:center !important;min-height:44px !important}#header{display:flex !important;align-items:center !important;line-height:0 !important}#logo,.logo_h{display:flex !important;align-items:center !important;line-height:0 !important;margin:0 !important}#logo img,.logo_h img{display:block !important;vertical-align:middle !important;margin:0 !important}#top-social,.header-top .rst-social-menu{display:flex !important;align-items:center !important;line-height:0 !important}#top-social .widget-content,#top-social .socialzz,.header-top .rst-social-menu .widget-content,.header-top .rst-social-menu .socialzz{display:flex !important;align-items:center !important;line-height:0 !important}.mobile-search-trigger{display:inline-flex !important;align-items:center !important;justify-content:center !important;transform:none !important;margin:0 !important;vertical-align:middle !important;line-height:1 !important}body.vc-mobile-search-open #top-search{transform:none !important}}#logo img,.logo_h img{transform:none !important;position:relative !important;top:-2px !important}html[data-theme="dark"] #top-search .rst-search-form input::placeholder,html[data-theme="dark"] .rst-search-form input::placeholder{color:#c0c0c0 !important;opacity:1 !important}html[data-theme="dark"] .rst-search-form button[type="submit"]:hover,html[data-theme="dark"] .rst-search-form button[type="submit"]:focus-visible{background:#e5daba !important;color:#000 !important}.post-body,.entry-content,.post-entry{overflow-wrap:break-word !important;word-wrap:break-word !important}html[data-theme="dark"] .followit--follow-form-container .form-preview,html[data-theme="dark"] .followit--follow-form-container div[style*="background"],html[data-theme="dark"] .followit--follow-form-container form{background-color:var(--surface)!important;border-color:var(--line)!important;color:var(--text)!important}html[data-theme="dark"] .followit--follow-form-container .preview-heading h5,html[data-theme="dark"] .followit--follow-form-container label,html[data-theme="dark"] .followit--follow-form-container p,html[data-theme="dark"] .followit--follow-form-container span{color:var(--text)!important}html[data-theme="dark"] .followit--follow-form-container input,html[data-theme="dark"] .followit--follow-form-container .preview-input-field input{background-color:var(--surface-soft)!important;color:var(--text)!important;border-color:var(--line)!important}html[data-theme="dark"] .followit--follow-form-container input::placeholder{color:#c0c0c0 !important;opacity:1 !important}@media(max-width:720px){.featured-carousel-btn{min-width:48px !important;min-height:48px !important}}.post-title,.post-title.entry-title,h1.post-title,.entry-title,.post h1,.vc-item-post h1,.post-header h1{font-size:clamp(1.75rem,5vw+1rem,3.25rem)!important;line-height:1.1 !important;letter-spacing:-0.02em !important}.post-body h2,.entry-content h2,.post-entry h2,.vc-item-post h2,.post h2{font-size:2rem !important;line-height:1.16 !important;letter-spacing:-0.015em !important}.post-body h3,.entry-content h3,.post-entry h3,.vc-item-post h3,.post h3,.featured-card h3,.index-card h2,.mobile-index-title{font-size:1.5rem !important;line-height:1.18 !important;letter-spacing:-0.01em !important}.post-body h4,.entry-content h4,.post-entry h4,.vc-item-post h4,.post h4,.post-box-title,.sidebar h2,.sidebar h3,.widget h2,.widget h3{font-size:1.125rem !important;line-height:1.22 !important;letter-spacing:0 !important}@media(max-width:720px){.post-title,.post-title.entry-title,h1.post-title,.entry-title,.post h1,.vc-item-post h1,.post-header h1{font-size:clamp(1.75rem,5vw+1rem,2rem)!important;line-height:1.1 !important;letter-spacing:-0.02em !important}.post-body h2,.entry-content h2,.post-entry h2,.vc-item-post h2,.post h2{font-size:1.5rem !important;line-height:1.16 !important;letter-spacing:-0.015em !important}.post-body h3,.entry-content h3,.post-entry h3,.vc-item-post h3,.post h3,.featured-card h3,.index-card h2,.mobile-index-title{font-size:1.25rem !important;line-height:1.18 !important;letter-spacing:-0.01em !important}.post-body h4,.entry-content h4,.post-entry h4,.vc-item-post h4,.post h4,.post-box-title,.sidebar h2,.sidebar h3,.widget h2,.widget h3{font-size:1rem !important;line-height:1.22 !important;letter-spacing:0 !important}}@media(min-width:721px){.featured-card h3,.index-card h2{font-size:1.5rem !important;line-height:1.18 !important}}@media(max-width:720px){#featured-posts{position:relative!important}.featured-card{position:relative!important}.featured-carousel-btn{top:calc((100vw - 40px)*.5625/2)!important;transform:translateY(-50%)!important;z-index:8!important;opacity:.92!important}.featured-carousel-prev{left:8px!important}.featured-carousel-next{right:8px!important}.featured-card-body{position:relative!important;z-index:2!important;padding-top:18px!important}.featured-card h3{position:relative!important;z-index:3!important;padding-left:0!important;padding-right:0!important}}@media(max-width:420px){.featured-carousel-btn{top:calc((100vw - 40px)*.5625/2)!important}.featured-carousel-prev{left:8px!important}.featured-carousel-next{right:8px!important}}@media(max-width:720px){#navigation{position:sticky!important;top:0!important;min-height:44px!important;height:auto!important;overflow:visible!important;z-index:80!important}#navigation>.menu-mobile,.menu-mobile{position:absolute!important;left:12px!important;right:auto!important;top:22px!important;transform:translateY(-50%)!important;width:44px!important;height:44px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;font-size:0!important;line-height:0!important;letter-spacing:0!important;text-indent:0!important;z-index:90!important}.menu-mobile[aria-expanded="true"]{left:auto!important;right:12px!important;top:22px!important;transform:translateY(-50%)!important;background:var(--surface-soft)!important}.menu-mobile:before,.menu-mobile:after{content:none!important;display:none!important}.menu-mobile-icon,.menu-mobile-icon:before,.menu-mobile-icon:after{display:block!important;width:22px!important;height:2px!important;background:var(--text)!important;border-radius:2px!important;position:absolute!important;left:50%!important;top:50%!important;transform-origin:center!important;transition:transform .18s ease,opacity .18s ease,box-shadow .18s ease!important}.menu-mobile-icon{transform:translate(-50%,-50%)!important;box-shadow:0 -7px 0 var(--text),0 7px 0 var(--text)!important}.menu-mobile-icon:before,.menu-mobile-icon:after{content:""!important;box-shadow:none!important}.menu-mobile-icon:before{transform:translate(-50%,-50%)rotate(0deg)!important;opacity:0!important}.menu-mobile-icon:after{transform:translate(-50%,-50%)rotate(0deg)!important;opacity:0!important}.menu-mobile[aria-expanded="true"] .menu-mobile-icon{background:transparent!important;box-shadow:none!important}.menu-mobile[aria-expanded="true"] .menu-mobile-icon:before{opacity:1!important;transform:translate(-50%,-50%)rotate(45deg)!important}.menu-mobile[aria-expanded="true"] .menu-mobile-icon:after{opacity:1!important;transform:translate(-50%,-50%)rotate(-45deg)!important}.menu-mobile:focus-visible{outline:2px solid var(--focus)!important;outline-offset:2px!important;border-radius:4px!important}.menu-mobile:hover{background:var(--surface-soft)!important}.theme-switch-mobile{position:absolute!important;right:12px!important;top:22px!important;transform:translateY(-50%)!important;margin:0!important;z-index:85!important}body.mobile-nav-open .theme-switch-mobile{display:none!important}#navigation-wrapper{margin:0!important;padding-top:0!important}body.mobile-nav-open #navigation-wrapper{display:block!important;padding:44px 0 12px!important}body.mobile-nav-open #navigation-wrapper ul{margin:0!important}.header-top{clear:both!important;margin-top:0!important;padding-top:18px!important}.header-top .container{position:relative!important;min-height:36px!important}#header{padding-left:0!important}}html[data-theme="dark"] .menu-mobile-icon,html[data-theme="dark"] .menu-mobile-icon:before,html[data-theme="dark"] .menu-mobile-icon:after{background:var(--text)!important}html[data-theme="dark"] .menu-mobile[aria-expanded="true"] .menu-mobile-icon{background:transparent!important}
+
+]]></b:skin>
+
+		<script type='application/ld+json'>{&quot;@context&quot;:&quot;https://schema.org&quot;,&quot;@type&quot;:&quot;Organization&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl/>&quot;,&quot;logo&quot;:{&quot;@type&quot;:&quot;ImageObject&quot;,&quot;url&quot;:&quot;https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMv3E96Befmr-NIQ0L4VvxeDBieG2Gj3jHuHSjlitPLtsqbZDhBECtfgW8KAiTnOHJvXM1NvXXXj4npcFGGrbJiBDonu0PY9QPKeJTByOGALO8IJo23bvj3ulA2LPm_49n51Z1e2Q/w200-h200-rw/Vagabond%20Couple%20Transparent%20Overlay%20Logo%20-%20Original%201080x1080%20(adobe%20express).png&quot;,&quot;width&quot;:200,&quot;height&quot;:200},&quot;sameAs&quot;:[&quot;https://www.facebook.com/vagacouple&quot;,&quot;https://www.youtube.com/@vagabondcouple&quot;,&quot;https://www.instagram.com/vagabondcouple&quot;]}</script>
+		<script type='application/ld+json'>{&quot;@context&quot;:&quot;https://schema.org&quot;,&quot;@type&quot;:&quot;WebSite&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;alternateName&quot;:&quot;#VagabondCouple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl/>&quot;,&quot;publisher&quot;:{&quot;@type&quot;:&quot;Organization&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;},&quot;potentialAction&quot;:{&quot;@type&quot;:&quot;SearchAction&quot;,&quot;target&quot;:{&quot;@type&quot;:&quot;EntryPoint&quot;,&quot;urlTemplate&quot;:&quot;<data:blog.homepageUrl/>search?q={search_term_string}&quot;},&quot;query-input&quot;:&quot;required name=search_term_string&quot;}}</script>
+		<script>
+		//<![CDATA[
+		var numposts11 = 20;
+		function vcBloggerImageSize(url, size){
+		  url = String(url || '');
+		  size = size || 's640';
+		  if(!url) return '';
+		  return url
+		    .replace(/\/s\d+(?:\-[^\/]+)?\//, '/' + size + '/')
+		    .replace(/\/w\d+\-h\d+(?:\-[^\/]+)?\//, '/' + size + '/')
+		    .replace(/=s\d+(?:\-[^&]+)?/, '=' + size)
+		    .replace(/=w\d+\-h\d+(?:\-[^&]+)?/, '=' + size);
+		}
+		function vcStripHTML(html, maxWords){
+		  var source = String(html || '').replace(/<iframe[\s\S]*?<\/iframe>/gi,'').replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'');
+		  var holder = document.createElement('div');
+		  holder.innerHTML = source;
+		  var text = (holder.textContent || holder.innerText || '').replace(/\s+/g,' ').trim();
+		  var words = text.split(' ');
+		  return words.slice(0, maxWords || 28).join(' ') + (words.length > (maxWords || 28) ? '…' : '');
+		}
+		function vcEntryLink(entry){
+		  if(!entry.link) return '#';
+		  for(var i=0;i<entry.link.length;i++){ if(entry.link[i].rel === 'alternate') return entry.link[i].href; }
+		  return entry.link[0].href;
+		}
+		function vcEntryImage(entry, size){
+		  size = size || 's640';
+		  if(entry && entry.media$thumbnail && entry.media$thumbnail.url) return vcBloggerImageSize(entry.media$thumbnail.url, size);
+		  var content = entry && entry.content && entry.content.$t || '';
+		  var s = content.match(/<img[^>]+srcset=["']([^"']+)["']/i);
+		  if(s){
+		    var parts = s[1].split(',').map(function(part){
+		      var bits = part.trim().split(/\s+/);
+		      return {url: bits[0], width: parseInt((bits[1] || '0').replace(/\D/g,''), 10) || 0};
+		    }).sort(function(a,b){ return b.width - a.width; });
+		    if(parts[0] && parts[0].url) return vcBloggerImageSize(parts[0].url, size);
+		  }
+		  var m = content.match(/<img[^>]+(?:data-src|src)=["']([^"']+)["']/i);
+		  if(m) return vcBloggerImageSize(m[1], size);
+		  return '';
+		}
+		var relatedTitles = [], relatedUrls = [], thumburl = [], relatedTitlesNum = 0, relatedFeedsPending = 0, relatedPrintRequested = false, relatedCurrentUrl = '', relatedPrintTimer = null;
+		var defaultnoimage = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgqXde-worQuTJ8HHnBDZDs6PNRypLtaVHWiC6aHMqOU2pCcyHiYijh6gCi59mt3tqGgI_7MTY8RSlG7PkuDiP3r73Mzl2xVzODlzHy5pB2s7whR4ZeCpma_3xq70VGVz_q-7YuVPdSX37m/s1600/no-image-found.jpg';
+		var maxresults = 3;
+		function vcEscape(s){ return String(s || '').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+		function vcDecodeHTML(value){ var el = document.createElement('textarea'); el.innerHTML = value || ''; return el.value; }
+		function vcFirstImageFromHTML(html){ var m = String(html || '').match(/<img[^>]+(?:data-src|src)=["']([^"']+)["']/i); return m ? m[1] : ''; }
+		function vcLimitLabelHTML(tag, maxLabels){
+		  var raw = String(tag || '');
+		  if(!raw) return '';
+		  var holder = document.createElement('div');
+		  holder.innerHTML = raw;
+		  var links = Array.prototype.slice.call(holder.querySelectorAll('a')).slice(0, maxLabels || 3);
+		  return links.map(function(a){
+		    var href = vcEscape(a.getAttribute('href') || '#');
+		    var text = vcEscape(a.textContent || a.innerText || '');
+		    return '<a href="' + href + '" rel="tag">' + text + '</a>';
+		  }).join('');
+		}
+		function createSummaryAndThumb(pID, title, url, date, comment, tag){
+		  var div = document.getElementById(pID); if(!div) return;
+		  var body = div.innerHTML || '';
+		  var img = vcFirstImageFromHTML(body);
+		  var iframe = body.match(/<iframe[^>]+src=["']([^"']+)["'][^>]*>/i);
+		  var excerpt = vcStripHTML(body.replace(/<img[\s\S]*?>/ig,'').replace(/<iframe[\s\S]*?<\/iframe>/ig,''), 50);
+		  var labelHtml = vcLimitLabelHTML(tag, 3);
+		  var safeUrl = vcEscape(url);
+		  var safeTitle = vcEscape(vcDecodeHTML(title));
+		  var safeDate = vcEscape(date);
+		  var media = '';
+		  if(img){ media = '<div class="post-image"><a href="'+safeUrl+'"><img loading="lazy" decoding="async" src="'+vcEscape(img)+'" alt="'+safeTitle+'"/></a></div>'; }
+		  else if(iframe){ media = '<div class="post-image"><iframe loading="lazy" src="'+vcEscape(iframe[1])+'" allowfullscreen="allowfullscreen"></iframe></div>'; }
+		  div.className = (div.className ? div.className + ' ' : '') + 'index-summary';
+		  if(div.parentElement && div.parentElement.classList && !div.parentElement.classList.contains('index-card')){ div.parentElement.classList.add('index-card'); }
+		  div.innerHTML = '<div class="post-header"><div class="post-tag">'+labelHtml+'</div><h2><a href="'+safeUrl+'">'+safeTitle+'</a></h2><div class="meta-date">'+safeDate+'</div></div>' + media + '<div class="post-entry"><p>'+excerpt+'...</p><p><a class="more-link" href="'+safeUrl+'">Continue Reading</a></p></div>';
+		  div.style.display = 'block';
+		}
+		function vcQueueRelatedFeed(){
+		  relatedFeedsPending++;
+		}
+		function vcRelatedMaybePrint(){
+		  if(!relatedPrintRequested || relatedFeedsPending > 0) return;
+		  if(relatedPrintTimer){ window.clearTimeout(relatedPrintTimer); relatedPrintTimer = null; }
+		  removeRelatedDuplicates_thumbs();
+		  printRelatedLabels_thumbs(relatedCurrentUrl);
+		}
+		function related_results_labels_thumbs(json){
+		  try {
+		    if(json && json.feed && json.feed.entry){
+		      for(var i=0;i<json.feed.entry.length;i++){
+		        var entry = json.feed.entry[i], href = vcEntryLink(entry), title = entry.title && entry.title.$t || 'Related post';
+		        if(!href) continue;
+		        relatedTitles.push(title.length>60 ? title.substring(0,60)+'…' : title); relatedUrls.push(href); thumburl.push(vcEntryImage(entry, 's480') || defaultnoimage);
+		      }
+		    }
+		  } finally {
+		    if(relatedFeedsPending > 0) relatedFeedsPending--;
+		    vcRelatedMaybePrint();
+		  }
+		}
+		function removeRelatedDuplicates_thumbs(){
+		  var seen={}, t=[], u=[], th=[];
+		  for(var i=0;i<relatedUrls.length;i++){ if(!seen[relatedUrls[i]]){ seen[relatedUrls[i]]=true; t.push(relatedTitles[i]); u.push(relatedUrls[i]); th.push(thumburl[i]); } }
+		  relatedTitles=t; relatedUrls=u; thumburl=th;
+		}
+		function printRelatedLabels_thumbs(current){
+		  relatedPrintRequested = true;
+		  relatedCurrentUrl = current || relatedCurrentUrl || '';
+		  if(relatedFeedsPending > 0){
+		    if(!relatedPrintTimer){ relatedPrintTimer = window.setTimeout(function(){ relatedFeedsPending = 0; vcRelatedMaybePrint(); }, 3000); }
+		    return;
+		  }
+		  var max = (typeof maxresults !== 'undefined') ? maxresults : 3, printed = 0, html = '';
+		  for(var i=0;i<relatedUrls.length && printed<max;i++){
+		    if(relatedUrls[i] === relatedCurrentUrl) continue;
+		    var img = vcBloggerImageSize(thumburl[i] || defaultnoimage, 's480');
+		    var safeRelatedUrl = vcEscape(relatedUrls[i]);
+		    html += '<article class="item-related related-journey-card"><a class="related-thumb" href="'+safeRelatedUrl+'"><img loading="lazy" decoding="async" width="320" height="180" src="'+vcEscape(img)+'" alt="'+vcEscape(relatedTitles[i])+'"/></a><div class="related-body"><h3><a href="'+safeRelatedUrl+'">'+vcEscape(relatedTitles[i])+'</a></h3><a class="related-read" href="'+safeRelatedUrl+'">Continue reading →</a></div></article>';
+		    printed++;
+		  }
+		  var target = document.querySelector('.post-related .related-results');
+		  if(target) target.innerHTML = html;
+		  relatedTitles=[]; relatedUrls=[]; thumburl=[]; relatedPrintRequested = false;
+		}
+		function vcInitFeaturedCarousel(){
+		  var wrap = document.getElementById('featured-posts');
+		  if(!wrap || wrap.dataset.carouselReady === '1') return;
+		  var track = wrap.querySelector('.featured-posts-track');
+		  if(!track) return;
+		  var cards = Array.prototype.slice.call(track.querySelectorAll('.featured-card'));
+		  if(cards.length < 2){ wrap.classList.add('is-single'); return; }
+		  wrap.dataset.carouselReady = '1';
+		  var index = 0, timer = null, restartTimer = null, visible = true;
+		  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		  var live = document.createElement('span');
+		  live.className = 'sr-only featured-carousel-live';
+		  live.setAttribute('aria-live','off');
+		  wrap.appendChild(live);
+		  function perView(){ return window.matchMedia('(max-width:720px)').matches ? 1 : (window.matchMedia('(max-width:960px)').matches ? 2 : 3); }
+		  function maxIndex(){ return Math.max(0, cards.length - perView()); }
+		  function gap(){ var g = window.getComputedStyle(track).gap || window.getComputedStyle(track).columnGap || '18px'; g = parseFloat(g); return isNaN(g) ? 18 : g; }
+		  function apply(){
+		    window.requestAnimationFrame(function(){
+		      var max = maxIndex();
+		      if(index > max) index = 0;
+		      if(index < 0) index = max;
+		      var width = cards[0].getBoundingClientRect().width;
+		      if(!width || width < 10){ window.setTimeout(apply, 100); return; }
+		      track.style.transform = 'translateX(-' + (index * (width + gap())) + 'px)';
+		      if(live && live.getAttribute('aria-live') === 'polite' && cards[index]){
+		        var h = cards[index].querySelector('h3');
+		        live.textContent = h ? 'Featured post: ' + h.textContent : 'Featured post changed';
+		      }
+		    });
+		  }
+		  function next(){ index = index >= maxIndex() ? 0 : index + 1; apply(); }
+		  function prev(){ index = index <= 0 ? maxIndex() : index - 1; apply(); }
+		  function stop(){ if(timer){ window.clearInterval(timer); timer = null; } }
+		  function start(){ stop(); if(!reducedMotion && visible && maxIndex() > 0){ timer = window.setInterval(next, 4500); } }
+		  function pauseThenResume(){ stop(); if(restartTimer) window.clearTimeout(restartTimer); restartTimer = window.setTimeout(start, 6500); }
+		  function addButton(cls, label, icon, handler){
+		    var btn = document.createElement('button');
+		    btn.type = 'button'; btn.className = 'featured-carousel-btn ' + cls; btn.setAttribute('aria-label', label); btn.innerHTML = '<i class="fa-solid ' + icon + '" aria-hidden="true"></i>';
+		    btn.addEventListener('click', function(){ if(live) live.setAttribute('aria-live','polite'); handler(); pauseThenResume(); });
+		    wrap.appendChild(btn);
+		  }
+		  addButton('featured-carousel-prev','Previous featured post','fa-angle-left',prev);
+		  addButton('featured-carousel-next','Next featured post','fa-angle-right',next);
+		  function waitForImages(done){
+		    var imgs = Array.prototype.slice.call(track.querySelectorAll('img'));
+		    if(!imgs.length){ done(); return; }
+		    var remaining = imgs.length;
+		    function one(){ remaining--; if(remaining <= 0) done(); }
+		    imgs.forEach(function(img){ if(img.complete){ one(); } else { img.addEventListener('load', one, {once:true}); img.addEventListener('error', one, {once:true}); } });
+		  }
+		  waitForImages(function(){ apply(); start(); });
+		  var resizeTimer;
+		  window.addEventListener('resize', function(){ window.clearTimeout(resizeTimer); resizeTimer = window.setTimeout(function(){ apply(); start(); }, 150); });
+		  wrap.addEventListener('mouseenter', stop);
+		  wrap.addEventListener('mouseleave', start);
+		  wrap.addEventListener('focusin', stop);
+		  wrap.addEventListener('focusout', start);
+		  wrap.addEventListener('touchstart', pauseThenResume, {passive:true});
+		  if('IntersectionObserver' in window){
+		    new IntersectionObserver(function(entries){ visible = entries[0] && entries[0].isIntersecting; visible ? start() : stop(); }, {threshold:.2}).observe(wrap);
+		  }
+		}
+		function showrecentposts1(json){
+		  var target = document.getElementById('featured-posts'); if(!target || !json || !json.feed || !json.feed.entry) return;
+		  var cards = json.feed.entry.slice(0,numposts11).map(function(entry, i){
+		    var title = entry.title && entry.title.$t || 'Post';
+		    var href = vcEntryLink(entry);
+		    var img = vcEntryImage(entry, 's640');
+		    var excerpt = vcStripHTML(entry.summary && entry.summary.$t || entry.content && entry.content.$t || '', 26);
+		    var safeHref = vcEscape(href);
+		    var safeTitle = vcEscape(title);
+		    var safeImg = img ? vcEscape(img) : '';
+		    var safeExcerpt = vcEscape(excerpt);
+		    var safeAlt = safeTitle || 'Featured travel post';
+		    return '<article class="featured-card"><a href="'+safeHref+'">'+(img?'<img loading="'+(i<3?'eager':'lazy')+'" decoding="async" src="'+safeImg+'" alt="'+safeAlt+'"/>':'')+'<div class="featured-card-body"><h3>'+safeTitle+'</h3><p>'+safeExcerpt+'</p></div></a></article>';
+		  }).join('');
+		  target.innerHTML = '<div class="featured-posts-track">' + cards + '</div>';
+		  vcInitFeaturedCarousel();
+		}
+		//]]>
+		</script>
+	</head>
+<body>
+		<a class='skip-to-content' href='#main-content'>Skip to main content</a>
+
+			<div id='navigation'>
+					<nav aria-label='Primary navigation' id='navigation-wrapper'>
+						<ul>
+							<li><a expr:href='data:blog.homepageUrl'>Home</a></li>
+							<li><a href='/p/contact.html'>About Us &amp; Contact</a></li>
+							<li><a href='/p/privacy-policy.html'>Privacy Policy</a></li>
+							<li class='theme-control'><button aria-label='Switch theme' class='theme-switch' data-effective='light' id='vc-theme-toggle' title='Switch theme' type='button'><span aria-hidden='true' class='theme-switch-track'><span class='theme-switch-icon theme-switch-sun'>&#9728;</span><span class='theme-switch-icon theme-switch-moon'>&#9790;</span><span class='theme-switch-thumb'/></span><span class='sr-only theme-switch-label' id='vc-theme-toggle-label'>Theme follows device settings. Activate to switch theme.</span></button></li>
+						</ul>
+					</nav>
+<div aria-label='Menu' class='menu-mobile' role='button' tabindex='0'><span aria-hidden='true' class='menu-mobile-icon'/></div>
+<button aria-label='Switch theme' class='theme-switch theme-switch-mobile' data-effective='light' id='vc-theme-toggle-mobile' title='Switch theme' type='button'><span aria-hidden='true' class='theme-switch-track'><span class='theme-switch-icon theme-switch-sun'>&#9728;</span><span class='theme-switch-icon theme-switch-moon'>&#9790;</span><span class='theme-switch-thumb'/></span><span class='sr-only theme-switch-label' id='vc-theme-toggle-label-mobile'>Theme follows device settings. Activate to switch theme.</span></button>
+				</div>
+				<div class='header-top'>
+					<div class='container'>
+						<b:section id='header' showaddelement='yes'>
+<b:widget id='Header1' locked='false' title='The Vagabond Couple (Header)' type='Header' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='displayUrl'>https://blogger.googleusercontent.com/img/a/AVvXsEhpuoqWPunqT2G8FZ-bee53TsfGPItivlFKOJnGopUUpx7HK1gOkVRsuC-bG9AR9zRovRhfQUBUzHRrkhuvLBhzi7QBeqSeqeuGiKkSQO8JRZNyqYXp6-AjCCridYf4lbLwI8Z59dihVPOvGGGevUDLtGJ0IHStGMcuhCDegwZ629QeLK3hzODQSJvMhDX5=s16000</b:widget-setting>
+    <b:widget-setting name='displayHeight'>332</b:widget-setting>
+    <b:widget-setting name='sectionWidth'>1152</b:widget-setting>
+    <b:widget-setting name='useImage'>true</b:widget-setting>
+    <b:widget-setting name='shrinkToFit'>false</b:widget-setting>
+    <b:widget-setting name='imagePlacement'>REPLACE</b:widget-setting>
+    <b:widget-setting name='displayWidth'>778</b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+									<b:if cond='data:useImage'>
+										<b:if cond='data:imagePlacement == &quot;BEHIND&quot;'>
+											<b:if cond='data:mobile'>
+												<div class='container'>
+													<div id='logo'>
+														<h1 class='title' style='background: transparent; border-width: 0px'>
+															<b:include name='title'/>
+														</h1>
+													</div>
+													<b:include name='description'/>
+												</div>
+												<b:else/>
+												<div class='container' expr:style='&quot;background-image: url(\&quot;&quot; + data:sourceUrl + &quot;\&quot;); &quot;  + &quot;background-position: &quot;   + data:backgroundPositionStyleStr + &quot;; &quot;                        + data:widthStyleStr                        + &quot;min-height: &quot; + data:height                        + &quot;_height: &quot; + data:height                        + &quot;background-repeat: no-repeat; &quot;'>
+													<div class='titlewrapper' style='background: transparent'>
+														<h1 class='title' style='background: transparent; border-width: 0px'>
+															<b:include name='title'/>
+														</h1>
+													</div>
+													<b:include name='description'/>
+												</div>
+											</b:if>
+											<b:else/>
+
+											<div class='container'>
+												<div id='logo'>
+													<h1>
+														<a expr:href='data:blog.homepageUrl' style='display: block'>								<img decoding='async' expr:alt='data:title' expr:height='data:height' expr:id='data:widget.instanceId + &quot;_headerimg&quot;' expr:src='data:sourceUrl' expr:width='data:width' fetchpriority='high'/>
+														</a>
+													</h1>
+
+													<b:if cond='data:imagePlacement == &quot;BEFORE_DESCRIPTION&quot;'>
+														<b:include name='description'/>
+													</b:if>
+												</div>
+											</div>
+										</b:if>
+										<b:else/>
+
+										<div class='container'>
+											<h1 class='logo_h logo_h__txt'>
+												<b:include name='title'/>
+											</h1>
+											<p class='logo_tagline'>
+												<b:include name='description'/>
+											</p>
+										</div>
+									</b:if>
+								</b:includable>
+  <b:includable id='description'>
+									<p>
+										<data:description/>
+									</p>
+								</b:includable>
+  <b:includable id='title'>
+									<b:if cond='data:blog.url == data:blog.homepageUrl'>
+										<data:title/>
+										<b:else/>
+										<a expr:href='data:blog.homepageUrl'>
+											<data:title/>
+										</a>
+									</b:if>
+								</b:includable>
+</b:widget>
+</b:section>
+						<b:section class='rst-social-menu' id='top-social' showaddelement='yes'>
+<b:widget id='LinkList1' locked='false' title='' type='LinkList' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='sorting'>NONE</b:widget-setting>
+    <b:widget-setting name='text-1'>youtube</b:widget-setting>
+    <b:widget-setting name='link-1'>https://www.youtube.com/@vagabondcouple</b:widget-setting>
+    <b:widget-setting name='text-0'>facebook</b:widget-setting>
+    <b:widget-setting name='link-2'>https://twitter.com/vagabond_couple</b:widget-setting>
+    <b:widget-setting name='link-0'>https://www.facebook.com/vagacouple/</b:widget-setting>
+    <b:widget-setting name='text-2'>twitter</b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+									<div class='widget-content'>
+										<b:loop values='data:links' var='link'>
+											<a expr:href='data:link.target'>
+												<i/>
+												<span class='smg-label'>
+													<data:link.name/>
+												</span>
+											</a>
+										</b:loop>
+										<b:include name='quickedit'/>
+									</div>
+								</b:includable>
+</b:widget>
+</b:section>
+						<div id='top-search'>
+							<button aria-controls='top-search-form' aria-expanded='false' aria-label='Open search' class='mobile-search-trigger' type='button'><i aria-hidden='true' class='fa-solid fa-magnifying-glass'/></button>
+							<div class='header-right'>
+								<form action='/search' class='rst-search-form open rst-fixed' id='top-search-form'>
+									<button aria-label='Close search and return to header' class='mobile-search-back' type='button'><i aria-hidden='true' class='fa-solid fa-arrow-left'/></button>
+									<input aria-label='Search the blog' name='q' placeholder='Search here ...' type='text'/>
+									<button aria-label='Search' type='submit'><i aria-hidden='true' class='fa-solid fa-magnifying-glass'/></button>
+									<button aria-label='Close search' class='mobile-search-close' type='button'><i aria-hidden='true' class='fa-solid fa-xmark'/></button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class='clear'/>
+					<b:if cond='data:blog.url == data:blog.homepageUrl'>
+						<section aria-label='Featured posts' class='main-slider'>
+							<div aria-live='polite' class='featured-posts' id='featured-posts'/>
+						</section>
+					</b:if>
+					<div class='container sp_sidebar'>
+						<main id='main-content' role='main'>
+						<b:section id='main' showaddelement='no'>
+<b:widget id='Blog1' locked='true' title='Blog Posts' type='Blog' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='showDateHeader'>true</b:widget-setting>
+    <b:widget-setting name='style.textcolor'>#ffffff</b:widget-setting>
+    <b:widget-setting name='showShareButtons'>true</b:widget-setting>
+    <b:widget-setting name='authorLabel'>By</b:widget-setting>
+    <b:widget-setting name='showCommentLink'>true</b:widget-setting>
+    <b:widget-setting name='style.urlcolor'>#ffffff</b:widget-setting>
+    <b:widget-setting name='showAuthor'>false</b:widget-setting>
+    <b:widget-setting name='style.linkcolor'>#ffffff</b:widget-setting>
+    <b:widget-setting name='style.unittype'>TextAndImage</b:widget-setting>
+    <b:widget-setting name='style.bgcolor'>#ffffff</b:widget-setting>
+    <b:widget-setting name='timestampLabel'>-</b:widget-setting>
+    <b:widget-setting name='reactionsLabel'/>
+    <b:widget-setting name='showAuthorProfile'>false</b:widget-setting>
+    <b:widget-setting name='style.layout'>1x1</b:widget-setting>
+    <b:widget-setting name='showLabels'>true</b:widget-setting>
+    <b:widget-setting name='showLocation'>true</b:widget-setting>
+    <b:widget-setting name='showTimestamp'>true</b:widget-setting>
+    <b:widget-setting name='postsPerAd'>3</b:widget-setting>
+    <b:widget-setting name='showBacklinks'>false</b:widget-setting>
+    <b:widget-setting name='style.bordercolor'>#ffffff</b:widget-setting>
+    <b:widget-setting name='showInlineAds'>true</b:widget-setting>
+    <b:widget-setting name='showReactions'>false</b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main' var='top'>
+									<b:loop values='data:posts' var='post'>
+										<b:include data='post' name='post'/>
+									</b:loop>
+									<b:if cond='data:blog.pageType != &quot;item&quot;'>
+									<b:if cond='data:blog.pageType != &quot;static_page&quot;'>
+										<b:include name='nextprev'/>
+									</b:if>
+									</b:if>
+								</b:includable>
+  <b:includable id='backlinkDeleteIcon' var='backlink'>
+									<span expr:class='&quot;item-control &quot; + data:backlink.adminClass'>
+									<a expr:href='data:backlink.deleteUrl' expr:title='data:top.deleteBacklinkMsg'>
+									<img src='//www.blogger.com/img/icon_delete13.gif'/>
+									</a>
+									</span>
+								</b:includable>
+  <b:includable id='backlinks' var='post'>
+									<a name='links'/>
+										<h4>
+											<data:post.backlinksLabel/>
+										</h4>
+										<b:if cond='data:post.numBacklinks != 0'>
+											<dl class='comments-block' id='comments-block'>
+												<b:loop values='data:post.backlinks' var='backlink'>
+													<div class='collapsed-backlink backlink-control'>
+														<dt class='comment-title'>
+															<span class='backlink-toggle-zippy'>&#160;</span>
+									<a expr:href='data:backlink.url' rel='nofollow'><data:backlink.title/></a>
+									<b:include data='backlink' name='backlinkDeleteIcon'/>
+									</dt>
+									<dd class='comment-body collapseable'>
+									<data:backlink.snippet/>
+									</dd>
+									<dd class='comment-footer collapseable'>
+									<span class='comment-author'><data:post.authorLabel/> <data:backlink.author/></span>
+									<span class='comment-timestamp'><data:post.timestampLabel/> <data:backlink.timestamp/></span>
+									</dd>
+									</div>
+									</b:loop>
+									</dl>
+									</b:if>
+									<p class='comment-footer'>
+										<a class='comment-link' expr:href='data:post.createLinkUrl' expr:id='data:widget.instanceId + &quot;_backlinks-create-link&quot;' target='_blank'>
+											<data:post.createLinkLabel/>
+										</a>
+									</p>
+								</b:includable>
+  <b:includable id='comment-form' var='post'>
+									<div class='comment-form'>
+										<a name='comment-form'/>
+											<b:if cond='data:mobile'>
+												<h4 id='comment-post-message'>
+										<a expr:id='data:widget.instanceId + &quot;_comment-editor-toggle-link&quot;' href='javascript:void(0)'><data:postCommentMsg/></a></h4>
+										<p><data:blogCommentMessage/></p>
+										<data:blogTeamBlogMessage/>
+										<a expr:href='data:post.commentFormIframeSrc' id='comment-editor-src'/>
+										<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410' id='comment-editor' name='comment-editor' src='' style='display: none' width='100%'/>
+										<b:else/>
+										<h4 id='comment-post-message'><data:postCommentMsg/></h4>
+										<p><data:blogCommentMessage/></p>
+										<data:blogTeamBlogMessage/>
+										<a expr:href='data:post.commentFormIframeSrc' id='comment-editor-src'/>
+										<iframe allowtransparency='true' class='blogger-iframe-colorize blogger-comment-from-post' frameborder='0' height='410' id='comment-editor' name='comment-editor' src='' width='100%'/>
+										</b:if>
+										<data:post.friendConnectJs/>
+										<data:post.cmtfpIframe/>
+										<script type='text/javascript'>
+											BLOG_CMT_createIframe(&#39;<data:post.appRpcRelayPath/>&#39;, &#39;<data:post.communityId/>&#39;);
+										</script>
+									</div>
+								</b:includable>
+  <b:includable id='commentDeleteIcon' var='comment'>
+								<span expr:class='&quot;item-control &quot; + data:comment.adminClass'>
+								<b:if cond='data:showCmtPopup'>
+								<div class='goog-toggle-button'>
+								<div class='goog-inline-block comment-action-icon'/>
+								</div>
+								<b:else/>
+								<a class='comment-delete' expr:href='data:comment.deleteUrl' expr:title='data:top.deleteCommentMsg'>
+								<img src='//www.blogger.com/img/icon_delete13.gif'/>
+								</a>
+								</b:if>
+								</span>
+								</b:includable>
+  <b:includable id='comment_count_picker' var='post'/>
+  <b:includable id='comment_picker' var='post'/>
+  <b:includable id='comments' var='post'/>
+  <b:includable id='feedLinks'>
+								<b:if cond='data:blog.pageType != &quot;item&quot;'>
+								<b:if cond='data:feedLinks'>
+								<div class='blog-feeds'>
+								<b:include data='feedLinks' name='feedLinksBody'/>
+								</div>
+								</b:if>
+								<b:else/>
+								<div class='post-feeds'>
+								<b:loop values='data:posts' var='post'>
+								<b:if cond='data:post.allowComments'>
+								<b:if cond='data:post.feedLinks'>
+								<b:include data='post.feedLinks' name='feedLinksBody'/>
+								</b:if>
+								</b:if>
+								</b:loop>
+								</div>
+								</b:if>
+								</b:includable>
+  <b:includable id='feedLinksBody' var='links'>
+								<div class='feed-links'>
+								<data:feedLinksMsg/>
+								<b:loop values='data:links' var='f'>
+								<a class='feed-link' expr:href='data:f.url' expr:type='data:f.mimeType' target='_blank'><data:f.name/> (<data:f.feedType/>)</a>
+								</b:loop>
+								</div>
+								</b:includable>
+  <b:includable id='iframe_comments' var='post'/>
+  <b:includable id='mobile-index-post' var='post'>
+									<div class='mobile-date-outer date-outer'>
+									<b:if cond='data:post.dateHeader'>
+									  <div class='date-header'>
+									    <span><data:post.dateHeader/></span>
+									  </div>
+									</b:if>
+
+									<div class='mobile-post-outer'>
+									  <a expr:href='data:post.url'>
+									    <h3 class='mobile-index-title entry-title'>
+									      <data:post.title/>
+									    </h3>
+
+									    <div class='mobile-index-arrow'>&amp;rsaquo;</div>
+
+									    <div class='mobile-index-contents'>
+									      <b:if cond='data:post.thumbnailUrl'>
+									        <div class='mobile-index-thumbnail'>
+									          <div class='Image'>
+									            <img decoding='async' expr:src='data:post.thumbnailUrl' loading='lazy'/>
+									          </div>
+									        </div>
+									      </b:if>
+
+									      <div class='post-body'>
+									        <b:if cond='data:post.snippet'><data:post.snippet/></b:if>
+									      </div>
+									    </div>
+
+									    <div style='clear: both;'/>
+									  </a>
+</div>
+									</div>
+									</b:includable>
+  <b:includable id='mobile-main' var='top'>
+
+									<div class='blog-posts hfeed'>
+
+									  <b:include data='top' name='status-message'/>
+
+									  <b:if cond='data:blog.pageType == &quot;index&quot;'>
+									    <b:loop values='data:posts' var='post'>
+									      <b:include data='post' name='mobile-index-post'/>
+									    </b:loop>
+									  <b:else/>
+									    <b:loop values='data:posts' var='post'>
+									      <b:include data='post' name='mobile-post'/>
+									    </b:loop>
+									  </b:if>
+									</div>
+
+									<b:include name='mobile-nextprev'/>
+									</b:includable>
+  <b:includable id='mobile-nextprev'>
+									<nav aria-label='Post navigation' class='blog-pager no-reader' data-reader-exclude='true' id='blog-pager'>
+									<b:if cond='data:newerPageUrl'>
+									  <div class='mobile-link-button' id='blog-pager-newer-link'>
+									  <a class='blog-pager-newer-link' expr:href='data:newerPageUrl' expr:id='data:widget.instanceId + &quot;_blog-pager-newer-link&quot;' expr:title='data:newerPageTitle'>&amp;lsaquo;</a>
+									  </div>
+									</b:if>
+
+									<b:if cond='data:olderPageUrl'>
+									  <div class='mobile-link-button' id='blog-pager-older-link'>
+									  <a class='blog-pager-older-link' expr:href='data:olderPageUrl' expr:id='data:widget.instanceId + &quot;_blog-pager-older-link&quot;' expr:title='data:olderPageTitle'>&amp;rsaquo;</a>
+									  </div>
+									</b:if>
+
+									<div class='mobile-link-button' id='blog-pager-home-link'>
+									<a class='home-link' expr:href='data:blog.homepageUrl'><data:homeMsg/></a>
+									</div>
+
+									<div class='mobile-desktop-link'>
+									  <a class='home-link' expr:href='data:desktopLinkUrl'><data:desktopLinkMsg/></a>
+									</div>
+
+									</nav>
+									<div class='clear'/>
+									</b:includable>
+  <b:includable id='mobile-post' var='post'>
+									<div class='date-outer'>
+									<b:if cond='data:post.dateHeader'>
+									  <h2 class='date-header'><span><data:post.dateHeader/></span></h2>
+									</b:if>
+									<div class='date-posts'>
+									  <div class='post-outer'>
+
+									    <div class='post hentry uncustomized-post-template'>
+									      <a expr:name='data:post.id'/>
+									      <b:if cond='data:post.title'>
+									        <h3 class='post-title entry-title'>
+									          <b:if cond='data:post.link'>
+									            <a expr:href='data:post.link'><data:post.title/></a>
+									          <b:else/>
+									            <b:if cond='data:post.url'>
+									              <b:if cond='data:blog.url != data:post.url'>
+									                <a expr:href='data:post.url'><data:post.title/></a>
+									              <b:else/>
+									                <data:post.title/>
+									              </b:if>
+									            <b:else/>
+									              <data:post.title/>
+									            </b:if>
+									          </b:if>
+									        </h3>
+									      </b:if>
+
+									      <div class='post-header'>
+									      </div>
+
+									      <div class='post-body entry-content' expr:id='&quot;post-body-&quot; + data:post.id'>
+									        <data:post.body/>
+									        <div style='clear: both;'/>
+
+									<b:if cond='data:view.isPost'>
+
+									<script type='application/ld+json'>{&quot;@context&quot;:&quot;https://schema.org&quot;,&quot;@type&quot;:&quot;BlogPosting&quot;,&quot;@id&quot;:&quot;<data:post.url.jsonEscaped/>#post-body-<data:post.id/>&quot;,&quot;mainEntityOfPage&quot;:{&quot;@type&quot;:&quot;WebPage&quot;,&quot;@id&quot;:&quot;<data:post.url.jsonEscaped/>&quot;},&quot;headline&quot;:&quot;<data:post.title.jsonEscaped/>&quot;,&quot;name&quot;:&quot;<data:post.title.jsonEscaped/>&quot;,&quot;url&quot;:&quot;<data:post.url.jsonEscaped/>&quot;,&quot;isPartOf&quot;:{&quot;@type&quot;:&quot;Blog&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;},&quot;datePublished&quot;:&quot;<data:post.date.iso8601/>&quot;,&quot;dateModified&quot;:&quot;<data:post.date.iso8601/>&quot;,&quot;author&quot;:{&quot;@type&quot;:&quot;Organization&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;},&quot;publisher&quot;:{&quot;@type&quot;:&quot;Organization&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;,&quot;description&quot;:&quot;Adventures of the nomadic Vagabond Couple from around the world. #VagabondCouple&quot;,&quot;logo&quot;:{&quot;@type&quot;:&quot;ImageObject&quot;,&quot;url&quot;:&quot;https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4Sg7oD4Y8W99wG16k4IfevHin90lzSlT_rzl_HhXLz7G9yEskjuq4tnpsNMu-WP6_tnKhfmsJ23sMGhG2Gj3jHuHSjlitPLtsqbZDhBECtfgW8KAiTnOHJvXM1NvXXXj4npcFGGrbJiBDonu0PY9QPKeJTByOGALO8IJo23bvj3ulA2LPm_49n51Z1e2Q/w200-h200-rw/Vagabond%20Couple%20Transparent%20Overlay%20Logo%20-%20Original%201080x1080%20(adobe%20express).png&quot;,&quot;width&quot;:200,&quot;height&quot;:200}}}</script>
+								<script type='application/ld+json'>{&quot;@context&quot;:&quot;https://schema.org&quot;,&quot;@type&quot;:&quot;BreadcrumbList&quot;,&quot;itemListElement&quot;:[{&quot;@type&quot;:&quot;ListItem&quot;,&quot;position&quot;:1,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;item&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;},{&quot;@type&quot;:&quot;ListItem&quot;,&quot;position&quot;:2,&quot;name&quot;:&quot;<data:post.title.jsonEscaped/>&quot;,&quot;item&quot;:&quot;<data:post.url/>&quot;}]}</script>
+								</b:if>
+
+								</div>
+								<div class='post-footer'>
+								<div class='post-footer-line post-footer-line-1'>
+								<span class='post-timestamp'>
+								<b:if cond='data:top.showTimestamp'>
+								<data:top.timestampLabel/>
+								<b:if cond='data:post.url'>
+								<a class='timestamp-link' expr:href='data:post.url' rel='bookmark' title='permanent link'><abbr class='published' expr:title='data:post.timestampISO8601'><data:post.timestamp/></abbr></a>
+								</b:if>
+								</b:if>
+								</span>
+									</div>
+								<div class='post-footer-line post-footer-line-2'>
+								<b:if cond='data:top.showMobileShare'>
+								<div class='mobile-link-button goog-inline-block' id='mobile-share-button'>
+								<a href='javascript:void(0);'><data:shareMsg/></a>
+								</div>
+								</b:if>
+								<b:if cond='data:top.showDummy'>
+								<div class='goog-inline-block dummy-container'><data:post.dummyTag/></div>
+								</b:if>
+								</div>
+								</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+		</b:includable>
+  <b:includable id='nextprev'>
+		<div class='pagination'>
+		<b:if cond='data:newerPageUrl'>
+		<div class='newer'><a expr:href='data:newerPageUrl'><span class='pager-heading'>Newer Posts</span></a></div>
+		</b:if>
+		<b:if cond='data:olderPageUrl'>
+		<div class='older'><a expr:href='data:olderPageUrl'><span class='pager-heading'>Older Posts</span></a></div>
+		</b:if>
+		</div>
+		</b:includable>
+  <b:includable id='post' var='post'>
+		<b:if cond='data:blog.pageType == &quot;item&quot;'>
+		<article class='post vc-post vc-item-post h-entry' itemscope='itemscope' itemtype='https://schema.org/BlogPosting' role='article'>
+		<div class='post-header'>
+		<div class='post-tag'><b:loop values='data:post.labels' var='label'><a expr:href='data:label.url + &quot;?max-results=6&quot;' rel='tag'><data:label.name/></a></b:loop></div>
+		<h1 class='post-title entry-title p-name' itemprop='headline'>
+		<data:post.title/>
+		</h1>
+		<time class='meta-date post-date dt-published' expr:datetime='data:post.timestampISO8601' itemprop='datePublished'>
+		<data:post.timestamp/>
+		</time>
+		<meta expr:content='data:post.timestampISO8601' itemprop='dateModified'/>
+		</div>
+		<div class='post-entry post-body entry-content e-content' itemprop='articleBody'>
+		<data:post.body/>
+		</div>
+		<b:if cond='data:view.isPost'>
+		<script type='application/ld+json'>{&quot;@context&quot;:&quot;https://schema.org&quot;,&quot;@type&quot;:&quot;BlogPosting&quot;,&quot;@id&quot;:&quot;<data:post.url.jsonEscaped/>#post-body-<data:post.id/>&quot;,&quot;mainEntityOfPage&quot;:{&quot;@type&quot;:&quot;WebPage&quot;,&quot;@id&quot;:&quot;<data:post.url.jsonEscaped/>&quot;},&quot;headline&quot;:&quot;<data:post.title.jsonEscaped/>&quot;,&quot;name&quot;:&quot;<data:post.title.jsonEscaped/>&quot;,&quot;url&quot;:&quot;<data:post.url.jsonEscaped/>&quot;,&quot;isPartOf&quot;:{&quot;@type&quot;:&quot;Blog&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;},&quot;datePublished&quot;:&quot;<data:post.timestampISO8601/>&quot;,&quot;dateModified&quot;:&quot;<data:post.timestampISO8601/>&quot;,&quot;author&quot;:{&quot;@type&quot;:&quot;Organization&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;},&quot;publisher&quot;:{&quot;@type&quot;:&quot;Organization&quot;,&quot;name&quot;:&quot;The Vagabond Couple&quot;,&quot;url&quot;:&quot;<data:blog.homepageUrl.jsonEscaped/>&quot;,&quot;logo&quot;:{&quot;@type&quot;:&quot;ImageObject&quot;,&quot;url&quot;:&quot;https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4Sg7oD4Y8W99wG16k4IfevHin90lzSlT_rzl_HhXLz7G9yEskjuq4tnpsNMu-WP6_tnKhfmsJ23sMGhG2Gj3jHuHSjlitPLtsqbZDhBECtfgW8KAiTnOHJvXM1NvXXXj4npcFGGrbJiBDonu0PY9QPKeJTByOGALO8IJo23bvj3ulA2LPm_49n51Z1e2Q/w200-h200-rw/Vagabond%20Couple%20Transparent%20Overlay%20Logo%20-%20Original%201080x1080%20(adobe%20express).png&quot;,&quot;width&quot;:200,&quot;height&quot;:200}}}</script>
+		</b:if>
+
+		</article>
+		<div class='post-meta no-reader' data-reader-exclude='true'>
+		<div class='post-share1'>
+		<a expr:href='&quot;https://www.facebook.com/sharer.php?u=&quot; + data:post.url + &quot;&amp;title=&quot;+ data:post.title' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-facebook-f'/><span>Share</span></div></a>
+		<a expr:href='&quot;https://twitter.com/share?url=&quot; + data:post.url + &quot;&amp;via=vagabond_couple&quot;' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-x-twitter'/><span>Tweet</span></div></a>
+		<a expr:href='&quot;https://pinterest.com/pin/create/button/?url=&quot; + data:post.url + &quot;&amp;description=&quot; + data:post.title' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-pinterest-p'/><span>Pin</span></div></a>
+
+		</div>
+			</div>
+			<nav aria-label='Post navigation' class='blog-pager no-reader' data-reader-exclude='true' id='blog-pager'>
+		<b:if cond='data:newerPageUrl'>
+		<span id='blog-pager-newer-link'>
+		<a class='blog-pager-newer-link' expr:href='data:newerPageUrl' expr:id='data:widget.instanceId + &quot;_blog-pager-newer-link&quot;' expr:title='data:newerPageTitle'>
+		<span aria-hidden='true' class='pager-arrow pager-arrow-left'>&#8592;</span>
+		<span class='pager-label'>Newer Post</span>
+		</a>
+		</span>
+		</b:if>
+		<b:if cond='data:olderPageUrl'>
+		<span id='blog-pager-older-link'>
+		<a class='blog-pager-older-link' expr:href='data:olderPageUrl' expr:id='data:widget.instanceId + &quot;_blog-pager-older-link&quot;' expr:title='data:olderPageTitle'>
+		<span class='pager-label'>Older Post</span>
+		<span aria-hidden='true' class='pager-arrow pager-arrow-right'>&#8594;</span>
+		</a>
+		</span>
+		</b:if>
+		<b:if cond='data:mobileLinkUrl'>
+		<div class='blog-mobile-link'>
+		<a expr:href='data:mobileLinkUrl'>
+		<data:mobileLinkMsg/>
+		</a>
+		</div>
+		</b:if>
+		</nav>
+		<div class='clear'/>
+		<section aria-label='Related Journeys' class='post-related no-reader' data-reader-exclude='true'>
+		<div class='post-box'>
+		<h4 class='post-box-title'>Related Journeys</h4>
+		</div>
+		<div class='related-results'/>
+		<b:loop values='data:post.labels' var='label'>
+		<script type='text/javascript'>vcQueueRelatedFeed();</script>
+		<script expr:src='&quot;/feeds/posts/default/-/&quot; + data:label.name + &quot;?alt=json-in-script&amp;callback=related_results_labels_thumbs&amp;max-results=6&quot;' onerror='if(relatedFeedsPending &gt; 0) relatedFeedsPending--; vcRelatedMaybePrint();' type='text/javascript'/>
+			</b:loop>
+			<script type='text/javascript'>
+				printRelatedLabels_thumbs(&quot;<data:post.url/>&quot;);
+
+		</script>
+		</section>
+
+		<b:else/>
+		<b:if cond='data:blog.pageType == &quot;static_page&quot;'>
+		<article class='post vc-post vc-static-page h-entry' role='article'>
+		<div class='post-header'>
+		<h1 class='post-title entry-title p-name'>
+		<data:post.title/>
+		</h1>
+		</div>
+		<div class='post-entry post-body entry-content e-content'>
+		<data:post.body/>
+		</div>
+		</article>
+		<div class='post-share no-reader' data-reader-exclude='true'>
+		<a expr:href='&quot;https://www.facebook.com/sharer.php?u=&quot; + data:post.url + &quot;&amp;title=&quot;+ data:post.title' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-facebook-f'/><span>Share</span></div></a>
+		<a expr:href='&quot;https://twitter.com/share?url=&quot; + data:post.url + &quot;&amp;via=vagabond_couple&quot;' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-x-twitter'/><span>Tweet</span></div></a>
+		<a expr:href='&quot;https://pinterest.com/pin/create/button/?url=&quot; + data:post.url + &quot;&amp;description=&quot; + data:post.title' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-pinterest-p'/><span>Pin</span></div></a>
+
+		</div>
+		<b:else/>
+		<article class='post vc-post index-card' role='article'>
+		<div expr:id='&quot;summary&quot; + data:post.id' style='display:none;'>
+		<data:post.body/>
+		</div>
+		<script type='text/javascript'>createSummaryAndThumb(&quot;summary<data:post.id/>&quot;,&quot;<data:post.title/>&quot;,&quot;<data:post.url/>&quot;,&quot;<data:post.timestamp/>&quot;,&quot;<data:post.numComments/>&quot;,&quot;<b:loop values='data:post.labels' var='label'><a expr:href='data:label.url + &quot;?max-results=6&quot;' rel='tag'><data:label.name/></a></b:loop>&quot;);</script>
+		<div class='post-meta'>
+		<div class='post-share1'>
+		<a expr:href='&quot;https://www.facebook.com/sharer.php?u=&quot; + data:post.url + &quot;&amp;title=&quot;+ data:post.title' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-facebook-f'/><span>Share</span></div></a>
+		<a expr:href='&quot;https://twitter.com/share?url=&quot; + data:post.url + &quot;&amp;via=vagabond_couple&quot;' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-x-twitter'/><span>Tweet</span></div></a>
+		<a expr:href='&quot;https://pinterest.com/pin/create/button/?url=&quot; + data:post.url + &quot;&amp;description=&quot; + data:post.title' rel='noopener noreferrer nofollow' target='_blank'><div class='sharebox'><i class='fa-brands fa-pinterest-p'/><span>Pin</span></div></a>
+
+		</div>
+</div>
+</article>
+		</b:if>
+		</b:if>
+		</b:includable>
+  <b:includable id='postQuickEdit' var='post'>
+		<b:if cond='data:post.editUrl'>
+		<span expr:class='&quot;item-control &quot; + data:post.adminClass'>
+		<a expr:href='data:post.editUrl' expr:title='data:top.editPostMsg'>
+		<img alt='' class='icon-action' height='18' src='https://img2.blogblog.com/img/icon18_edit_allbkg.gif' width='18'/>
+		</a>
+		</span>
+		</b:if>
+		</b:includable>
+  <b:includable id='shareButtons' var='post'>
+		<b:if cond='data:top.showEmailButton'>
+		<a class='goog-inline-block share-button sb-email' expr:href='data:post.sharePostUrl + &quot;&amp;target=email&quot;' expr:title='data:top.emailThisMsg' target='_blank'>
+		<span class='share-button-link-text'>
+		<data:top.emailThisMsg/>
+		</span>
+		</a>
+		</b:if>
+		<b:if cond='data:top.showBlogThisButton'>
+		<a class='goog-inline-block share-button sb-blog' expr:href='data:post.sharePostUrl + &quot;&amp;target=blog&quot;' expr:onclick='&quot;window.open(this.href, \&quot;_blank\&quot;, \&quot;height=270,width=475\&quot;); return false;&quot;' expr:title='data:top.blogThisMsg' target='_blank'>
+		<span class='share-button-link-text'>
+		<data:top.blogThisMsg/>
+		</span>
+		</a>
+		</b:if>
+		<b:if cond='data:top.showTwitterButton'>
+		<a class='goog-inline-block share-button sb-twitter' expr:href='data:post.sharePostUrl + &quot;&amp;target=twitter&quot;' expr:title='data:top.shareToTwitterMsg' target='_blank'>
+		<span class='share-button-link-text'>
+		<data:top.shareToTwitterMsg/>
+		</span>
+		</a>
+		</b:if>
+		<b:if cond='data:top.showFacebookButton'>
+		<a class='goog-inline-block share-button sb-facebook' expr:href='data:post.sharePostUrl + &quot;&amp;target=facebook&quot;' expr:onclick='&quot;window.open(this.href, \&quot;_blank\&quot;, \&quot;height=430,width=640\&quot;); return false;&quot;' expr:title='data:top.shareToFacebookMsg' target='_blank'>
+		<span class='share-button-link-text'>
+		<data:top.shareToFacebookMsg/>
+		</span>
+		</a>
+		</b:if>
+		<b:if cond='data:top.showOrkutButton'>
+		<a class='goog-inline-block share-button sb-orkut' expr:href='data:post.sharePostUrl + &quot;&amp;target=orkut&quot;' expr:title='data:top.shareToOrkutMsg' target='_blank'>
+		<span class='share-button-link-text'>
+		<data:top.shareToOrkutMsg/>
+		</span>
+		</a>
+		</b:if>
+		<b:if cond='data:top.showDummy'>
+		<div class='goog-inline-block dummy-container'>
+		<data:post.dummyTag/>
+		</div>
+		</b:if>
+		</b:includable>
+  <b:includable id='status-message'>
+		<b:if cond='data:navMessage'>
+		<div class='status-msg-wrap'>
+		<div class='status-msg-body'>
+		<data:navMessage/>
+		</div>
+		<div class='status-msg-border'>
+		<div class='status-msg-bg'>
+		<div class='status-msg-hidden'>
+		<data:navMessage/>
+		</div>
+		</div>
+		</div>
+		</div>
+		<div style='clear: both;'/>
+		</b:if>
+		</b:includable>
+  <b:includable id='threaded-comment-form' var='post'/>
+  <b:includable id='threaded_comment_js' var='post'/>
+  <b:includable id='threaded_comments' var='post'/>
+</b:widget>
+</b:section>
+		</main>
+		<b:section id='sidebar' showaddelement='yes'>
+<b:widget id='Label1' locked='false' title='Destinations' type='Label' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='sorting'>ALPHA</b:widget-setting>
+    <b:widget-setting name='display'>LIST</b:widget-setting>
+    <b:widget-setting name='selectedLabelsList'/>
+    <b:widget-setting name='showType'>ALL</b:widget-setting>
+    <b:widget-setting name='showFreqNumbers'>true</b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+		<b:if cond='data:title'>
+		<h2><data:title/></h2>
+		</b:if>
+		<div expr:class='&quot;widget-content &quot; + data:display + &quot;-label-widget-content&quot;'>
+		<b:if cond='data:display == &quot;list&quot;'>
+		<ul>
+		<b:loop values='data:labels' var='label'>
+		<li>
+		<b:if cond='data:blog.url == data:label.url'>
+		<span expr:dir='data:blog.languageDirection'><data:label.name/></span>
+		<b:else/>
+		<a expr:dir='data:blog.languageDirection' expr:href='data:label.url'><data:label.name/></a>
+		</b:if>
+		<b:if cond='data:showFreqNumbers'>
+		<span dir='ltr'>(<data:label.count/>)</span>
+		</b:if>
+		</li>
+		</b:loop>
+		</ul>
+		<b:else/>
+		<b:loop values='data:labels' var='label'>
+		<span expr:class='&quot;label-size label-size-&quot; + data:label.cssSize'>
+		<b:if cond='data:blog.url == data:label.url'>
+		<span expr:dir='data:blog.languageDirection'><data:label.name/></span>
+		<b:else/>
+		<a expr:dir='data:blog.languageDirection' expr:href='data:label.url'><data:label.name/></a>
+		</b:if>
+		<b:if cond='data:showFreqNumbers'>
+		<span class='label-count' dir='ltr'>(<data:label.count/>)</span>
+		</b:if>
+		</span>
+		</b:loop>
+		</b:if>
+		<b:include name='quickedit'/>
+		</div>
+		</b:includable>
+</b:widget>
+<b:widget id='HTML2' locked='false' title='' type='HTML' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='content'><![CDATA[<style>
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview {
+			display: flex !important;
+			flex-direction: column !important;
+			justify-content: center !important;
+			margin-top: 30px !important;
+			padding: clamp(17px, 5%, 40px) clamp(17px, 7%, 50px) !important;
+			max-width: none !important;
+			border-radius: 6px !important;
+			box-shadow: 0 5px 25px rgba(34, 60, 47, 0.25) !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview,
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview *{
+			box-sizing: border-box !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading {
+			width: 100% !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading h5{
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field {
+			margin-top: 20px !important;
+			width: 100% !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input {
+			width: 100% !important;
+			height: 40px !important;
+			border-radius: 6px !important;
+			border: 2px solid #e9e8e8 !important;
+			background-color: #fff !important;
+			outline: none !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input {
+			color: #000000 !important;
+			font-family: "Montserrat" !important;
+			font-size: 14px !important;
+			font-weight: 400 !important;
+			line-height: 20px !important;
+			text-align: center !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::placeholder {
+			color: #000000 !important;
+			opacity: 1 !important;
+			}
+
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input:-ms-input-placeholder {
+			color: #000000 !important;
+			}
+
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::-ms-input-placeholder {
+			color: #000000 !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button {
+			margin-top: 10px !important;
+			width: 100% !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button {
+			width: 100% !important;
+			height: 40px !important;
+			border: 0 !important;
+			border-radius: 6px !important;
+			line-height: 0px !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button:hover {
+			cursor: pointer !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line {
+			color: #231f20 !important;
+			font-family: "Montserrat" !important;
+			font-size: 13px !important;
+			font-weight: 400 !important;
+			line-height: 25px !important;
+			text-align: center !important;
+			text-decoration: none !important;
+			display: flex !important;
+			width: 100% !important;
+			justify-content: center !important;
+			align-items: center !important;
+			margin-top: 10px !important;
+			}
+			.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line img {
+			margin-left: 10px !important;
+			height: 1.13em !important;
+			max-height: 1.13em !important;
+			}
+			</style><div class="followit--follow-form-container" attr-a attr-b attr-c attr-d attr-e attr-f><form data-v-1bbcb9ec="" action="https://api.follow.it/subscription-form/M21Sbnh5c1o5S2lQRjlrc0dhSlQ0NmdlRC84NllPOE9FaXFZMjNJeW5MYkNqZ1VSaWlTUEFRSURLUmxTUmlXNjVFRkNsVU5qaGxxMnVzMWhXS0xkcXFyS0RwZFI1MW1ySkhzN3BzdUp4WjJkaEZteUc5NVd5TkcvbU8vZ2FvNWp8c2VnRFhHZTRZcEoyUEE3dEpRTGp1UGM1NWwrbVY0SE9GMEx5RUw4QW5hUT0=/8" method="post"><div data-v-1bbcb9ec="" class="form-preview" style="background-color: rgb(255, 255, 255); border-style: solid; border-width: 1px; border-color: rgb(204, 204, 204); position: relative;"><div data-v-1bbcb9ec="" class="preview-heading"><h5 data-v-1bbcb9ec="" style="text-transform: none !important; font-family: Arial; font-weight: bold; color: rgb(0, 0, 0); font-size: 16px; text-align: center;">
+			                Get new posts by email:
+			              </h5></div> <div data-v-1bbcb9ec="" class="preview-input-field"><input data-v-1bbcb9ec="" type="email" name="email" required="required" placeholder="Enter your email" spellcheck="false" style="text-transform: none !important; font-family: Arial; font-weight: normal; color: rgb(0, 0, 0); font-size: 14px; text-align: center; background-color: rgb(255, 255, 255);" /></div> <div data-v-1bbcb9ec="" class="preview-submit-button"><button data-v-1bbcb9ec="" type="submit" style="text-transform: none !important; font-family: Arial; font-weight: bold; color: rgb(255, 255, 255); font-size: 16px; text-align: center; background-color: rgb(0, 0, 0);">
+			                Subscribe
+			              </button></div></div></form><a href="https://follow.it" class="powered-by-line">Powered by <img src="https://follow.it/static/img/colored-logo.svg" alt="follow.it" height="17px"/></a></div>]]></b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+
+		<b:if cond='data:title != &quot;&quot;'>
+		<h2 class='title'><data:title/></h2>
+		</b:if>
+		<div class='widget-content'>
+		<data:content/>
+		</div>
+		<b:include name='quickedit'/>
+		</b:includable>
+</b:widget>
+<b:widget id='HTML1' locked='false' title='Subscribe via RSS' type='HTML' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='content'><![CDATA[<p><a href="https://feeds.feedburner.com/thevagabondcouple/feed" target="_blank">RSS Feed &raquo;</a></p>]]></b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+
+		<b:if cond='data:title != &quot;&quot;'>
+		<h2 class='title'><data:title/></h2>
+		</b:if>
+		<div class='widget-content'>
+		<data:content/>
+		</div>
+		<b:include name='quickedit'/>
+		</b:includable>
+</b:widget>
+<b:widget id='PageList1' locked='false' title='Pages' type='PageList' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='pageListJson'><![CDATA[{"710455029304313913":{"href":"https://thevagabondcouple.blogspot.com/p/privacy-policy.html","position":2,"title":"Privacy Policy"},"link0":{"href":"https://thevagabondcouple.blogspot.com/","position":0,"title":"Home"},"202923193014590724":{"href":"https://thevagabondcouple.blogspot.com/p/contact.html","position":1,"title":"About Us &amp; Contact"}}]]></b:widget-setting>
+    <b:widget-setting name='homeTitle'>Home</b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+		<b:if cond='data:title != &quot;&quot;'><h2><data:title/></h2></b:if>
+		<div class='widget-content'>
+		<b:if cond='data:mobile'>
+		<select expr:id='data:widget.instanceId + &quot;_select&quot;'>
+		<b:if cond='data:showPlaceholder'>
+		<option disabled='disabled' hidden='hidden' value=''>
+		<b:attr cond='!data:hasCurrentPage' name='selected' value='selected'/>
+		<b:message name='messages.moveToPage'/>
+		</option>
+		</b:if>
+		<b:loop values='data:links' var='link'>
+		<option expr:value='data:link.href'>
+		<b:attr cond='data:link.isCurrentPage' name='selected' value='selected'/>
+		<data:link.title/>
+		</option>
+		</b:loop>
+		</select>
+		<span class='pagelist-arrow'>&amp;#9660;</span>
+		<b:else/>
+		<ul>
+		<b:loop values='data:links' var='link'>
+		<li>
+		<b:class cond='data:link.isCurrentPage' name='selected'/>
+		<a expr:href='data:link.href'><data:link.title/></a>
+		</li>
+		</b:loop>
+		</ul>
+		</b:if>
+		<b:include name='quickedit'/>
+		</div>
+		</b:includable>
+</b:widget>
+</b:section>
+		</div>
+		<b:section id='Instagram' showaddelement='yes'>
+<b:widget id='Text1' locked='false' title='' type='Text' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='content'><![CDATA[<hr /><footer align="center">&copy; 1997 - <span id="currentYear"></span> <a href="https://bit.ly/contact-vagabond-couple" target="_blank">The Vagabond Couple Travel Blog</a>. All rights reserved.</footer>
+							<script>
+							  // Get the current year
+							  let currentDate = new Date();
+							  let currentYear = currentDate.getFullYear();
+
+							  // Find the element with the id "currentYear"
+							  let currentYearElement = document.getElementById("currentYear");
+
+							  // Update the content of the element with the current year
+							  if (currentYearElement) currentYearElement.textContent = currentYear;
+							</script>]]></b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+
+					<b:if cond='data:title != &quot;&quot;'>
+						<h2 class='title'>
+							<data:title/>
+						</h2>
+					</b:if>
+					<div class='widget-content'>
+						<data:content/>
+					</div>
+					<b:include name='quickedit'/>
+				</b:includable>
+</b:widget>
+</b:section>
+		<div class='rst-copyright  '>
+		<div class='container'>
+		<div class='logo-footer text-center'>
+			<div class='headlogo'/>
+			</div>
+			<div class='rst-social-menu' id='footer-social'>
+				<div class='socialzz'/>
+				</div>
+				<div class='copyright'>				</div>
+			</div>
+		</div>
+
+		<div class='attribution-bottom'>
+		<div class='container'>
+		<b:section class='bottom-attribution' id='bottom-attribution' maxwidgets='1' showaddelement='no'>
+<b:widget id='Attribution1' locked='false' title='' type='Attribution' version='1'>
+  <b:widget-settings>
+    <b:widget-setting name='copyright'><![CDATA[
+        
+         Text, images, audio and video in The Vagabond Couple Travel Blog are © The Vagabond Couple.<br>
+         
+       ]]></b:widget-setting>
+  </b:widget-settings>
+  <b:includable id='main'>
+    <div class='widget-content' style='text-align: center;'>
+      <b:if cond='data:attribution != &quot;&quot;'>
+       <data:attribution/>
+      </b:if>
+    </div>
+
+    <b:include name='quickedit'/>
+  </b:includable>
+</b:widget>
+</b:section>
+		</div>
+		</div>
+		<a aria-label='Back to top' class='to-top' href='#'><span aria-hidden='true' class='to-top-arrow'>&#8593;</span><span class='sr-only'>Back to top</span></a>
+		<b:if cond='data:blog.url == data:blog.homepageUrl'>
+		<script async='async' src='/feeds/posts/default?max-results=20&amp;orderby=published&amp;alt=json-in-script&amp;callback=showrecentposts1'/>
+		</b:if>
+		<b:include data='blog' name='google-analytics'/>
+		<script>
+		//<![CDATA[
+		(function(){
+		  function ready(fn){ if(document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+		  ready(function(){
+		    document.body.classList.add('vc-modern-theme');
+			var vcThemeToggles = Array.prototype.slice.call(document.querySelectorAll('.theme-switch'));
+			var vcThemeToggleLabels = Array.prototype.slice.call(document.querySelectorAll('.theme-switch-label'));
+			var vcThemeLive = document.getElementById('vc-theme-live');
+			if(!vcThemeLive){
+			  vcThemeLive = document.createElement('div');
+			  vcThemeLive.id = 'vc-theme-live';
+			  vcThemeLive.className = 'sr-only';
+			  vcThemeLive.setAttribute('aria-live','polite');
+			  vcThemeLive.setAttribute('aria-atomic','true');
+			  document.body.appendChild(vcThemeLive);
+			}
+			var vcThemeMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+			var vcThemeMeta = document.getElementById('vc-theme-color');
+			var vcLogoLightUrl = 'https://blogger.googleusercontent.com/img/a/AVvXsEhpuoqWPunqT2G8FZ-bee53TsfGPItivlFKOJnGopUUpx7HK1gOkVRsuC-bG9AR9zRovRhfQUBUzHRrkhuvLBhzi7QBeqSeqeuGiKkSQO8JRZNyqYXp6-AjCCridYf4lbLwI8Z59dihVPOvGGGevUDLtGJ0IHStGMcuhCDegwZ629QeLK3hzODQSJvMhDX5=s16000';
+			var vcLogoDarkUrl = 'https://blogger.googleusercontent.com/img/a/AVvXsEiNrtgXbLtQB9CzItrxMJD9CTAg6cTSSEMyV9pPBpZs4yW7OmtaZ1uTCzPiY_GrFMqKOu3LbvwWsq2Lw_CIIvyNoJw4_v4p4nmo5GEZRa5VRTpCAwipFn36Pgn1sjZlBSQc4TZqKLlmFvneJmzA67bqrhWLeHsPMuEPVTs0QLE7XLZBLp6Ft7ZHqP5ReFx5=s16000';
+			var vcLogoImages = function(){
+			  return Array.prototype.slice.call(document.querySelectorAll('#logo img, .logo_h img'));
+			};
+			var vcUpdateLogo = function(effective){
+			  var src = effective === 'dark' ? vcLogoDarkUrl : vcLogoLightUrl;
+			  vcLogoImages().forEach(function(img){
+			    if(!img) return;
+			    if(img.getAttribute('src') !== src) img.setAttribute('src', src);
+			    img.setAttribute('width','778');
+			    img.setAttribute('height','332');
+			    img.setAttribute('decoding','async');
+			    if(!img.getAttribute('alt')) img.setAttribute('alt','The Vagabond Couple');
+			  });
+			};
+			function vcStoredTheme(){
+			  var t='system';
+			  try { t = localStorage.getItem('tvc-theme') || 'system'; } catch(e) { t='system'; }
+			  return /^(system|light|dark)$/.test(t) ? t : 'system';
+			}
+			function vcResolvedTheme(value){
+			  if(value === 'dark' || value === 'light') return value;
+			  return (vcThemeMedia && vcThemeMedia.matches) ? 'dark' : 'light';
+			}
+			function vcToggleTarget(resolved){
+			  return resolved === 'dark' ? 'light' : 'dark';
+			}
+			function vcUpdateThemeToggle(value, resolved){
+			  var next = vcToggleTarget(resolved);
+			  var modeText = value === 'system' ? 'follows device settings' : 'is forced to ' + value;
+			  var label = 'Theme ' + modeText + '. Current theme is ' + resolved + '. Activate to switch to ' + next + '.';
+			  vcThemeToggles.forEach(function(toggle){
+			    toggle.setAttribute('data-effective', resolved);
+			    toggle.setAttribute('aria-label', label);
+			    toggle.setAttribute('title', 'Switch to ' + next + ' theme');
+			  });
+			  vcThemeToggleLabels.forEach(function(labelEl){ labelEl.textContent = label; });
+			}
+			function vcApplyTheme(value, persist, announce){
+			  if(!/^(system|light|dark)$/.test(value)) value='system';
+			  var resolved = vcResolvedTheme(value);
+			  document.documentElement.setAttribute('data-theme', resolved);
+			  document.documentElement.setAttribute('data-theme-choice', value);
+			  document.documentElement.style.colorScheme = resolved;
+			  if(vcThemeMeta) vcThemeMeta.setAttribute('content', resolved === 'dark' ? '#101010' : '#ffffff');
+			  vcUpdateLogo(resolved);
+			  vcUpdateThemeToggle(value, resolved);
+			  if(persist){ try { localStorage.setItem('tvc-theme', value); } catch(e) {} }
+			  if(announce && vcThemeLive) vcThemeLive.textContent = 'Theme changed to ' + value;
+			}
+			vcApplyTheme(vcStoredTheme(), false, false);
+			vcThemeToggles.forEach(function(toggle){
+			  toggle.addEventListener('click', function(){
+			    var current = vcStoredTheme();
+			    var resolved = vcResolvedTheme(current);
+			    vcApplyTheme(vcToggleTarget(resolved), true, true);
+			  });
+			});
+			if(vcThemeMedia){
+			  var vcSystemListener = function(){ if(vcStoredTheme() === 'system') vcApplyTheme('system', false, false); };
+			  if(vcThemeMedia.addEventListener) vcThemeMedia.addEventListener('change', vcSystemListener);
+			  else if(vcThemeMedia.addListener) vcThemeMedia.addListener(vcSystemListener);
+			}
+
+			var mobileSearchTrigger = document.querySelector('.mobile-search-trigger');
+			var mobileSearchForm = document.getElementById('top-search-form');
+			var mobileSearchInput = mobileSearchForm ? mobileSearchForm.querySelector('input[name="q"]') : null;
+			var mobileSearchBack = mobileSearchForm ? mobileSearchForm.querySelector('.mobile-search-back') : null;
+			var mobileSearchClose = mobileSearchForm ? mobileSearchForm.querySelector('.mobile-search-close') : null;
+			var mobileSearchPreviousFocus = null;
+			var mobileSearchMQ = window.matchMedia ? window.matchMedia('(max-width:720px)') : null;
+			var syncMobileSearchAria = function(open){
+			  if(!mobileSearchForm) return;
+			  var isMobile = mobileSearchMQ ? mobileSearchMQ.matches : (window.innerWidth <= 720);
+			  mobileSearchForm.setAttribute('aria-hidden', (isMobile && !open) ? 'true' : 'false');
+			};
+			syncMobileSearchAria(false);
+			if(mobileSearchMQ){
+			  var searchMqListener = function(){ syncMobileSearchAria(document.body.classList.contains('vc-mobile-search-open')); };
+			  if(mobileSearchMQ.addEventListener) mobileSearchMQ.addEventListener('change', searchMqListener);
+			  else if(mobileSearchMQ.addListener) mobileSearchMQ.addListener(searchMqListener);
+			}
+			var mobileSearchFocusable = function(){
+			  if(!mobileSearchForm) return [];
+			  return Array.prototype.slice.call(mobileSearchForm.querySelectorAll('button, input, [href], [tabindex]:not([tabindex="-1"])')).filter(function(el){
+			    return !el.disabled && el.offsetParent !== null;
+			  });
+			};
+			var setMobileSearchOpen = function(open){
+			  document.body.classList.toggle('vc-mobile-search-open', open);
+			  if(mobileSearchTrigger) mobileSearchTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+			  syncMobileSearchAria(open);
+			  if(open){
+			    mobileSearchPreviousFocus = document.activeElement;
+			    window.setTimeout(function(){ if(mobileSearchInput) mobileSearchInput.focus(); }, 0);
+			  } else {
+			    if(mobileSearchInput) mobileSearchInput.blur();
+			    if(mobileSearchTrigger) mobileSearchTrigger.focus();
+			  }
+			};
+			if(mobileSearchTrigger && mobileSearchForm){
+			  mobileSearchTrigger.addEventListener('click', function(){ setMobileSearchOpen(true); });
+			  if(mobileSearchBack) mobileSearchBack.addEventListener('click', function(){ setMobileSearchOpen(false); });
+			  if(mobileSearchClose) mobileSearchClose.addEventListener('click', function(){
+			    if(mobileSearchInput && mobileSearchInput.value){ mobileSearchInput.value = ''; mobileSearchInput.focus(); }
+			    else { setMobileSearchOpen(false); }
+			  });
+			  mobileSearchForm.addEventListener('keydown', function(e){
+			    if(e.key !== 'Tab' || !document.body.classList.contains('vc-mobile-search-open')) return;
+			    var focusables = mobileSearchFocusable();
+			    if(!focusables.length) return;
+			    var first = focusables[0];
+			    var last = focusables[focusables.length - 1];
+			    if(e.shiftKey && document.activeElement === first){
+			      e.preventDefault();
+			      last.focus();
+			    } else if(!e.shiftKey && document.activeElement === last){
+			      e.preventDefault();
+			      first.focus();
+			    }
+			  });
+			  document.addEventListener('keydown', function(e){
+			    if(e.key === 'Escape' && document.body.classList.contains('vc-mobile-search-open')){
+			      setMobileSearchOpen(false);
+			    }
+			  });
+			}
+
+		    var menu = document.querySelector('.menu-mobile');
+		    var nav = document.getElementById('navigation-wrapper');
+		    if(menu && nav){
+		      menu.setAttribute('role','button'); menu.setAttribute('tabindex','0'); menu.setAttribute('aria-expanded','false'); menu.setAttribute('aria-controls','navigation-wrapper');
+		      document.body.classList.remove('mobile-nav-open');
+		      var firstNavLink = function(){ return nav.querySelector('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])'); };
+		      var setMenuOpen = function(open){
+		        document.body.classList.toggle('mobile-nav-open', open);
+		        menu.setAttribute('aria-expanded', open ? 'true':'false');
+		        if(open){
+		          window.setTimeout(function(){ var first = firstNavLink(); if(first) first.focus(); }, 0);
+		        } else {
+		          menu.focus();
+		        }
+		      };
+		      var toggle = function(){ setMenuOpen(!document.body.classList.contains('mobile-nav-open')); };
+		      menu.addEventListener('click', toggle);
+		      menu.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }});
+		      document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && document.body.classList.contains('mobile-nav-open')){ setMenuOpen(false); }});
+		    }
+		    var topSocial = document.querySelector('#top-social .widget-content');
+		    var footerSocial = document.querySelector('#footer-social .socialzz');
+		    if (topSocial && footerSocial && !footerSocial.children.length) {
+		      footerSocial.innerHTML = topSocial.innerHTML;
+		      footerSocial.querySelectorAll('a[target="_blank"]').forEach(function(a){ a.setAttribute('rel','noopener noreferrer'); });
+		    }
+		    document.querySelectorAll('img').forEach(function(img, i){ if(!img.hasAttribute('decoding')) img.setAttribute('decoding','async'); if(i>0 && !img.hasAttribute('loading')) img.setAttribute('loading','lazy'); });
+		    document.querySelectorAll('a.to-top').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); }); });
+		  });
+		})();
+		//]]>
+		</script>
+	</body>
+</html>
