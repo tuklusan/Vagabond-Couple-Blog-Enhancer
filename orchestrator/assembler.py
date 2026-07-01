@@ -345,6 +345,35 @@ def apply_prefold(html, summary_fragment, context, schema_script=None):
     return str(soup)
 
 
+_SIGNOFF_RE = re.compile(
+    r"until next time|fellow wanderers|vagabond couple|safe travels|happy trails",
+    re.IGNORECASE)
+
+
+def _outro_anchor(soup):
+    """The node BEFORE which trailing generated content (journey-significance,
+    last-section factoid) must be inserted so the post's sign-off/outro stays last
+    (TICKET-0060). Prefer a 'Next Stop' H2; else the sign-off paragraph; else None
+    (meaning: append to the end)."""
+    for h in soup.find_all("h2"):
+        if h.get_text(strip=True).lower().startswith("next stop"):
+            return h
+    # else: the earliest trailing <p> that reads like a sign-off
+    for p in soup.find_all("p"):
+        if _SIGNOFF_RE.search(p.get_text(" ", strip=True)):
+            return p
+    return None
+
+
+def _append_before_outro(soup, node):
+    """Insert `node` just before the outro anchor, or append if there is none."""
+    anchor = _outro_anchor(soup)
+    if anchor is not None:
+        anchor.insert_before(node)
+    else:
+        soup.append(node)
+
+
 # ---------------------------------------------------------------------------
 # Fragment splicing (certified generated fragments -> canonical positions)
 # ---------------------------------------------------------------------------
@@ -406,12 +435,11 @@ def insert_factoids(html, factoids):
                 nxt = h2s[idx + 1] if idx + 1 < len(h2s) else None
                 break
         node = BeautifulSoup(frag, "html.parser")
-        if target is None:
-            soup.append(node)                 # no matching heading -> end of body
-        elif nxt is not None:
-            nxt.insert_before(node)           # end of this section
+        if target is not None and nxt is not None:
+            nxt.insert_before(node)           # end of this section (before next H2)
         else:
-            (target.parent or soup).append(node)
+            # last section (or no matching heading): keep the sign-off/outro last
+            _append_before_outro(soup, node)
         inserted += 1
     return str(soup), inserted
 
@@ -443,7 +471,9 @@ def splice_fragments(html, fragments):
         html, _ = insert_separators(html, fragments["separators"])
     if fragments.get("journey_significance"):
         soup2 = BeautifulSoup(html, "html.parser")
-        soup2.append(BeautifulSoup(fragments["journey_significance"], "html.parser"))
+        # Journey-significance precedes the Next Stop outro (rev-18 body order) --
+        # insert before the sign-off, not at the very end (TICKET-0060).
+        _append_before_outro(soup2, BeautifulSoup(fragments["journey_significance"], "html.parser"))
         html = str(soup2)
     return html
 

@@ -109,12 +109,25 @@ def test_splice_separators():
     check("separator_between_tables", -1 < pa < ps < pb, f"{pa},{ps},{pb}")
 
 
+def test_trailing_content_before_outro():
+    # journey-significance + last-section factoid must precede the sign-off (0060)
+    body = ('<!--more--><h2>One</h2><p>a</p><h2>Last</h2><p>b</p>'
+            '<p>Until next time, fellow wanderers. - The Vagabond Couple</p>')
+    out = assembler.splice_fragments(body, {"journey_significance": "<p>JSIG</p>"})
+    check("journey_before_outro", -1 < out.find("JSIG") < out.find("Until next time"),
+          f"{out.find('JSIG')},{out.find('Until next time')}")
+    out2, _ = assembler.insert_factoids(body, [{"section": "Last", "html": "<p>FLAST</p>"}])
+    check("last_factoid_before_outro", -1 < out2.find("FLAST") < out2.find("Until next time"),
+          f"{out2.find('FLAST')},{out2.find('Until next time')}")
+
+
 def main():
     test_reference_transforms()
     test_strip_removes_body_style()
     test_m1_removal()
     test_splice_order()
     test_splice_separators()
+    test_trailing_content_before_outro()
     print()
     if FAILS:
         print(_ascii("FAILED: " + str(FAILS)))
