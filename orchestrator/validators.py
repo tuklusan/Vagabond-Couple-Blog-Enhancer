@@ -279,6 +279,99 @@ def validate_ld_json(html: str):
 
 
 # ===========================================================================
+# Phase 1 analysis passes (1A / 1B / 1H / 1I) -- deterministic (TICKET-0003)
+# ===========================================================================
+def _sentences(text):
+    return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+
+
+def _count_syllables(word):
+    word = word.lower()
+    groups = re.findall(r"[aeiouy]+", word)
+    n = len(groups)
+    if word.endswith("e") and n > 1:
+        n -= 1
+    return max(1, n)
+
+
+def readability(html):
+    """1B -- Flesch Reading Ease + overlong-paragraph flags for the body prose.
+    Target per the writing rules is Flesch 60-70 (7th-9th grade)."""
+    below = _body_below_more(html)
+    soup = _soup(below)
+    for s in soup.find_all(["script", "style"]):
+        s.decompose()
+    text = soup.get_text(separator=" ", strip=True)
+    words = re.findall(r"\b[\w'-]+\b", text)
+    sentences = _sentences(text)
+    nw, ns = len(words), max(1, len(sentences))
+    syll = sum(_count_syllables(w) for w in words) or 1
+    if nw == 0:
+        return {"flesch": None, "words": 0, "sentences": 0, "target_ok": None, "long_paragraphs": 0}
+    flesch = 206.835 - 1.015 * (nw / ns) - 84.6 * (syll / nw)
+    flesch = round(flesch, 1)
+    long_paras = sum(1 for p in soup.find_all("p")
+                     if len(re.findall(r"\b[\w'-]+\b", p.get_text(" ", strip=True))) > 200)
+    return {"flesch": flesch, "words": nw, "sentences": len(sentences),
+            "target_ok": 55 <= flesch <= 75, "long_paragraphs": long_paras}
+
+
+def repetition_scan(html):
+    """1H -- deterministic repeated-content scan: identical (normalized) sentences
+    and repeated 5-grams across the body prose."""
+    below = _body_below_more(html)
+    soup = _soup(below)
+    for s in soup.find_all(["script", "style"]):
+        s.decompose()
+    text = soup.get_text(separator=" ", strip=True)
+    norm_sents = {}
+    for s in _sentences(text):
+        key = re.sub(r"[^a-z0-9 ]", "", s.lower()).strip()
+        if len(key) > 25:
+            norm_sents.setdefault(key, 0)
+            norm_sents[key] += 1
+    repeated_sentences = [k for k, c in norm_sents.items() if c > 1]
+    words = re.findall(r"\b[\w'-]+\b", text.lower())
+    grams = {}
+    for i in range(len(words) - 4):
+        g = " ".join(words[i:i + 5])
+        grams[g] = grams.get(g, 0) + 1
+    repeated_ngrams = [g for g, c in grams.items() if c > 1]
+    return {"repeated_sentences": repeated_sentences[:20],
+            "repeated_ngrams": repeated_ngrams[:20],
+            "repeated_sentence_count": len(repeated_sentences),
+            "repeated_ngram_count": len(repeated_ngrams)}
+
+
+def writing_rules_audit(html):
+    """1I -- forbidden terms + first-person narrator violations in EXISTING body
+    prose (deterministic). These feed the Phase 4 summary and Step 12."""
+    text = plain_text(_body_below_more(html))
+    forbidden = scan_forbidden(text)
+    narrator = []
+    if re.search(r"\bI\b(?![-‐-―]?\d)", text):
+        narrator.append("first-person 'I' present")
+    if re.search(r"\bme\b", text):
+        narrator.append("first-person 'me' present")
+    return {"forbidden": forbidden, "narrator": narrator,
+            "forbidden_count": len(forbidden), "clean": not forbidden and not narrator}
+
+
+def fact_sanity(html):
+    """1A -- deterministic sanity signals for the operator: numeric/date claims in
+    the body and the external links that can serve as sources. (Web fact-checking is
+    the reviewer's job per-node; this is a lightweight source-count audit.)"""
+    text = plain_text(_body_below_more(html))
+    numeric_claims = re.findall(r"\b\d[\d,.]*\s?(?:%|km|mi|miles|km|m|meters|metres|ft|feet|"
+                                r"years?|BCE?|CE|AD|century|centuries)\b", text, re.IGNORECASE)
+    years = re.findall(r"\b(?:1[0-9]{3}|20[0-9]{2})\b", text)
+    ext_links = [i for i in href_inventory(html) if i["kind"] == "external"]
+    return {"numeric_claims": len(numeric_claims), "year_mentions": len(set(years)),
+            "external_sources": len(ext_links),
+            "note": "operator/reviewer should spot-check numeric/date claims against sources"}
+
+
+# ===========================================================================
 # ETR + char count (Step 2 / 2-F)
 # ===========================================================================
 def _body_below_more(html: str) -> str:

@@ -244,15 +244,47 @@ def generative_node(node_id, phase, spec_factory, optional=False):
     return SeqNode(node_id, phase, "generative", handler)
 
 
+# Deterministic Phase-1 analysis passes (TICKET-0003). These audit the ORIGINAL
+# prose and produce structured findings for the Phase 4 summary + Step 12; they run
+# without an LLM (the DeepSeek-only reviewer can't web-verify, and rules/repetition/
+# readability are mechanical anyway).
+_ANALYSIS_IMPL = {
+    "1A_facts": lambda html: validators.fact_sanity(html),
+    "1B_readability": lambda html: validators.readability(html),
+    "1H_repetition": lambda html: validators.repetition_scan(html),
+    "1I_writing_rules": lambda html: validators.writing_rules_audit(html),
+}
+
+
+def _analysis_note(node_id, data):
+    if node_id == "1B_readability":
+        return "flesch=" + str(data.get("flesch")) + " target_ok=" + str(data.get("target_ok"))
+    if node_id == "1H_repetition":
+        return ("repeated sentences=" + str(data.get("repeated_sentence_count", 0))
+                + " ngrams=" + str(data.get("repeated_ngram_count", 0)))
+    if node_id == "1I_writing_rules":
+        return "clean=" + str(data.get("clean")) + " forbidden=" + str(data.get("forbidden_count", 0))
+    if node_id == "1A_facts":
+        return ("numeric_claims=" + str(data.get("numeric_claims", 0))
+                + " sources=" + str(data.get("external_sources", 0)))
+    return "analysis recorded"
+
+
 def analysis_node(node_id, phase):
-    """LLM-judgment Phase-1 pass (1A/1B/1H/1I). Stubbed in dry mode; the live
-    reviewer-based implementation plugs in here. The per-node Tier-1 loops and
-    the Phase 5 G2 pass already enforce facts/rules/repetition on produced text."""
+    """Deterministic Phase-1 analysis pass (1A/1B/1H/1I). Stubbed only in dry mode."""
     def handler(sctx):
         if sctx.dry_generative:
             return {"complete": True, "note": "[dry] analysis stubbed"}
-        sctx.state.save_artifact("analysis_" + node_id, {"status": "live_impl_pending"})
-        return {"complete": True, "note": "analysis recorded (live reviewer pass pending)"}
+        impl = _ANALYSIS_IMPL.get(node_id)
+        if impl is None:
+            sctx.state.save_artifact("analysis_" + node_id, {"status": "no_impl"})
+            return {"complete": True, "note": "analysis recorded"}
+        try:
+            data = impl(sctx.state.get_working_html())
+        except Exception as e:
+            data = {"error": str(e)[:160]}
+        sctx.state.save_artifact("analysis_" + node_id, data)
+        return {"complete": True, "note": _analysis_note(node_id, data)}
     return SeqNode(node_id, phase, "analysis", handler)
 
 
