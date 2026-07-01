@@ -10,11 +10,41 @@ import datetime
 
 import glob
 
+import re
+
 
 
 TICKET_DIR = 'Tickets'
 
 TICKET_EXTENSION = '.md'
+
+
+def safe_ticket_id(raw):
+    """Return the canonical 'TICKET-NNNN' id, or None if `raw` is not a plain
+    numeric id. Blocks path traversal via ticket_id (TICKET-0035)."""
+    if raw is None:
+        return None
+    m = re.fullmatch(r'(?:TICKET-)?(\d{1,6})', str(raw).strip())
+    return f'TICKET-{int(m.group(1)):04d}' if m else None
+
+
+def ticket_path(ticket_id):
+    """Resolve a sanitized ticket id to a path INSIDE TICKET_DIR, or None."""
+    canonical = safe_ticket_id(ticket_id)
+    if not canonical:
+        return None
+    path = os.path.join(TICKET_DIR, canonical + TICKET_EXTENSION)
+    # Defense in depth: the resolved path must stay within TICKET_DIR.
+    root = os.path.realpath(TICKET_DIR)
+    if os.path.commonpath([root, os.path.realpath(path)]) != root:
+        return None
+    return path
+
+
+def oneline(value):
+    """Collapse newlines so a field value cannot inject extra header lines
+    (TICKET-0036)."""
+    return re.sub(r'[\r\n]+', ' ', value or '').strip()
 
 
 
@@ -148,39 +178,52 @@ def create_ticket_file(args):
 
     ensure_ticket_dir()
 
-    next_id = get_next_ticket_id()
-
-    filename = f'TICKET-{next_id}{TICKET_EXTENSION}'
-
-    filepath = os.path.join(TICKET_DIR, filename)
-
     created = datetime.datetime.now().strftime('%Y-%m-%d')
 
-    content = [
+    # Retry loop: claim the next id by EXCLUSIVE create so two concurrent 'new'
+    # commands cannot grab the same id (TICKET-0037).
 
-        f'# TICKET-{next_id}: {args.title}',
+    for _ in range(50):
 
-        f'Status: Open',
+        next_id = get_next_ticket_id()
 
-        f'Priority: {args.priority}',
+        filepath = os.path.join(TICKET_DIR, f'TICKET-{next_id}{TICKET_EXTENSION}')
 
-        f'Type: {args.type}',
+        content = [
 
-        f'Created: {created}',
+            f'# TICKET-{next_id}: {oneline(args.title)}',
 
-        f'Description: {args.desc}',
+            f'Status: Open',
 
-        'Steps to Reproduce: ',
+            f'Priority: {oneline(args.priority)}',
 
-        'Notes: '
+            f'Type: {oneline(args.type)}',
 
-    ]
+            f'Created: {created}',
 
-    with open(filepath, 'w', encoding='utf-8') as f:
+            f'Description: {oneline(args.desc)}',
 
-        f.write('\n'.join(content) + '\n')
+            'Steps to Reproduce: ',
 
-    print(f'TICKET-{next_id}')
+            'Notes: '
+
+        ]
+
+        try:
+
+            with open(filepath, 'x', encoding='utf-8') as f:
+
+                f.write('\n'.join(content) + '\n')
+
+        except FileExistsError:
+
+            continue
+
+        print(f'TICKET-{next_id}')
+
+        return
+
+    print('Error: could not allocate a ticket id')
 
 
 
@@ -222,15 +265,9 @@ def list_tickets(args):
 
 def show_ticket(args):
 
-    ticket_id = args.ticket_id
+    filepath = ticket_path(args.ticket_id)
 
-    if not ticket_id.startswith('TICKET-'):
-
-        ticket_id = f'TICKET-{ticket_id}'
-
-    filepath = os.path.join(TICKET_DIR, f'{ticket_id}{TICKET_EXTENSION}')
-
-    if not os.path.exists(filepath):
+    if not filepath or not os.path.exists(filepath):
 
         print('Ticket not found')
 
@@ -266,19 +303,15 @@ def show_ticket(args):
 
 def update_ticket(args):
 
-    ticket_id = args.ticket_id
+    filepath = ticket_path(args.ticket_id)
 
-    if not ticket_id.startswith('TICKET-'):
-
-        ticket_id = f'TICKET-{ticket_id}'
-
-    filepath = os.path.join(TICKET_DIR, f'{ticket_id}{TICKET_EXTENSION}')
-
-    if not os.path.exists(filepath):
+    if not filepath or not os.path.exists(filepath):
 
         print('Ticket not found')
 
         return
+
+    ticket_id = safe_ticket_id(args.ticket_id)
 
     ticket = parse_ticket_file(filepath)
 
@@ -290,11 +323,11 @@ def update_ticket(args):
 
     if args.status:
 
-        ticket['status'] = args.status
+        ticket['status'] = oneline(args.status)
 
     if args.notes is not None:
 
-        ticket['notes'] = args.notes
+        ticket['notes'] = oneline(args.notes)
 
     content = [
 

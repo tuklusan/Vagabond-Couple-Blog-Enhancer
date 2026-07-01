@@ -37,6 +37,21 @@ WRITER_ESCALATE_AFTER = int(os.environ.get("ORCH_WRITER_ESCALATE_AFTER", "2"))
 REVIEWER_ESCALATE_REROLLS = int(os.environ.get("ORCH_REVIEWER_REROLLS", "2"))
 
 
+def _safe_certify(spec, rsys, ruser):
+    """Call the reviewer, converting ANY unexpected exception into a synthetic
+    ESCALATE verdict so a reviewer outage escalates gracefully instead of crashing
+    the node loop (TICKET-0013). reviewer_client.certify already handles provider
+    fallbacks internally; this guards against errors it does not."""
+    try:
+        return reviewer_client.certify(
+            rsys, ruser, web_search=spec.web_search, max_tokens=spec.review_max_tokens)
+    except Exception as e:
+        verdict = {"decision": "ESCALATE",
+                   "note": "reviewer call failed: " + str(e)[:160],
+                   "reviewer_provider": "none", "criteria": {}, "sources": []}
+        return verdict, "", []
+
+
 def run_generative_node(spec, context, max_rounds=None, verbose=True):
     """Run one generative node's writer<->reviewer loop. Returns an outcome dict."""
     max_rounds = max_rounds or config.MAX_NODE_ROUNDS
@@ -90,8 +105,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
 
         # --- 3. reviewer (judgment) ---
         rsys, ruser = spec.build_review_prompt(output, det_findings, context)
-        verdict, _rtext, sources = reviewer_client.certify(
-            rsys, ruser, web_search=spec.web_search, max_tokens=spec.review_max_tokens)
+        verdict, _rtext, sources = _safe_certify(spec, rsys, ruser)
         decision = str(verdict.get("decision", "ESCALATE")).upper()
         log(f"round {rnd}: review {decision} (writer={wprov}, reviewer={verdict.get('reviewer_provider')})")
         history.append({"round": rnd, "writer": wprov, "stage": "review",
@@ -105,8 +119,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
         reroll = 0
         while decision == "ESCALATE" and reroll < REVIEWER_ESCALATE_REROLLS:
             reroll += 1
-            verdict, _rtext, sources = reviewer_client.certify(
-                rsys, ruser, web_search=spec.web_search, max_tokens=spec.review_max_tokens)
+            verdict, _rtext, sources = _safe_certify(spec, rsys, ruser)
             decision = str(verdict.get("decision", "ESCALATE")).upper()
             log(f"round {rnd}: reviewer re-roll {reroll} -> {decision} "
                 f"(reviewer={verdict.get('reviewer_provider')})")

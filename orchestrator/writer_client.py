@@ -123,7 +123,18 @@ def _post_chat(url, api_key, model, messages, max_tokens, temperature, timeout,
                     continue
                 resp.raise_for_status()
             resp.raise_for_status()
-            text = _extract_content(resp.json())
+            try:
+                data = resp.json()
+            except ValueError as e:
+                # Malformed body (e.g. an HTML error page) is not a
+                # requests.RequestException; treat it as a retryable error so the
+                # retry/fallback chain still runs (TICKET-0022).
+                last_err = RuntimeError("non-JSON response from " + str(model) + ": " + str(e)[:120])
+                if attempt < max_retries:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise last_err
+            text = _extract_content(data)
             if not text.strip():
                 last_err = RuntimeError("empty content from " + str(model))
                 if attempt < max_retries:

@@ -18,17 +18,38 @@ Layout (under Output/runs/<run_id>/):
     artifacts/<name>.json # structured outputs (inventories, audits, verdicts)
 """
 import json
+import os
+import re
 import time
 from datetime import datetime
 from pathlib import Path
 
 from . import config
 
+_SAFE_RUN_ID = re.compile(r"[A-Za-z0-9_\-]+")
+
+
+def _sanitize_run_id(run_id: str) -> str:
+    """Reject run ids that could escape the run root (TICKET-0018). Only
+    alphanumerics, underscore, and hyphen are allowed."""
+    if not run_id or not _SAFE_RUN_ID.fullmatch(run_id):
+        raise ValueError("invalid run_id " + repr(run_id)
+                         + " -- allowed characters: letters, digits, '_' and '-'")
+    return run_id
+
+
+def _atomic_write_text(path: Path, text: str):
+    """Write via a temp file + atomic replace so a crash mid-write never leaves a
+    truncated/partial file for a concurrent reader (TICKET-0019/0020)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
 
 class RunState:
     def __init__(self, run_id: str):
-        self.run_id = run_id
-        self.dir = config.RUN_ROOT / run_id
+        self.run_id = _sanitize_run_id(run_id)
+        self.dir = config.RUN_ROOT / self.run_id
         self.artifacts_dir = self.dir / "artifacts"
         self.working_html_path = self.dir / "working.html"
         self.status_path = self.dir / "status.json"
@@ -57,29 +78,40 @@ class RunState:
         return self.working_html_path.read_text(encoding="utf-8")
 
     def set_working_html(self, html: str):
-        self.working_html_path.write_text(html, encoding="utf-8")
+        _atomic_write_text(self.working_html_path, html)
 
     # ---- artifacts -------------------------------------------------------
     def save_artifact(self, name: str, obj) -> str:
         path = self.artifacts_dir / (name + ".json")
-        path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+        _atomic_write_text(path, json.dumps(obj, ensure_ascii=False, indent=2))
         return str(path)
 
     def read_artifact(self, name: str):
         path = self.artifacts_dir / (name + ".json")
         if not path.exists():
             return None
-        return json.loads(path.read_text(encoding="utf-8"))
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, ValueError):
+            # A truncated/corrupt artifact is treated as absent rather than crashing
+            # the run (TICKET-0021); the node that needs it will regenerate/re-check.
+            return None
 
     def has_artifact(self, name: str) -> bool:
         return (self.artifacts_dir / (name + ".json")).exists()
 
     # ---- status / G4 gate ------------------------------------------------
     def _read_status(self):
-        return json.loads(self.status_path.read_text(encoding="utf-8"))
+        try:
+            return json.loads(self.status_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError, ValueError):
+            # Corrupt/missing status -> start from an empty skeleton (TICKET-0021)
+            # rather than crashing; callers re-populate via mark_node/set_current_node.
+            return {"run_id": self.run_id, "current_node": None, "nodes": {}}
 
     def _write_status(self, status):
-        self.status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
+        _atomic_write_text(self.status_path,
+                           json.dumps(status, ensure_ascii=False, indent=2))
 
     def set_current_node(self, node_id: str):
         st = self._read_status()

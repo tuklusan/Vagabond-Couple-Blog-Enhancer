@@ -11,6 +11,21 @@ headless in CI or be re-pointed without code edits.
 import os
 from pathlib import Path
 
+
+def _env_int(name, default):
+    """Read an int from the environment, falling back to `default` on a missing or
+    non-integer value instead of crashing the import (TICKET-0006)."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        print("[config] ignoring non-integer " + name + "=" + repr(raw)
+              + "; using default " + str(default))
+        return default
+
+
 # Repo root = parent of the orchestrator package directory.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SECRETS_DIR = PROJECT_ROOT / "Config" / "_SECRETS"
@@ -48,7 +63,8 @@ def resolve_doc(logical_name: str):
     pattern = REQUIRED_DOCS[logical_name]
     for base in DOCS_SEARCH_DIRS:
         if "*" in pattern:
-            matches = sorted(base.glob(pattern))
+            # newest by modification time, not lexical order (TICKET-0007)
+            matches = sorted(base.glob(pattern), key=lambda p: p.stat().st_mtime)
             if matches:
                 return matches[-1]
         else:
@@ -90,7 +106,7 @@ WEB_SEARCH_TOOL_TYPE_FALLBACK = "web_search_20250305"
 # How many writer<->reviewer rounds on a single node before escalating to the
 # operator rather than looping forever ("even if it takes a long time" - but not
 # infinitely on an unverifiable claim).
-MAX_NODE_ROUNDS = int(os.environ.get("ORCH_MAX_NODE_ROUNDS", "6"))
+MAX_NODE_ROUNDS = _env_int("ORCH_MAX_NODE_ROUNDS", 6)
 
 # If every review provider is unreachable: fail-open (allow, flag) by default so
 # an outage never permanently blocks a run; set 1 to fail-closed (block).

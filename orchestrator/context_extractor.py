@@ -18,6 +18,16 @@ from bs4 import BeautifulSoup
 from . import validators
 
 
+def _schema_name(value):
+    """Extract a place/instrument name from an ld+json value that may be a dict
+    ({"name": ...}) OR a plain string per Schema.org (TICKET-0009)."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        return (value.get("name", "") or "").strip()
+    return ""
+
+
 def parse_schema(html):
     soup = BeautifulSoup(html, "html.parser")
     s = soup.find("script", attrs={"type": "application/ld+json"})
@@ -98,12 +108,12 @@ def extract_context(html, allow_llm=False):
     }
 
     if schema:
-        ctx["origin"] = (schema.get("fromLocation") or {}).get("name", "") or ""
-        ctx["destination"] = (schema.get("toLocation") or {}).get("name", "") or ""
+        ctx["origin"] = _schema_name(schema.get("fromLocation"))
+        ctx["destination"] = _schema_name(schema.get("toLocation"))
         ctx["post_title"] = schema.get("name", "") or ""
-        instr = schema.get("instrument") or {}
-        if instr.get("name"):
-            ctx["method"] = instr["name"]
+        method = _schema_name(schema.get("instrument"))
+        if method:
+            ctx["method"] = method
         stops, landmarks, waypoints, facts = [], [], [], []
         for part in schema.get("hasPart", []) or []:
             if not isinstance(part, dict):
