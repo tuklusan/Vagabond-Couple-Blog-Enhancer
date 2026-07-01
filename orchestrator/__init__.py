@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Supratim Sanyal, SANYALnet Labs. All rights reserved.
+# Limited Source-Code Viewing License -- view-only. No execution, modification,
+# redistribution, production use, or AI/ML training. Full terms: see LICENSE
+# (repo root) or https://github.com/tuklusan/Vagabond-Couple-Blog-Enhancer/blob/master/LICENSE
 """
 TVC Blog-Fix Orchestrator.
 

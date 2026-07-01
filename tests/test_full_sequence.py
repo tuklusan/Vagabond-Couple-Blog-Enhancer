@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Supratim Sanyal, SANYALnet Labs. All rights reserved.
+# Limited Source-Code Viewing License -- view-only. No execution, modification,
+# redistribution, production use, or AI/ML training. Full terms: see LICENSE
+# (repo root) or https://github.com/tuklusan/Vagabond-Couple-Blog-Enhancer/blob/master/LICENSE
 """
 Dry walk of the FULL canonical sequence (generative/analysis stubbed) over the
 reference HTML, with an approving operator. Verifies the whole G4 chain wires
