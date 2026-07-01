@@ -132,7 +132,11 @@ def test_youtube_caption_escaped():
             '<p class="tr-caption">cap &quot;q &lt;script&gt;</p></div></div>')
     out, n = assembler.reemit_youtube(html)
     check("youtube_reemitted", n == 1, str(n))
-    check("no_raw_script_injected", "<script>" not in out.lower(), out[:120])
+    low = out.lower()
+    # no raw script tag anywhere, and the title attribute is not broken out of
+    # (raw onerror= / an unescaped closing quote+space) -- TICKET-0061/0101
+    check("no_raw_script_injected", "<script" not in low, out[:120])
+    check("no_attr_breakout", "onerror=" not in low and 'title="x" ' not in low, out[:160])
 
 
 def test_prefold_without_more_marker():
