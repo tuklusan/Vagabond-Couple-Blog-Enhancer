@@ -49,8 +49,13 @@ def _halt(sctx, node, reason, item, action):
     line = ("HALT -- " + reason + " -- Offending item: " + str(item)
             + ". Action required: " + str(action))
     print(_ascii("[X] " + line))
-    sctx.state.log("halt", {"node": node.id, "reason": reason, "item": item, "action": action})
-    sctx.state.mark_node(node.id, complete=False, gates_ok=False, note=line)
+    # Best-effort durable record of the halt; never let a state-write failure mask
+    # the halt itself (TICKET-0120).
+    try:
+        sctx.state.log("halt", {"node": node.id, "reason": reason, "item": item, "action": action})
+        sctx.state.mark_node(node.id, complete=False, gates_ok=False, note=line)
+    except Exception as e:
+        print(_ascii("   (warning: could not persist halt state: " + str(e)[:120] + ")"))
     return {"status": "HALT", "at": node.id, "reason": reason, "item": item, "action": action}
 
 
@@ -73,10 +78,16 @@ def run_sequence(nodes, sctx):
             return _halt(sctx, node, result.get("halt_reason", "halt"),
                          result.get("item", ""), result.get("action", ""))
 
-        sctx.state.mark_node(node.id, complete=result.get("complete", True),
-                             output_ref=result.get("output_ref"), note=result.get("note", ""))
-        sctx.state.log("node_done", {"node": node.id, "status": result.get("status", "ok"),
-                                     "note": result.get("note", "")})
+        # Durable-state writes: a storage/IO failure here must halt cleanly (G4)
+        # rather than abort the sequence with an uncaught exception (TICKET-0120).
+        try:
+            sctx.state.mark_node(node.id, complete=result.get("complete", True),
+                                 output_ref=result.get("output_ref"), note=result.get("note", ""))
+            sctx.state.log("node_done", {"node": node.id, "status": result.get("status", "ok"),
+                                         "note": result.get("note", "")})
+        except Exception as e:
+            return _halt(sctx, node, "durable-state write failed", str(e)[:160],
+                         "check disk/permissions for the run dir, then re-run " + node.id)
         if result.get("note"):
             print(_ascii("   " + result["note"]))
         prev_id = node.id
