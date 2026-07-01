@@ -67,9 +67,28 @@ def writing_rules_findings(text: str):
     return findings
 
 
-def standard_deterministic_check(output, context):
-    findings = writing_rules_findings(_plain(output))
+# Minimum plain-text length below which an output is almost certainly not real
+# content but a stray token / moderation artifact (e.g. openrouter/free emitting
+# "User Safety: safe"). Catching it deterministically routes it back to the writer
+# (and, after WRITER_ESCALATE_AFTER fails, to DeepSeek) instead of letting empty
+# junk reach the reviewer and trigger a terminal ESCALATE.
+_MIN_CONTENT_CHARS = 40
+
+
+def standard_deterministic_check(output, context, min_chars=_MIN_CONTENT_CHARS):
+    text = _plain(output).strip()
+    findings = writing_rules_findings(text)
+    if len(text) < min_chars:
+        findings.append("output too short (" + str(len(text)) + " chars) -- not a real "
+                        "content block; write the full requested content")
     return (len(findings) == 0, findings)
+
+
+def prose_paragraph_check(min_chars):
+    """A stricter standard check for full-paragraph nodes (route-first body, etc.)."""
+    def _check(output, context):
+        return standard_deterministic_check(output, context, min_chars=min_chars)
+    return _check
 
 
 _VERDICT_SHAPE = (
@@ -133,7 +152,7 @@ def step6_first_body_paragraph() -> GenerativeNode:
         id="step6_first_body_paragraph",
         label="Step 6 - First body paragraph (route-first)",
         build_writer_prompt=writer,
-        deterministic_check=standard_deterministic_check,
+        deterministic_check=prose_paragraph_check(120),
         build_review_prompt=review,
         web_search=True,
         writer_max_tokens=512,
@@ -353,7 +372,7 @@ def step10_journey_significance() -> GenerativeNode:
 
     return GenerativeNode(
         id="step10_journey_significance", label="Step 10 - Journey significance",
-        build_writer_prompt=writer, deterministic_check=standard_deterministic_check,
+        build_writer_prompt=writer, deterministic_check=prose_paragraph_check(120),
         build_review_prompt=review, web_search=True,
         writer_max_tokens=600, review_max_tokens=1536,
     )
