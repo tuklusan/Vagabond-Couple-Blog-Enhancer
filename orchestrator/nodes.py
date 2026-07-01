@@ -55,9 +55,14 @@ def writing_rules_findings(text: str):
     findings = []
     for hit in validators.scan_forbidden(text):
         findings.append("forbidden " + hit["kind"] + ": '" + hit["term"] + "' x" + str(hit["count"]))
-    if re.search(r"\bI\b", text):
+    # First-person 'I' -- but NOT the interstate-highway designation (I-40, I-5,
+    # I-10...), which is pervasive in US road-trip content. Exclude 'I' immediately
+    # followed by an (optional) hyphen and a digit.
+    if re.search(r"\bI\b(?![-‐-―]?\d)", text):
         findings.append("first-person singular 'I' present -- narrator must be we/us")
-    if re.search(r"\bme\b", text, re.IGNORECASE):
+    # First-person 'me' is the lowercase pronoun. Case-sensitive so we do not flag
+    # the state abbreviation 'ME' (Maine) or other all-caps tokens.
+    if re.search(r"\bme\b", text):
         findings.append("first-person singular 'me' present -- narrator must be we/us")
     return findings
 
