@@ -13,10 +13,17 @@ emitting Rule G1 single-line indicators, and halting in the G1 format
 validators; generative nodes run the Tier-1 loop; operator nodes pause for the
 human (Phase 4 approval gate blocks HTML generation).
 """
+import json
+import os
+import re
 from dataclasses import dataclass
 from typing import Callable
 
 from . import config, validators, review_loop, assembler, context_extractor, nodes as node_specs
+
+# How many times a Pass-1 REVISE may bounce (drop the flagged factoid + reassemble
+# + re-certify) before halting for the operator (TICKET-0123).
+MAX_PASS1_BOUNCES = int(os.environ.get("ORCH_MAX_PASS1_BOUNCES", "3"))
 
 
 @dataclass
@@ -387,61 +394,128 @@ def phase2_url_lock_node():
     return SeqNode("phase2_url_lock", "Phase 2 - URL stub lock", "deterministic", handler)
 
 
+def _collect_fragments(sctx):
+    """Gather the certified generative fragments from the run artifacts."""
+    mapping = {
+        "gen_step3_summary_block": "summary_block",
+        "gen_step6_first_body_paragraph": "first_paragraph",
+        "gen_step7_route_summary_box": "route_box",
+        "gen_step8_route_at_a_glance": "route_at_a_glance",
+        "gen_step10_journey_significance": "journey_significance",
+    }
+    fragments = {}
+    for art_key, frag_key in mapping.items():
+        art = sctx.state.read_artifact(art_key)
+        if art and art.get("status") == "CERTIFIED" and art.get("output"):
+            fragments[frag_key] = art["output"]
+    sep = sctx.state.read_artifact("gen_step13_separator")
+    if sep and sep.get("outputs"):
+        fragments["separators"] = list(sep["outputs"])       # one per image pair (0053)
+    elif sep and sep.get("status") == "CERTIFIED" and sep.get("output"):
+        fragments["separators"] = [sep["output"]]
+    fac = sctx.state.read_artifact("gen_step9f_factoid")
+    if fac and fac.get("items"):
+        factoids = [{"section": it["item"].get("section_topic", ""), "html": it["output"]}
+                    for it in fac["items"] if it.get("output")]
+        if factoids:
+            fragments["factoids"] = factoids
+    return fragments
+
+
+def _assemble_working(sctx):
+    """(Re)assemble working.html from the saved pre-assembly source + current
+    fragment artifacts. Reusable so the Pass-1 bounce can reassemble after
+    regenerating a fragment (TICKET-0123)."""
+    source = sctx.state.read_artifact("pre_assembly_source")
+    src_html = source.get("html") if isinstance(source, dict) else None
+    if src_html is None:
+        src_html = sctx.state.get_working_html()          # first pass: working == source
+        sctx.state.save_artifact("pre_assembly_source", {"html": src_html})
+    fragments = _collect_fragments(sctx)
+    # Keyword-rich schema name/description from the certified title/search desc (0107).
+    title_art = sctx.state.read_artifact("gen_step1_title")
+    if title_art and title_art.get("status") == "CERTIFIED" and title_art.get("output"):
+        sctx.context["schema_name"] = title_art["output"].strip()
+    desc_art = sctx.state.read_artifact("gen_step2f_search_description")
+    if desc_art and desc_art.get("status") == "CERTIFIED" and desc_art.get("output"):
+        sctx.context["schema_description"] = desc_art["output"].strip()
+    assembled = assembler.assemble(src_html, fragments or None, context=sctx.context)
+    sctx.state.set_working_html(assembled)
+    return len(fragments)
+
+
 def phase5_generate_node():
     """Phase 5 HTML generation: assemble the certified fragments into working.html
     (and run the deterministic transforms: strip styles, reapply summary CSS,
     re-emit YouTube, remove ?m=1)."""
     def handler(sctx):
-        html = sctx.state.get_working_html()
-        mapping = {
-            "gen_step3_summary_block": "summary_block",
-            "gen_step6_first_body_paragraph": "first_paragraph",
-            "gen_step7_route_summary_box": "route_box",
-            "gen_step8_route_at_a_glance": "route_at_a_glance",
-            "gen_step10_journey_significance": "journey_significance",
-        }
-        fragments = {}
-        for art_key, frag_key in mapping.items():
-            art = sctx.state.read_artifact(art_key)
-            if art and art.get("status") == "CERTIFIED" and art.get("output"):
-                fragments[frag_key] = art["output"]
-        sep = sctx.state.read_artifact("gen_step13_separator")
-        if sep and sep.get("outputs"):
-            fragments["separators"] = list(sep["outputs"])   # one per image pair (0053)
-        elif sep and sep.get("status") == "CERTIFIED" and sep.get("output"):
-            fragments["separators"] = [sep["output"]]
-        # Section-closing factoids: one per section, placed at the end of its section.
-        fac = sctx.state.read_artifact("gen_step9f_factoid")
-        if fac and fac.get("items"):
-            factoids = [{"section": it["item"].get("section_topic", ""), "html": it["output"]}
-                        for it in fac["items"] if it.get("output")]
-            if factoids:
-                fragments["factoids"] = factoids
-        # Feed the certified SEO title / search description into the schema so its
-        # name/description are keyword-rich, not the bare route (TICKET-0107).
-        title_art = sctx.state.read_artifact("gen_step1_title")
-        if title_art and title_art.get("status") == "CERTIFIED" and title_art.get("output"):
-            sctx.context["schema_name"] = title_art["output"].strip()
-        desc_art = sctx.state.read_artifact("gen_step2f_search_description")
-        if desc_art and desc_art.get("status") == "CERTIFIED" and desc_art.get("output"):
-            sctx.context["schema_description"] = desc_art["output"].strip()
-        assembled = assembler.assemble(html, fragments or None, context=sctx.context)
-        sctx.state.set_working_html(assembled)
-        return {"complete": True, "note": "assembled HTML (" + str(len(fragments))
+        n = _assemble_working(sctx)
+        return {"complete": True, "note": "assembled HTML (" + str(n)
                 + " fragments spliced + pre-fold summary/schema)"}
     return SeqNode("phase5_generate", "Phase 5 - HTML generation (assemble fragments)", "deterministic", handler)
 
 
+def _drop_flagged_factoid(sctx, pass1):
+    """Remove the section-closing factoid whose section the Pass-1 review flags
+    (e.g. a chronology/placement problem). Factoids are optional (0053), so dropping
+    the offending one yields a clean post while keeping the rest. Returns the dropped
+    section name, or None if the REVISE can't be localized to a factoid (TICKET-0123)."""
+    fac = sctx.state.read_artifact("gen_step9f_factoid")
+    if not fac or not fac.get("items"):
+        return None
+    rev = ((pass1.get("revision_instructions") or "") + " "
+           + json.dumps(pass1.get("criteria", {}), ensure_ascii=False)).lower()
+    stop = {"into", "the", "and", "with", "from", "past", "journey", "night"}
+    # Score every factoid section by how many of its distinctive tokens appear in the
+    # revision text, and drop the BEST match -- not just the first section that shares
+    # a common word like 'Dhaba' (TICKET-0123).
+    best, best_score = None, 0
+    for it in fac["items"]:
+        if not it.get("output"):
+            continue
+        sec = (it.get("item") or {}).get("section_topic", "")
+        toks = {w.lower() for w in re.findall(r"[A-Za-z]{4,}", sec) if w.lower() not in stop}
+        score = sum(1 for w in toks if w in rev)
+        if score > best_score:
+            best, best_score = it, score
+    if best is not None and best_score > 0:
+        best["output"] = ""
+        best["dropped_pass1"] = True
+        sctx.state.save_artifact("gen_step9f_factoid", fac)
+        return (best.get("item") or {}).get("section_topic", "")
+    return None
+
+
 def phase5_certification_node():
     def handler(sctx):
-        cert = review_loop.run_document_certification(sctx.state, run_reviewer=not sctx.dry_generative)
-        if not cert.get("certified"):
+        for attempt in range(MAX_PASS1_BOUNCES + 1):
+            cert = review_loop.run_document_certification(
+                sctx.state, run_reviewer=not sctx.dry_generative)
+            if cert.get("certified"):
+                note = "G2 two-pass clean -> delivery permitted"
+                if attempt:
+                    note += " (after " + str(attempt) + " Pass-1 bounce(s))"
+                return {"complete": True, "note": note}
+            # A real DETERMINISTIC (Pass-2) failure can't be auto-fixed -> halt.
             failed = (cert.get("pass2_deterministic") or {}).get("failed", [])
-            if not failed:
-                failed = [str((cert.get("pass1_reviewer") or {}).get("decision"))]
-            return {"halt": True, "halt_reason": "Phase 5 G2 certification not clean",
-                    "item": str(failed), "action": "fix the failing checks and re-run Phase 5"}
-        return {"complete": True, "note": "G2 two-pass clean -> delivery permitted"}
+            if failed:
+                return {"halt": True, "halt_reason": "Phase 5 G2 Pass-2 not clean",
+                        "item": str(failed), "action": "fix the failing checks and re-run Phase 5"}
+            # Pass-1 (holistic) REVISE with a clean Pass-2: bounce -- drop the flagged
+            # factoid and reassemble, then re-certify (TICKET-0123).
+            if attempt >= MAX_PASS1_BOUNCES:
+                break
+            dropped = _drop_flagged_factoid(sctx, cert.get("pass1_reviewer") or {})
+            if not dropped:
+                break   # couldn't localize the REVISE to a factoid -> halt for operator
+            sctx.operator.info("Pass-1 flagged content; dropped the factoid for '"
+                               + dropped + "' and reassembling...")
+            _assemble_working(sctx)
+        # Exhausted bounces or unlocalizable REVISE.
+        p1 = cert.get("pass1_reviewer") or {}
+        return {"halt": True, "halt_reason": "Phase 5 G2 Pass-1 not clean",
+                "item": str((p1.get("revision_instructions") or p1.get("decision")))[:160],
+                "action": "review the holistic finding and re-run Phase 5"}
     return SeqNode("phase5_cert", "Phase 5 - HTML sanity certification (G2 two-pass)", "analysis", handler)
 
 
