@@ -506,13 +506,16 @@ def step3_summary_block() -> GenerativeNode:
         sections = context.get("sections", [])
         system = (
             "You write the TEXT content of a pre-fold summary block: (1) a small-caps label "
-            "'[POST TITLE] - Post Summary'; (2) ONE narrative paragraph in the author's voice "
-            "describing the full route arc; (3) one 'What's Covered' table row per top-level "
-            "H2 section (emoji + 'Section name - brief descriptor'). "
+            "in the form '<Post title> - Post Summary' using the ACTUAL post title given below "
+            "(do NOT write the literal words 'POST TITLE' or any bracketed placeholder); "
+            "(2) ONE narrative paragraph in the author's voice describing the full route arc; "
+            "(3) one 'What's Covered' table row per top-level H2 section (emoji + "
+            "'Section name - brief descriptor'). "
             "NARRATOR IS 'The Vagabond Couple': use ONLY 'we'/'us'/'our'; NEVER write the "
             "word 'I' or 'me' anywhere. No forbidden words. Output as: a LABEL: line, a "
             "NARRATIVE: paragraph, then ROWS: one 'emoji | Section - descriptor' per line. "
-            "Output EXACTLY one row per section listed below -- no more, no fewer."
+            "Every row MUST be complete (section name, ' - ', then a descriptor); never cut a "
+            "row off. Output EXACTLY one row per section listed below -- no more, no fewer."
         )
         user = ("Post title: " + (context.get("post_title") or "") +
                 "\nRoute: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
@@ -531,6 +534,18 @@ def step3_summary_block() -> GenerativeNode:
         # soft check: roughly one row per section (reviewer confirms exact match)
         if sections and len(rows) and abs(len(rows) - len(sections)) > 2:
             findings.append("row count " + str(len(rows)) + " far from section count " + str(len(sections)))
+        # completeness: each row must have a descriptor after the section name and be
+        # a full line -- catches a truncated final row like 'A Luxurious' when the
+        # writer was cut off by max_tokens (TICKET-0121).
+        for r in rows:
+            descriptor = r.split("|", 1)[-1].strip() if "|" in r else r
+            if " - " not in descriptor and " — " not in descriptor:
+                findings.append("incomplete/truncated summary row (no descriptor): '"
+                                + descriptor[:40] + "'")
+                break
+        # the writer must SUBSTITUTE the title, not echo the '[POST TITLE]' placeholder
+        if "[post title]" in output.lower() or "post title]" in output.lower():
+            findings.append("literal '[POST TITLE]' placeholder not substituted")
         return (len(findings) == 0, findings)
 
     def review(output, det_findings, context):
