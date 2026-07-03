@@ -136,7 +136,16 @@ def test_youtube_caption_escaped():
     # no raw script tag anywhere, and the title attribute is not broken out of
     # (raw onerror= / an unescaped closing quote+space) -- TICKET-0061/0101
     check("no_raw_script_injected", "<script" not in low, out[:120])
-    check("no_attr_breakout", "onerror=" not in low and 'title="x" ' not in low, out[:160])
+    # The real security property: the attacker-supplied title must stay INSIDE a
+    # single title="..." attribute value, not become its own onerror= attribute.
+    # (BeautifulSoup re-serializes with whichever quote char is safe for the value
+    # -- e.g. single-quotes when the value contains a literal double-quote -- so a
+    # raw substring check for 'onerror=' is too naive once the template's [VIDEO
+    # TITLE] placeholder is actually substituted; TICKET-0125.)
+    from bs4 import BeautifulSoup as _BS
+    reparsed = _BS(out, "html.parser").find("iframe")
+    check("no_attr_breakout", reparsed is not None and "onerror" not in reparsed.attrs,
+          str(reparsed.attrs if reparsed else None))
 
 
 def test_prefold_without_more_marker():

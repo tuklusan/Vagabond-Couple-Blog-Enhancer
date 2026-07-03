@@ -91,6 +91,38 @@ def prose_paragraph_check(min_chars):
     return _check
 
 
+def _with_lead_link_check(base_check, ctx_key):
+    """Wrap a deterministic check: when context[ctx_key] ('prior_post'/'next_post',
+    fetched from an operator-supplied live URL) is present, the output must
+    literally link to its real URL. Grounds the lead-in/lead-out in something
+    real instead of letting the writer silently drop a supplied link or, worse,
+    invent one of its own (TICKET-0132)."""
+    def _check(output, context):
+        ok, findings = base_check(output, context)
+        post = context.get(ctx_key)
+        if post and post.get("url") and post["url"] not in output:
+            findings.append(
+                "a real " + ctx_key.replace("_", " ") + " (" + post["url"] + ") was supplied "
+                "but is not linked in the output -- include a genuine <a href='" + post["url"] +
+                "'>...</a> reference to it, using its real title")
+        return (len(findings) == 0, findings)
+    return _check
+
+
+def _no_real_route(context):
+    """True when there is no real two-endpoint route to narrate: origin/
+    destination missing or identical. Covers both a genuine single-location post
+    AND a context-extraction miss (empty origin/destination) -- either way, any
+    '[Origin] to [Destination]'/'Overland via ...' framing must not be forced,
+    since a writer with nothing concrete to anchor to will invent a whole
+    fictional trip to fill the gap (observed on arsenalna1: an invented
+    'Kyiv to Lviv' road trip with a fake corridor name and fake detour --
+    TICKET-0127/0129/0131/0133)."""
+    origin = (context.get("origin") or "").strip().lower()
+    dest = (context.get("destination") or "").strip().lower()
+    return (not origin) or (not dest) or origin == dest
+
+
 def route_items(context):
     """The authoritative, grounded ordered route list for this post.
 
@@ -180,24 +212,55 @@ _VERDICT_SHAPE = (
 # ---------------------------------------------------------------------------
 def step6_first_body_paragraph() -> GenerativeNode:
     def writer(context, prior, revision):
+        prior_post = context.get("prior_post")
+        no_route = _no_real_route(context)
+        subject = (context.get("post_title") or (context.get("sections") or [""])[0]
+                   or "the subject of this post")
+        shape = (
+            # No real origin/destination -- NEVER let the writer invent a drive to fill
+            # the gap (observed: a fully fictional 'Kyiv to Lviv' road trip with a fake
+            # corridor and a fake detour, TICKET-0133). Ground on the real subject only.
+            "There is no real point-to-point route here (a single-location post, or route "
+            "extraction found nothing) -- do NOT invent an origin, destination, drive, or "
+            "corridor to fill this gap. Open with the REAL subject instead ('" + subject +
+            "'). Shape:\n[One sentence establishing what/where this post is actually about, "
+            "using ONLY the given subject/sections/landmarks below -- no invented place "
+            "names, route, or method]. [one sentence on what made this notable]. [one "
+            "sentence on what this post covers]."
+            if no_route else
+            "HARD RULE: origin, destination, and primary route method must appear before "
+            "any atmosphere or character. Shape:\n"
+            "We drove from [ORIGIN] to [DESTINATION] via [KEY WAYPOINTS / METHOD]. "
+            "[one sentence on what made this stretch notable]. "
+            "[one sentence on what this post covers]."
+        )
         system = (
             "You are a travel-blog editor for The Vagabond Couple. Narrator is 'we'/'us' "
             "(NEVER 'I'/'me'). Write ONLY the FIRST body paragraph that appears below the "
-            "fold. HARD RULE: origin, destination, and primary route method must appear "
-            "before any atmosphere or character. Shape:\n"
-            "We drove from [ORIGIN] to [DESTINATION] via [KEY WAYPOINTS / METHOD]. "
-            "[one sentence on what made this stretch notable]. "
-            "[one sentence on what this post covers].\n"
+            "fold. " + shape + "\n"
             "Output ONLY the paragraph wrapped in a single <p>...</p>. No preamble. "
-            "Avoid all marketing/transition cliche words."
+            "Avoid all marketing/transition cliche words." + (
+                " A PRIOR post in this series is given below (real title/URL/gist, already "
+                "fetched) -- open with a genuine one-clause lead-in referencing it BEFORE the "
+                "rest of the paragraph (e.g. 'As promised in our [Prior Title] post, ...'), "
+                "with a real <a href='" + prior_post["url"] + "'>" + (prior_post.get("title") or "link")
+                + "</a> link. Base the reference ONLY on the real title/gist given -- never "
+                "invent what the prior post covered."
+                if prior_post else ""
+            )
         )
         user = (
             "Origin: " + (context.get("origin") or "") + "\n"
             "Destination: " + (context.get("destination") or "") + "\n"
             "Waypoints: " + ", ".join(context.get("waypoints", [])) + "\n"
             "Method: " + (context.get("method") or "overland") + "\n"
+            "Known sections/subject (ground the paragraph in these if there's no route): " +
+            ("; ".join(context.get("sections") or []) or subject) + "\n"
             "What this post covers: " + (context.get("covers") or "")
         )
+        if prior_post:
+            user += ("\n\nPrior post (for the lead-in): title='" + (prior_post.get("title") or "") +
+                     "', url='" + prior_post["url"] + "', gist='" + (prior_post.get("gist") or "") + "'")
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:
@@ -205,17 +268,29 @@ def step6_first_body_paragraph() -> GenerativeNode:
         return system, user
 
     def review(output, det_findings, context):
+        prior_post = context.get("prior_post")
+        no_route = _no_real_route(context)
         system = (
             "You certify a travel blog's FIRST body paragraph. Use web_search to confirm "
             "the named places and the stated route method are real and plausible. Certify "
-            "against: (a) FACTS -- origin, destination and route method accurate and named; "
-            "(b) WRITING RULES -- narrator we/us, route-first order, no forbidden words; "
+            "against: (a) FACTS -- " + (
+                "there is no real route here, so do NOT require an origin/destination/drive "
+                "-- instead verify the paragraph's subject matches the known sections/subject "
+                "given below and invents no place, route, or method"
+                if no_route else
+                "origin, destination and route method accurate and named"
+            ) + (
+                "; the lead-in reference to the prior post must match its real title/gist "
+                "given below, not an invented summary"
+                if prior_post else ""
+            ) + "; (b) WRITING RULES -- narrator we/us, route-first order, no forbidden words; "
             "(d) REPETITION -- no idea repeated within the paragraph.\n" + _VERDICT_SHAPE
         )
         user = (
             "Route context: " + json.dumps(
                 {k: context.get(k) for k in ("origin", "destination", "waypoints", "method")},
                 ensure_ascii=False) +
+            ("\n\nPrior post (real): " + json.dumps(prior_post, ensure_ascii=False) if prior_post else "") +
             "\n\nParagraph to certify:\n" + output
         )
         return system, user
@@ -224,7 +299,7 @@ def step6_first_body_paragraph() -> GenerativeNode:
         id="step6_first_body_paragraph",
         label="Step 6 - First body paragraph (route-first)",
         build_writer_prompt=writer,
-        deterministic_check=prose_paragraph_check(120),
+        deterministic_check=_with_lead_link_check(prose_paragraph_check(120), "prior_post"),
         build_review_prompt=review,
         web_search=True,
         writer_max_tokens=512,
@@ -308,21 +383,57 @@ def title_deterministic_check(output, context):
     if len(t) > 120:
         findings.append("title overlong (" + str(len(t)) + " chars)")
     findings += writing_rules_findings(t)
+    # TICKET-0127: a "via X" clause must name a REAL waypoint grounded in the
+    # extracted context, never an invented place. Seen on the Arsenalna run: with
+    # no waypoints available the writer fabricated "via Chernihiv" (a real city,
+    # but never mentioned anywhere in the source) and the web-less reviewer
+    # certified it as fact. Catch this deterministically -- title-case terms
+    # after "via" must appear in the known origin/destination/waypoints/landmarks.
+    m = re.search(r"\bvia\s+(.+)$", t, re.IGNORECASE)
+    if m:
+        known = " ".join([
+            context.get("origin") or "", context.get("destination") or "",
+            " ".join(context.get("waypoints") or []), context.get("landmarks") or "",
+            context.get("post_title") or "",
+        ]).lower()
+        dest = (context.get("destination") or context.get("origin") or "the destination")
+        for term in re.split(r",| and ", m.group(1)):
+            term = term.strip(" .")
+            if term and term[0].isupper() and term.lower() not in known:
+                findings.append(
+                    "waypoint '" + term + "' in the title is not present in the extracted "
+                    "origin/destination/waypoints/landmarks -- this is a FABRICATION, do not "
+                    "invent any other place name to replace it either. Output EXACTLY this "
+                    "format instead: '" + dest + ": <2-6 word real theme from the post subject "
+                    "or Known high-value landmarks>' -- no 'Overland via' clause at all.")
     return (len(findings) == 0, findings)
 
 
 def step1_title() -> GenerativeNode:
     def writer(context, prior, revision):
+        origin = context.get("origin") or ""
+        dest = context.get("destination") or ""
+        single_location = _no_real_route(context)
+        subject = dest or origin or context.get("post_title") or "the post"
         system = (
-            "You write ONE SEO-optimized blog post title. Format: "
+            "You write ONE SEO-optimized blog post title. Default format: "
             "'[Origin] to [Destination] Overland via [waypoints or themes]'. The title "
             "must carry the highest-value search keywords (place names, landmarks, route "
             "terms a real searcher types). Default cap THREE waypoints; exceed only if each "
-            "extra term is independently high-search-value. NO emoji, NO parentheticals, NO "
-            "business brand names, no forbidden words. Output ONLY the title text on one line."
+            "extra term is independently high-search-value. NEVER invent a waypoint, detour, "
+            "or place name that is not given to you below." + (
+                " There is no real two-endpoint route here (origin/destination missing or "
+                "identical -- a single-location post: an urban sight, a descent, a museum, "
+                "NOT a multi-town overland trip): do NOT use 'Overland via ...' or '[Origin] "
+                "to [Destination]' at all, even if a 'waypoint' below is just an interior "
+                "landmark (e.g. a lobby/room), not a separate place. Use this format instead: "
+                "'" + subject + ": [2-6 word real theme/subject]'."
+                if single_location else ""
+            ) + " NO emoji, NO parentheticals, NO business brand names, no forbidden words. "
+            "Output ONLY the title text on one line."
         )
         user = (
-            "Origin: " + (context.get("origin") or "") + "\nDestination: " + (context.get("destination") or "") +
+            "Origin: " + origin + "\nDestination: " + dest +
             "\nWaypoints/themes available: " + ", ".join(context.get("waypoints", [])) +
             "\nKnown high-value landmarks: " + (context.get("landmarks") or "")
         )
@@ -333,13 +444,27 @@ def step1_title() -> GenerativeNode:
         return system, user
 
     def review(output, det_findings, context):
+        single_location = _no_real_route(context)
         system = (
             "You certify a travel-blog SEO title. Use web_search to gauge whether the place "
             "names are real and which terms have genuine search value. Certify: (a) FACTS -- "
-            "origin/destination/waypoints are real and correctly spelled; (b) WRITING RULES "
-            "-- format '[Origin] to [Destination] Overland via ...', no emoji/parenthetical/"
-            "brand/forbidden words, waypoints justified by keyword value; (d) no redundant "
-            "terms.\n" + _VERDICT_SHAPE
+            "every place/waypoint named in the title is real, correctly spelled, AND appears "
+            "in the 'Route' context given below (origin/destination/waypoints) -- a real place "
+            "that is simply ABSENT from that context is a FABRICATION and must FAIL, even if "
+            "the place itself genuinely exists; (b) WRITING RULES -- " + (
+                "there is NO real two-endpoint route here (origin/destination missing or "
+                "identical), so the format '[Origin] to [Destination] Overland via ...' does "
+                "NOT apply -- do not fail the title merely for lacking an origin/destination/"
+                "Overland clause; instead require format '[Subject]: [theme]'."
+                if single_location else
+                "format '[Origin] to [Destination] Overland via ...'"
+            ) + ", no emoji/parenthetical/brand/forbidden words, "
+            "waypoints justified by keyword value; (d) no redundant terms. If you find a "
+            "problem with a waypoint, your revision_instructions must NEVER suggest a "
+            "replacement place name of your own (e.g. 'try via Brovary instead') -- that is "
+            "you fabricating content, exactly what this check exists to prevent. The only "
+            "valid revision instruction for a bad/missing waypoint is to drop the 'via ...' "
+            "clause and title on the real subject instead.\n" + _VERDICT_SHAPE
         )
         user = "Route: " + json.dumps(
             {k: context.get(k) for k in ("origin", "destination", "waypoints")},
@@ -418,18 +543,41 @@ def step2f_search_description() -> GenerativeNode:
 # ---------------------------------------------------------------------------
 def step10_journey_significance() -> GenerativeNode:
     def writer(context, prior, revision):
-        system = (
+        next_post = context.get("next_post")
+        no_route = _no_real_route(context)
+        thesis = (
+            # No real route to connect to a "wider expedition" -- that framing is
+            # exactly what invented a fake "Georgian stretch of our overland route"
+            # full of fabricated Silk Road imagery on arsenalna1 (TICKET-0133).
+            "You write ONE closing-thought paragraph that reflects on THIS post's real "
+            "subject/sections (given below) -- do NOT connect it to a wider overland "
+            "expedition or invent a route/journey that doesn't exist here."
+            if no_route else
             "You write ONE 'journey significance' paragraph that connects this post's stops "
-            "to the wider overland expedition (Silk Road context where relevant). Give the "
-            "post a thesis beyond individual stops. Narrator we/us, no forbidden words, no "
-            "'X is not just a Y' framing, no 'we learned/realized that'. Output ONLY a single "
-            "<p>...</p>."
+            "to the wider overland expedition (Silk Road context where relevant)."
+        )
+        system = (
+            thesis + " Give the post a thesis beyond individual stops. Narrator we/us, no "
+            "forbidden words, no 'X is not just a Y' framing, no 'we learned/realized "
+            "that'." + (
+                " A NEXT post in this series is given below (real title/URL/gist, already "
+                "fetched) -- end this paragraph with a genuine lead-out sentence to it (e.g. "
+                "'From here, our travels carried us onward to [Next Title].'), with a real "
+                "<a href='" + next_post["url"] + "'>" + (next_post.get("title") or "link") +
+                "</a> link. Base the reference ONLY on the real title/gist given below -- "
+                "never invent what the next post covers, and do not drift into abstract/"
+                "philosophical language to fill space; keep the lead-out concrete."
+                if next_post else ""
+            ) + " Output ONLY a single <p>...</p>."
         )
         user = (
             "Post route: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
-            "\nThemes: " + (context.get("landmarks") or "") +
+            "\nThemes/sections: " + ((context.get("landmarks") or "") or "; ".join(context.get("sections") or [])) +
             "\nFacts already in the post (do not repeat):\n" + (context.get("existing_facts") or "(none)")
         )
+        if next_post:
+            user += ("\n\nNext post (for the lead-out): title='" + (next_post.get("title") or "") +
+                     "', url='" + next_post["url"] + "', gist='" + (next_post.get("gist") or "") + "'")
         if prior:
             user += "\n\nYour previous draft:\n" + prior
         if revision:
@@ -437,19 +585,31 @@ def step10_journey_significance() -> GenerativeNode:
         return system, user
 
     def review(output, det_findings, context):
+        next_post = context.get("next_post")
+        no_route = _no_real_route(context)
         system = (
             "You certify a journey-significance paragraph. Use web_search to verify any "
-            "historical/geographic claim (e.g. Silk Road links). Certify: (a) FACTS accurate; "
-            "(b) WRITING RULES -- narrator we/us, no forbidden words, no contrast framing; "
+            "historical/geographic claim (e.g. Silk Road links). Certify: (a) FACTS accurate" + (
+                "; there is no real route/wider-expedition connection here, so the paragraph "
+                "must NOT invent one (e.g. a fabricated route, region, or historical-trade "
+                "theme not grounded in this post's real subject/sections) -- FAIL if it does"
+                if no_route else ""
+            ) + (
+                "; the lead-out reference to the next post must match its real title/gist "
+                "given below, not an invented summary"
+                if next_post else ""
+            ) + "; (b) WRITING RULES -- narrator we/us, no forbidden words, no contrast framing; "
             "(d) REPETITION -- introduces no fact already in the post.\n" + _VERDICT_SHAPE
         )
         user = ("Facts already in post:\n" + (context.get("existing_facts") or "(none)") +
+                ("\n\nNext post (real): " + json.dumps(next_post, ensure_ascii=False) if next_post else "") +
                 "\n\nParagraph to certify:\n" + output)
         return system, user
 
     return GenerativeNode(
         id="step10_journey_significance", label="Step 10 - Journey significance",
-        build_writer_prompt=writer, deterministic_check=prose_paragraph_check(120),
+        build_writer_prompt=writer,
+        deterministic_check=_with_lead_link_check(prose_paragraph_check(120), "next_post"),
         build_review_prompt=review, web_search=True,
         writer_max_tokens=600, review_max_tokens=1536,
     )
@@ -570,35 +730,55 @@ def step3_summary_block() -> GenerativeNode:
 # Step 7 -- route summary box (template fill)
 # ---------------------------------------------------------------------------
 def step7_route_summary_box() -> GenerativeNode:
+    def _last_label(context):
+        """'Vehicle:' only makes sense when a real personal vehicle is in context
+        (a road trip). Everything else (transit, on foot, a descent) gets the
+        neutral 'Transit:' label -- matching how the human workflow labels a
+        non-road-trip post -- instead of forcing a vehicle that doesn't exist
+        (TICKET-0129)."""
+        return "Vehicle:" if context.get("vehicle") else "Transit:"
+
     def writer(context, prior, revision):
         stops = geographic_stops(context)
         route_chain = " &rarr; ".join(stops) if stops else (
             (context.get("origin") or "") + " &rarr; " + (context.get("destination") or ""))
+        last_label = _last_label(context)
         system = (
             "You fill a route summary box, EXACT template (tvc-route-summary class, no inline "
             "colour styles):\n"
             '<div class="tvc-route-summary"><strong>Route:</strong> [full stop chain]<br />'
             '<strong>Method:</strong> [how they travelled, name the roads]<br />'
             '<strong>Themes:</strong> [2-4 topical themes joined by ·]<br />'
-            '<strong>Vehicle:</strong> [vehicle]</div>\n'
+            '<strong>' + last_label + '</strong> [' +
+            ('vehicle' if last_label == "Vehicle:" else 'how they got around -- transit line, on foot, etc.') +
+            ']</div>\n'
             "RULES: Route = the FULL stop chain given below with &rarr; between stops (do "
             "NOT shorten to just the endpoints). Themes are TOPICS (e.g. 'Route 66', 'Punjabi "
             "dhaba road food', 'desert geology') inferred from the section titles -- NOT a list "
             "of the stops/towns. Include a 'Distance / Time:' line ONLY if a real figure is "
-            "given below; otherwise OMIT that line -- NEVER invent a distance or duration. No "
-            "forbidden words. Output ONLY the div."
+            "given below; otherwise OMIT that line -- NEVER invent a distance or duration. Use "
+            "the EXACT last-field label '" + last_label + "' given above -- do not substitute "
+            "a different label." + (
+                " Method and Transit must say DIFFERENT things: Method is the physical "
+                "movement/mechanism (e.g. 'two-stage escalator descent'), Transit is the named "
+                "system/operator (e.g. 'Kyiv Metro'). If they would be identical, OMIT the "
+                "Transit line entirely rather than repeat Method verbatim."
+                if last_label == "Transit:" else ""
+            ) + " No forbidden words. Output ONLY the div."
         )
         vehicle = context.get("vehicle") or {}
         if isinstance(vehicle, dict) and vehicle.get("name"):
             veh = vehicle["name"] + (
                 " (" + " ".join(x for x in (vehicle.get("manufacturer"), vehicle.get("model")) if x) + ")"
                 if vehicle.get("model") else "")
+        elif vehicle:
+            veh = str(vehicle)
         else:
-            veh = str(vehicle) if vehicle else "Overland vehicle"
+            veh = context.get("method") or "on foot"
         user = ("Full stop chain (use ALL, in order): " + route_chain +
                 "\nMethod: " + (context.get("method") or "overland") +
                 "\nSection titles (infer themes from these): " + "; ".join(context.get("sections") or []) +
-                "\nVehicle: " + veh +
+                "\n" + last_label[:-1] + ": " + veh +
                 "\nReal distance/time (blank = omit the line): " + (context.get("distance_time") or ""))
         if prior:
             user += "\n\nYour previous draft:\n" + prior
@@ -608,7 +788,14 @@ def step7_route_summary_box() -> GenerativeNode:
 
     def deterministic(output, context):
         findings = writing_rules_findings(_plain(output))
-        for label in ("Route:", "Method:", "Vehicle:"):
+        required = ["Route:", "Method:"]
+        # 'Vehicle:' is mandatory (a real vehicle is genuinely new information).
+        # 'Transit:' is advisory only -- when there's no vehicle, Method may
+        # already say everything worth saying, and forcing a redundant Transit
+        # line just fights the reviewer's own no-redundancy criterion (0129).
+        if context.get("vehicle"):
+            required.append("Vehicle:")
+        for label in required:
             if label not in output:
                 findings.append("missing '" + label + "' field")
         if "tvc-route-summary" not in output:

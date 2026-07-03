@@ -63,23 +63,30 @@ def _is_state_fragment(name):
 
 
 def _full_place_name(name):
-    """Expand a trailing 2-letter state and append USA -- 'Oakhurst, CA' ->
-    'Oakhurst, California, USA' (TICKET-0108). Leaves already-full names alone."""
+    """Expand a trailing 2-letter US state and append USA -- 'Oakhurst, CA' ->
+    'Oakhurst, California, USA' (TICKET-0108). Only a place that actually names a
+    US state gets 'USA' appended -- a non-US place ('Kyiv, Ukraine') must be left
+    alone, not have the wrong country forced onto it (TICKET-0128). Already-full
+    names are untouched either way."""
     n = (name or "").strip()
     if not n:
         return n
     parts = [p.strip() for p in n.split(",") if p.strip()]
-    if len(parts) >= 2 and parts[-1].upper() in _US_STATES:
+    is_us_state = len(parts) >= 2 and parts[-1].upper() in _US_STATES
+    if is_us_state:
         parts[-1] = _US_STATES[parts[-1].upper()]
     full = ", ".join(parts)
-    if not re.search(r"\b(usa|u\.s\.a\.|united states)\b", full, re.IGNORECASE):
+    if is_us_state and not re.search(r"\b(usa|u\.s\.a\.|united states)\b", full, re.IGNORECASE):
         full += ", USA"
     return full
 
 
 def _instrument(context):
     """Build the Vehicle instrument from a structured context['vehicle'] -- NEVER
-    the method verb like 'drove' (TICKET-0103)."""
+    the method verb like 'drove' (TICKET-0103). With no vehicle at all (a non-car
+    post -- transit, on foot, a descent), fall back to the extracted travel
+    'method' (e.g. 'escalator', 'subway train') rather than the generic 'Overland
+    vehicle', which falsely implies a personal vehicle exists (TICKET-0128)."""
     v = context.get("vehicle")
     if isinstance(v, dict) and (v.get("name") or v.get("model")):
         out = {"@type": "Vehicle", "name": v.get("name") or "Overland vehicle"}
@@ -90,7 +97,20 @@ def _instrument(context):
         return out
     if isinstance(v, str) and v.strip():
         return {"@type": "Vehicle", "name": v.strip()}
+    method = (context.get("method") or "").strip()
+    if method:
+        return {"@type": "Vehicle", "name": method[:1].upper() + method[1:]}
     return {"@type": "Vehicle", "name": "Overland vehicle"}
+
+
+def _tourist_type(context):
+    """'Overlander' only fits an actual road-trip post (a real vehicle in
+    context). Everything else (urban sights, transit, museums, single-location
+    posts) gets a neutral, non-fabricated default (TICKET-0128)."""
+    v = context.get("vehicle")
+    if v:
+        return "Overlander"
+    return "Traveler"
 
 
 def _post_h2_sections(html):
@@ -292,7 +312,7 @@ def build_travelaction_schema(context, html="", indent=2):
         "@type": "TravelAction",
         "name": name,
         "description": description,
-        "touristType": "Overlander",
+        "touristType": _tourist_type(context),
         "fromLocation": {"@type": "Place", "name": _full_place_name(origin)},
         "toLocation": {"@type": "Place", "name": _full_place_name(dest)},
         "instrument": _instrument(context),

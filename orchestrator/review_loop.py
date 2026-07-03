@@ -237,13 +237,21 @@ def _document_review(html):
         "geographical order, with no jarring transitions and one consistent authorial voice. "
         "Do NOT fact-check individual claims here -- factual accuracy is handled in other "
         "steps; ignore possible factual errors for this pass. Set decision to CERTIFIED if "
-        "and only if all three criteria pass.\n" + _DOC_VERDICT_SHAPE
+        "and only if all three criteria pass. List at most the 3 MOST significant findings "
+        "per criterion -- do not enumerate every instance; be concise so your reply is never "
+        "cut off.\n" + _DOC_VERDICT_SHAPE
     )
     # Send the WHOLE post -- a mid-document cut makes the reviewer report false
     # "truncated content / unclosed tag" findings (deepseek-v4-pro has a 1M-token
     # context, so the generous cap only guards against pathological input).
+    # A document-level verdict can carry several findings per criterion (e.g.
+    # multiple repetition hits) -- 2048 tokens was too tight and let DeepSeek's
+    # JSON get cut off mid-object, which forced an unparseable-verdict ESCALATE
+    # that couldn't be localized/bounced (TICKET-0124). Even 4096 wasn't always
+    # enough on a particularly verbose reply (TICKET-0135) -- bumped further and
+    # capped findings-per-criterion above so future replies stay well inside budget.
     verdict, _text, _sources = reviewer_client.certify(system, "Post body:\n" + html[:200000],
-                                                       web_search=False, max_tokens=2048)
+                                                       web_search=False, max_tokens=6144)
     return verdict
 
 

@@ -4,12 +4,12 @@
 			allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
 			allowfullscreen
 			frameborder="0"
-			src="https://www.youtube.com/embed/YJ354Qhiae0"
+			src="https://www.youtube.com/embed/[VIDEO_ID]"
 			style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-			title="Morning departure from Khansar Family Yurt Camp near Aydarkul Lake">
+			title="[VIDEO TITLE]">
 		</iframe>
 	</div>
 	<p class="tr-caption" style="text-align: center;">
-		Video: morning departure from Khansar Family Yurt Camp near Aydarkul Lake, after firelight, dutar, hot non, camel milk, sand, and the usual repacking ceremony. The romance had clocked out. The road toward Samarkand had not.
+		[CAPTION TEXT]
 	</p>
 </div>

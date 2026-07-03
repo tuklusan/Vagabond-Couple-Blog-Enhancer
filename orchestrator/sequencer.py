@@ -378,6 +378,20 @@ def context_extraction_node():
     def handler(sctx):
         ctx = context_extractor.extract_context(sctx.state.get_working_html(),
                                                 allow_llm=not sctx.dry_generative)
+        # Last-resort grounded fallback (TICKET-0133): no schema, no <h1>, and
+        # route derivation found nothing -- rather than leave post_title/origin/
+        # destination all empty (which invites downstream nodes to hallucinate a
+        # whole fictional trip to fill the gap, as seen on arsenalna1), derive a
+        # real subject from the post's own URL slug when the operator supplied
+        # --current-url. Never invents facts -- the slug IS the real post.
+        if not ctx.get("post_title"):
+            fallback = context_extractor.title_from_url_slug(sctx.context.get("current_url"))
+            if fallback:
+                ctx["post_title"] = fallback
+                if not ctx.get("origin"):
+                    ctx["origin"] = fallback
+                if not ctx.get("destination"):
+                    ctx["destination"] = fallback
         sctx.state.save_artifact("context", ctx)
         sctx.context.update(ctx)
         return {"complete": True,
@@ -386,6 +400,25 @@ def context_extraction_node():
                         + str(len(ctx.get("sections") or [])) + " sections, "
                         + str(len(ctx.get("stops") or [])) + " stops"}
     return SeqNode("context_extraction", "Setup - Source context extraction", "deterministic", handler)
+
+
+def lead_context_node():
+    """If the operator supplied prior/next LIVE post URLs (this post's place in a
+    series), fetch their real title+gist so step6/step10 can write a genuine,
+    linked lead-in/lead-out instead of inventing one (TICKET-0132). Optional --
+    a network failure or missing URL just means no lead-in/lead-out framing is
+    attempted; it never halts the run."""
+    def handler(sctx):
+        notes = []
+        for key, ctx_key in (("prior_url", "prior_post"), ("next_url", "next_post")):
+            url = sctx.context.get(key)
+            if not url:
+                continue
+            post = context_extractor.fetch_post_gist(url)
+            sctx.context[ctx_key] = post
+            notes.append(ctx_key + ("=" + post["title"][:40] if post else "=unreachable"))
+        return {"complete": True, "note": "lead context: " + (", ".join(notes) if notes else "none supplied")}
+    return SeqNode("lead_context", "Setup - Prior/next post lead-in/lead-out context", "deterministic", handler)
 
 
 def phase2_url_lock_node():
@@ -535,6 +568,7 @@ def build_full_sequence():
     return [
         precheck_node(),
         context_extraction_node(),
+        lead_context_node(),
         # Phase 1 -- scan & analyze (read-only)
         a("1A_facts", "Phase 1 / 1A - Fact & sanity check"),
         a("1B_readability", "Phase 1 / 1B - Human readability"),

@@ -266,7 +266,6 @@ def reemit_youtube(html):
         # Escape source-provided title/caption before templating (TICKET-0061):
         # title lands in a double-quoted attribute; caption in element text.
         block = (template.replace("[VIDEO_ID]", vid)
-                 .replace("YJ354Qhiae0", vid)  # template ships with a sample id
                  .replace("[VIDEO TITLE]", _attr(title or caption or "Video"))
                  .replace("[CAPTION TEXT]", _esc(caption or title or "")))
         new_node = _frag(block)
@@ -549,6 +548,35 @@ def normalize_characters(html):
     return html
 
 
+def wrap_orphan_text(html):
+    """Wrap loose top-level text that sits directly after <!--more--> (a legacy
+    Blogger habit -- '<!--more-->Arsenalna station is named after...' with no
+    wrapping <p>) into a <p>. Harmless in the original, but reads as broken/
+    orphan HTML once real structure (Route at a Glance <ol>, route box, schema)
+    is spliced in right next to it (TICKET-0130). Scoped to ONLY top-level
+    content after <!--more--> -- pre-fold content (and, in the test reference
+    fixture, a large top-level doc-comment preamble) must stay untouched."""
+    from bs4 import NavigableString, Comment
+    soup = BeautifulSoup(html, "html.parser")
+    changed = 0
+    more = next((c for c in soup.contents if isinstance(c, Comment) and c.strip() == "more"), None)
+    if more is None:
+        return str(soup), 0
+    after_more = False
+    for child in list(soup.contents):
+        if child is more:
+            after_more = True
+            continue
+        if not after_more:
+            continue
+        if isinstance(child, NavigableString) and not isinstance(child, Comment) and child.strip():
+            p = soup.new_tag("p")
+            child.replace_with(p)
+            p.append(child)
+            changed += 1
+    return str(soup), changed
+
+
 def strip_empty_paragraphs(html):
     """Remove truly-empty <p></p> (no text, no children) -- but keep <p><br/></p>,
     which the author uses for intentional spacing (TICKET-0117)."""
@@ -583,5 +611,6 @@ def assemble(html, fragments=None, context=None):
         html = apply_prefold(html, summary_frag, context)
     html = normalize_characters(html)           # TICKET-0115
     html, _ = strip_empty_paragraphs(html)       # TICKET-0117
+    html, _ = wrap_orphan_text(html)             # TICKET-0130
     html = reflow_blocks(html)                   # TICKET-0119 (readable source)
     return html

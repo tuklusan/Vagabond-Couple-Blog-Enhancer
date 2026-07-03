@@ -56,6 +56,11 @@ def main():
     ap.add_argument("--approve-phase4", action="store_true",
                     help="auto-operator: grant the Phase 4 approval gate (test/CI opt-in; real runs approve interactively)")
     ap.add_argument("--run-id", default=None, help="reuse/name a run id")
+    ap.add_argument("--current-url", default=None, help="this post's own live URL, if already published")
+    ap.add_argument("--prior-url", default=None,
+                    help="the series' prior post's live URL -- fetched for a genuine, linked lead-in")
+    ap.add_argument("--next-url", default=None,
+                    help="the series' next post's live URL -- fetched for a genuine, linked lead-out")
     args = ap.parse_args()
 
     # Hard-stop before doing anything if required support files are missing.
@@ -83,7 +88,10 @@ def main():
         print(_ascii("invalid --run-id: " + str(e)))
         sys.exit(1)
     op = Operator(auto=args.auto)
-    sctx = sequencer.StepContext(state=state, context={}, operator=op,
+    lead_ctx = {k: v for k, v in (
+        ("current_url", args.current_url), ("prior_url", args.prior_url), ("next_url", args.next_url),
+    ) if v}
+    sctx = sequencer.StepContext(state=state, context=lead_ctx, operator=op,
                                  mode="auto" if args.auto else "step",
                                  dry_generative=args.dry,
                                  approve_gates=args.approve_phase4)

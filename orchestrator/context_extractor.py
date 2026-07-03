@@ -13,6 +13,7 @@ route, sections, stops, and landmarks without any operator data entry.
 """
 import json
 
+import requests
 from bs4 import BeautifulSoup
 
 from . import validators
@@ -231,3 +232,60 @@ def extract_context(html, allow_llm=False):
 
     ctx["etr_minutes"] = validators.etr_minutes(html)["etr_minutes"]
     return ctx
+
+
+# ---------------------------------------------------------------------------
+# Lead-in / lead-out context: fetch the prior/next LIVE post so step6/step10 can
+# write a genuine, linked transition instead of inventing one (TICKET-0132).
+# ---------------------------------------------------------------------------
+def title_from_url_slug(url):
+    """Deterministically derive a readable subject from a post's own URL slug --
+    'arsenalna-kyiv-worlds-deepest-metro-station' -> 'Arsenalna Kyiv Worlds
+    Deepest Metro Station'. A last-resort, zero-hallucination-risk fallback
+    subject for when a source has no schema, no <h1>, and route derivation
+    fails/returns nothing (TICKET-0133): grounded in the post's own real slug,
+    never invented. Returns '' if url is falsy or unparseable."""
+    if not url:
+        return ""
+    slug = str(url).strip().rstrip("/").rsplit("/", 1)[-1]
+    slug = re.sub(r"\.html?$", "", slug, flags=re.IGNORECASE)
+    words = [w for w in slug.split("-") if w]
+    if not words:
+        return ""
+    return " ".join(w.capitalize() for w in words)
+
+
+def fetch_post_gist(url, timeout=8):
+    """Best-effort fetch of a live blog post's title + a short gist (its opening
+    paragraph). Returns {'url','title','gist'} or None on ANY failure (network
+    down, 404, timeout, parse error) -- never raises, never halts the run. This
+    is the ONLY source of truth for lead-in/lead-out content: step6/step10 must
+    not invent a prior/next post's subject matter, only reference what this
+    actually fetched."""
+    if not url or not str(url).strip():
+        return None
+    try:
+        resp = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+    except Exception:
+        return None
+    # Prefer <title> (Blogger's page <title> is the real post title + site suffix);
+    # a bare soup.find("h1") often hits the theme HEADER's h1 (site logo, no text)
+    # which comes before the real post-title h1 in document order.
+    post_h1 = soup.find(["h1", "h3"], class_=lambda c: c and "post-title" in c)
+    title_tag = soup.find("title") or post_h1
+    title = title_tag.get_text(strip=True) if title_tag else ""
+    # Strip a common blog-name suffix like " | The Vagabond Couple" / " - Site Name".
+    title = re.split(r"\s*[|–-]\s*(?:the vagabond couple)\s*$", title, flags=re.IGNORECASE)[0].strip()
+    gist = ""
+    meta = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
+    if meta and meta.get("content"):
+        gist = meta["content"].strip()
+    if not gist:
+        p = soup.find("p")
+        if p:
+            gist = p.get_text(" ", strip=True)
+    if not title and not gist:
+        return None
+    return {"url": str(url).strip(), "title": title, "gist": gist[:300]}
