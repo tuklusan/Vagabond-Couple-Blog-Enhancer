@@ -45,6 +45,17 @@ def _attr(s):
     return _esc(s).replace('"', "&quot;").replace("'", "&#39;")
 
 
+def _frag(html):
+    """Parse an HTML fragment into a node to insert. When the fragment is a single
+    top-level element (the case for every fragment we splice -- a <div>, <script>,
+    <p>, <table>), return that Tag so insert_before/after/replace_with don't get the
+    BeautifulSoup document wrapper as their target (TICKET-0121). Falls back to the
+    soup object for multi-element fragments."""
+    soup = BeautifulSoup(html, "html.parser")
+    tags = [c for c in soup.contents if getattr(c, "name", None)]
+    return tags[0] if len(tags) == 1 else soup
+
+
 def canonical_summary_block(label, narrative, rows):
     """Build the canonical summary block. rows = list of (emoji, descriptor)."""
     out = ['<div style="' + _SB_OUTER + '">']
@@ -100,7 +111,7 @@ def reapply_summary_block(html):
             if not right and "covered" in left.lower():
                 continue  # header row
             rows.append((left, right))
-    new_node = BeautifulSoup(canonical_summary_block(label_text, narrative_text, rows), "html.parser")
+    new_node = _frag(canonical_summary_block(label_text, narrative_text, rows))
     block.replace_with(new_node)
     return str(soup), True
 
@@ -258,7 +269,7 @@ def reemit_youtube(html):
                  .replace("YJ354Qhiae0", vid)  # template ships with a sample id
                  .replace("[VIDEO TITLE]", _attr(title or caption or "Video"))
                  .replace("[CAPTION TEXT]", _esc(caption or title or "")))
-        new_node = BeautifulSoup(block, "html.parser")
+        new_node = _frag(block)
         target = wrapper if (wrapper is not None and wrapper.name == "div") else iframe
         target.replace_with(new_node)
         count += 1
@@ -366,14 +377,14 @@ def apply_prefold(html, summary_fragment, context, schema_script=None):
         title = re.sub(r"\s*[-—]\s*post summary\s*$", "", title, flags=re.IGNORECASE)
         label = title + " — Post Summary"
         block_html = canonical_summary_block(label, narrative, rows)
-        more.insert_before(BeautifulSoup(block_html, "html.parser"))
+        more.insert_before(_frag(block_html))
 
     # 2. Schema -- drop any stale ld+json, then insert the freshly built one right
     #    before <!--more--> so the fold sits immediately after </script>.
     for stale in soup.find_all("script", attrs={"type": "application/ld+json"}):
         stale.decompose()
     script_html = schema_script or schema_builder.build_schema_script(context, str(soup))
-    more.insert_before(BeautifulSoup(script_html, "html.parser"))
+    more.insert_before(_frag(script_html))
 
     return str(soup)
 
@@ -413,7 +424,7 @@ def _append_before_outro(soup, node):
 def _insert_after_more(soup, fragment_html):
     """Insert a fragment immediately after <!--more--> in document order."""
     more = _find_more_comment(soup)
-    node = BeautifulSoup(fragment_html, "html.parser")
+    node = _frag(fragment_html)
     if more is not None:
         more.insert_after(node)
     else:
@@ -442,7 +453,7 @@ def insert_separators(html, separators):
                 between_prose = True
                 break
         if not between_prose:
-            a.insert_after(BeautifulSoup(separators[si], "html.parser"))
+            a.insert_after(_frag(separators[si]))
             inserted += 1
             si += 1
     return str(soup), inserted
@@ -467,7 +478,7 @@ def insert_factoids(html, factoids):
                 target = h
                 nxt = h2s[idx + 1] if idx + 1 < len(h2s) else None
                 break
-        node = BeautifulSoup(frag, "html.parser")
+        node = _frag(frag)
         if target is not None and nxt is not None:
             nxt.insert_before(node)           # end of this section (before next H2)
         else:
@@ -506,8 +517,25 @@ def splice_fragments(html, fragments):
         soup2 = BeautifulSoup(html, "html.parser")
         # Journey-significance precedes the Next Stop outro (rev-18 body order) --
         # insert before the sign-off, not at the very end (TICKET-0060).
-        _append_before_outro(soup2, BeautifulSoup(fragments["journey_significance"], "html.parser"))
+        _append_before_outro(soup2, _frag(fragments["journey_significance"]))
         html = str(soup2)
+    return html
+
+
+_BLOCK_TAGS = r"(?:div|script|table|ol|ul|h2|h3|h4|p|blockquote)"
+
+
+def reflow_blocks(html):
+    """Insert a newline between DIRECTLY-ADJACENT block elements (and after
+    <!--more-->) so the assembled source is readable/diffable. Only touches
+    block-to-block boundaries -- never inline tags (a/b/i/span) -- so the rendered
+    output is unchanged (TICKET-0119)."""
+    prev = None
+    # a couple of passes to catch chains like </div><script>...</script><!--more--><p>
+    while prev != html:
+        prev = html
+        html = re.sub(r"(</" + _BLOCK_TAGS + r">|<!--more-->)(<(?:" + _BLOCK_TAGS + r")\b)",
+                      r"\1\n\2", html)
     return html
 
 
@@ -555,4 +583,5 @@ def assemble(html, fragments=None, context=None):
         html = apply_prefold(html, summary_frag, context)
     html = normalize_characters(html)           # TICKET-0115
     html, _ = strip_empty_paragraphs(html)       # TICKET-0117
+    html = reflow_blocks(html)                   # TICKET-0119 (readable source)
     return html
