@@ -414,7 +414,17 @@ def lead_context_node():
             url = sctx.context.get(key)
             if not url:
                 continue
-            post = context_extractor.fetch_post_gist(url)
+            # fetch_post_gist already catches network/parse errors internally and
+            # returns None -- this belt-and-suspenders try/except makes sure that
+            # promise holds even if something outside its own guarded block raises
+            # (TICKET-0138): a lead-in/lead-out fetch must NEVER halt the run.
+            try:
+                post = context_extractor.fetch_post_gist(url)
+            except Exception as e:
+                post = None
+                notes.append(ctx_key + "=error(" + str(e)[:60] + ")")
+                sctx.context[ctx_key] = post
+                continue
             sctx.context[ctx_key] = post
             notes.append(ctx_key + ("=" + post["title"][:40] if post else "=unreachable"))
         return {"complete": True, "note": "lead context: " + (", ".join(notes) if notes else "none supplied")}

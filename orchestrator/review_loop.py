@@ -37,6 +37,18 @@ WRITER_ESCALATE_AFTER = int(os.environ.get("ORCH_WRITER_ESCALATE_AFTER", "2"))
 REVIEWER_ESCALATE_REROLLS = int(os.environ.get("ORCH_REVIEWER_REROLLS", "2"))
 
 
+def _safe_json(obj, fallback=""):
+    """json.dumps that can never crash the node loop. det_findings/verdict
+    criteria are always plain JSON-safe types in practice, but a reviewer/spec
+    surprise (e.g. a non-serializable object slipping into criteria) must
+    degrade to a readable fallback string, not an uncaught TypeError
+    (TICKET-0137)."""
+    try:
+        return json.dumps(obj, ensure_ascii=False)
+    except Exception:
+        return str(obj)[:400] or fallback
+
+
 def _safe_certify(spec, rsys, ruser):
     """Call the reviewer, converting ANY unexpected exception into a synthetic
     ESCALATE verdict so a reviewer outage escalates gracefully instead of crashing
@@ -113,7 +125,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
             history.append({"round": rnd, "writer": wprov, "stage": "deterministic",
                             "decision": "REVISE", "findings": det_findings})
             revision = ("Your previous draft failed objective checks. Fix ALL of these "
-                        "exactly, keep everything else:\n" + json.dumps(det_findings, ensure_ascii=False))
+                        "exactly, keep everything else:\n" + _safe_json(det_findings))
             prior_output = output
             continue
         det_fail_count = 0        # a clean draft resets the escalation counter
@@ -158,7 +170,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
                         "reason": "reviewer_escalated"}
             revision = ("The reviewer could not certify and raised: "
                         + (verdict.get("revision_instructions")
-                           or json.dumps(verdict.get("criteria", {}), ensure_ascii=False)
+                           or _safe_json(verdict.get("criteria", {}))
                            or "unable to verify the claims")
                         + "\nKeep only claims that are clearly true and well-known; make the "
                           "route and facts self-evident. Then resubmit.")
@@ -167,7 +179,7 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
 
         # REVISE -> feed instructions back to the writer
         revision = (verdict.get("revision_instructions")
-                    or json.dumps(verdict.get("criteria", {}), ensure_ascii=False))
+                    or _safe_json(verdict.get("criteria", {})))
         prior_output = output
 
     # rounds exhausted without certification -> operator decision

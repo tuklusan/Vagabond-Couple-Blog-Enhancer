@@ -100,7 +100,7 @@ def _with_lead_link_check(base_check, ctx_key):
     def _check(output, context):
         ok, findings = base_check(output, context)
         post = context.get(ctx_key)
-        if post and post.get("url") and post["url"] not in output:
+        if isinstance(post, dict) and post.get("url") and post["url"] not in output:
             findings.append(
                 "a real " + ctx_key.replace("_", " ") + " (" + post["url"] + ") was supplied "
                 "but is not linked in the output -- include a genuine <a href='" + post["url"] +
@@ -213,6 +213,7 @@ _VERDICT_SHAPE = (
 def step6_first_body_paragraph() -> GenerativeNode:
     def writer(context, prior, revision):
         prior_post = context.get("prior_post")
+        prior_post = prior_post if isinstance(prior_post, dict) and prior_post.get("url") else None
         no_route = _no_real_route(context)
         subject = (context.get("post_title") or (context.get("sections") or [""])[0]
                    or "the subject of this post")
@@ -269,6 +270,7 @@ def step6_first_body_paragraph() -> GenerativeNode:
 
     def review(output, det_findings, context):
         prior_post = context.get("prior_post")
+        prior_post = prior_post if isinstance(prior_post, dict) and prior_post.get("url") else None
         no_route = _no_real_route(context)
         system = (
             "You certify a travel blog's FIRST body paragraph. Use web_search to confirm "
@@ -544,6 +546,7 @@ def step2f_search_description() -> GenerativeNode:
 def step10_journey_significance() -> GenerativeNode:
     def writer(context, prior, revision):
         next_post = context.get("next_post")
+        next_post = next_post if isinstance(next_post, dict) and next_post.get("url") else None
         no_route = _no_real_route(context)
         thesis = (
             # No real route to connect to a "wider expedition" -- that framing is
@@ -586,6 +589,7 @@ def step10_journey_significance() -> GenerativeNode:
 
     def review(output, det_findings, context):
         next_post = context.get("next_post")
+        next_post = next_post if isinstance(next_post, dict) and next_post.get("url") else None
         no_route = _no_real_route(context)
         system = (
             "You certify a journey-significance paragraph. Use web_search to verify any "
