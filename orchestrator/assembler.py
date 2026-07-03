@@ -246,6 +246,7 @@ def reemit_youtube(html):
     template = _youtube_template()
     if not template:
         return html, 0
+    from bs4 import NavigableString, Comment
     soup = BeautifulSoup(html, "html.parser")
     count = 0
     for iframe in list(soup.find_all("iframe")):
@@ -256,13 +257,33 @@ def reemit_youtube(html):
         if not vid:
             continue
         title = iframe.get("title", "") or ""
+        p1 = iframe.parent
+        p2 = p1.parent if p1 is not None else None
+        # Modern nested template: iframe sits 2 levels deep (an aspect-ratio box
+        # div, inside an outer wrapper div that also holds the caption <p>) -- only
+        # climb to that outer div when it stays scoped to just this embed (few
+        # direct children), so we don't accidentally grab an unrelated ancestor.
+        climb = (p1 is not None and p1.name == "div" and p2 is not None
+                 and getattr(p2, "name", None) == "div"
+                 and len(p2.find_all(True, recursive=False)) <= 2)
+        wrapper = p2 if climb else p1
         # caption: nearest tr-caption <p> in the embed wrapper, else iframe title
-        wrapper = iframe.parent.parent if (iframe.parent and iframe.parent.parent) else iframe.parent
         caption = ""
         if wrapper is not None and hasattr(wrapper, "find"):
             cap = wrapper.find("p", class_=lambda c: c and "tr-caption" in c)
             if cap:
                 caption = cap.get_text(" ", strip=True)
+        if not caption and not climb and wrapper is not None and hasattr(wrapper, "contents"):
+            # Legacy Blogger embed: no tr-caption <p> at all -- the caption is
+            # loose text sitting right after a <br/>, a direct sibling of the
+            # iframe inside the same wrapper (e.g. '<iframe>...</iframe><br />
+            # Watch: Exploring ...'). Grab that loose text (TICKET-0126).
+            loose = " ".join(
+                s.strip() for s in wrapper.find_all(string=True, recursive=False)
+                if isinstance(s, NavigableString) and not isinstance(s, Comment) and s.strip()
+            )
+            if loose:
+                caption = loose
         # Escape source-provided title/caption before templating (TICKET-0061):
         # title lands in a double-quoted attribute; caption in element text.
         block = (template.replace("[VIDEO_ID]", vid)
@@ -577,6 +598,39 @@ def wrap_orphan_text(html):
     return str(soup), changed
 
 
+_FORWARD_REF_RE = re.compile(
+    r"\b(continues?|read more|next stop|see more|check out|more (at|on|here))\b", re.IGNORECASE)
+
+
+def drop_redundant_forward_reference(html, context):
+    """When the new lead-in feature (0132) has already referenced the prior post
+    up top, the ORIGINAL source's own ad-hoc forward-reference sentence to that
+    SAME post (a common old-Blogger habit -- 'Our photo-story continues at
+    [link]') becomes a second, disjointed pointer to a post already covered. Drop
+    that specific paragraph -- but ONLY when it's short, its one link matches
+    the real prior_post URL, and it reads like a bare continuation sentence --
+    never touch a paragraph with substantial content just because it happens to
+    share that link (TICKET-0134). Safe re: G3 href preservation: the prior
+    post's URL is still linked elsewhere (the new lead-in itself, and often the
+    original's own intro), so removing this one redundant mention never drops
+    the href from the document entirely."""
+    prior = context.get("prior_post") if context else None
+    if not isinstance(prior, dict) or not prior.get("url"):
+        return html, 0
+    soup = BeautifulSoup(html, "html.parser")
+    removed = 0
+    for p in soup.find_all("p"):
+        links = p.find_all("a")
+        if len(links) != 1 or links[0].get("href") != prior["url"]:
+            continue
+        text = p.get_text(" ", strip=True)
+        if len(text) > 250 or not _FORWARD_REF_RE.search(text):
+            continue
+        p.decompose()
+        removed += 1
+    return str(soup), removed
+
+
 def strip_empty_paragraphs(html):
     """Remove truly-empty <p></p> (no text, no children) -- but keep <p><br/></p>,
     which the author uses for intentional spacing (TICKET-0117)."""
@@ -609,6 +663,7 @@ def assemble(html, fragments=None, context=None):
     if context:
         summary_frag = (fragments or {}).get("summary_block")
         html = apply_prefold(html, summary_frag, context)
+        html, _ = drop_redundant_forward_reference(html, context)  # TICKET-0134
     html = normalize_characters(html)           # TICKET-0115
     html, _ = strip_empty_paragraphs(html)       # TICKET-0117
     html, _ = wrap_orphan_text(html)             # TICKET-0130

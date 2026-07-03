@@ -238,16 +238,34 @@ _DOC_VERDICT_SHAPE = (
 )
 
 
-def _document_review(html):
+def _document_review(html, context=None):
     """G2 Pass 1 -- reviewer reads the whole post for the holistic criteria."""
+    next_post = (context or {}).get("next_post")
+    prior_post = (context or {}).get("prior_post")
+    series_note = ""
+    if isinstance(prior_post, dict) or isinstance(next_post, dict):
+        # This reviewer reads the document cold, with no idea it's one entry in a
+        # series -- without this note it (correctly, by its own single-post logic)
+        # flags the intentional lead-in/lead-out (0132) as an off-topic tangent or
+        # a jarring transition. Tell it these ARE expected (TICKET-0134).
+        series_note = (
+            " This post is ONE ENTRY IN A SERIES: it may open with a brief lead-in "
+            "referencing the PRIOR post in the series and/or close with a brief "
+            "lead-out pointing to the NEXT post in the series, each as a real <a "
+            "href> link. This is EXPECTED and intentional -- do NOT flag a lead-in/"
+            "lead-out sentence as off-topic, a jarring transition, or content that "
+            "should stay within this post's own subject; only flag it if it makes "
+            "up false claims about what the other post covers."
+        )
     system = (
         "You are the final certifying reviewer for a travel blog post body. Read it as a "
         "first-time human with no prior context. Judge ONLY these three criteria: "
         "(c) HTML SANITY -- it reads as clean, well-structured content with no broken/odd "
         "markup; (d) REPETITION -- no idea, fact, or phrase repeats across sections; "
         "(e) SMOOTH READ -- it flows naturally and makes sense in chronological and "
-        "geographical order, with no jarring transitions and one consistent authorial voice. "
-        "Do NOT fact-check individual claims here -- factual accuracy is handled in other "
+        "geographical order, with no jarring transitions and one consistent authorial voice."
+        + series_note +
+        " Do NOT fact-check individual claims here -- factual accuracy is handled in other "
         "steps; ignore possible factual errors for this pass. Set decision to CERTIFIED if "
         "and only if all three criteria pass. List at most the 3 MOST significant findings "
         "per criterion -- do not enumerate every instance; be concise so your reply is never "
@@ -284,11 +302,15 @@ def _pass1_ok(pass1):
     return bool(statuses) and all(s == "pass" for s in statuses)
 
 
-def run_document_certification(state, run_reviewer=True):
+def run_document_certification(state, run_reviewer=True, context=None):
     """
     Run both G2 passes over the working HTML. Certified only if Pass 2
     (deterministic re-derivation) is clean AND Pass 1 (reviewer holistic) is
     CERTIFIED. A reviewer outage yields ESCALATE, never a silent pass.
+
+    context (optional): the run's generative context -- passed through so Pass 1
+    knows about an intentional lead-in/lead-out (prior_post/next_post, 0132) and
+    doesn't flag it as off-topic (TICKET-0134).
     """
     html = state.get_working_html()
     if not html:
@@ -305,7 +327,7 @@ def run_document_certification(state, run_reviewer=True):
     pass1 = None
     if run_reviewer:
         try:
-            pass1 = _document_review(html)
+            pass1 = _document_review(html, context)
         except Exception as e:
             pass1 = {"decision": "ESCALATE", "note": "reviewer unavailable: " + str(e)[:140]}
 

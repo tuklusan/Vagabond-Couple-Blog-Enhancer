@@ -533,7 +533,7 @@ def phase5_certification_node():
     def handler(sctx):
         for attempt in range(MAX_PASS1_BOUNCES + 1):
             cert = review_loop.run_document_certification(
-                sctx.state, run_reviewer=not sctx.dry_generative)
+                sctx.state, run_reviewer=not sctx.dry_generative, context=sctx.context)
             if cert.get("certified"):
                 note = "G2 two-pass clean -> delivery permitted"
                 if attempt:
