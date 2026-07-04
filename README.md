@@ -276,7 +276,7 @@ python -c "from orchestrator import config; print('missing:', config.missing_doc
 > grant to execute or deploy.
 
 ```bash
-python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--run-id NAME] \
+python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--approve-phase4] [--run-id NAME] \
     [--current-url URL] [--prior-url URL] [--next-url URL]
 ```
 
@@ -286,6 +286,7 @@ python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--ru
 | `--full` | Run the **entire** canonical pipeline (context extraction → Phase 1 → Phase 2 → Steps 1–13 → Phase 4 approval → Phase 5 generate + certify → Phase 6 deliverables). Without it, runs only the pre-check + deterministic Phase-1 analysis + the Phase 4 gate. |
 | `--dry` | Stub the generative/analysis (LLM) nodes — walk the whole machine **without any model calls**. Great for verifying setup and the document/structure checks. |
 | `--auto` | Headless operator: gates use safe defaults. **The Phase 4 gate withholds approval by default**, so an `--auto` run halts at Phase 4 (by design). Omit `--auto` to approve interactively. |
+| `--approve-phase4` | Test/CI opt-in: auto-grants the Phase 4 approval gate under `--auto` so a headless run can reach `DONE` without an interactive `y`. Real runs should approve interactively (omit both `--auto` and this flag) rather than rely on it. |
 | `--run-id` | Name/reuse a run directory under `Output/runs/`. |
 | `--current-url` | This post's own live URL, if already published. Optional; used only as a fallback subject when the source has no schema/title and route extraction finds nothing. |
 | `--prior-url` | The series' prior post's live URL. If given, the orchestrator fetches it (best-effort; a network failure or 404 just means no lead-in is attempted) and writes a genuine lead-in referencing and linking it in the first body paragraph. |
