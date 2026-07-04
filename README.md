@@ -276,7 +276,8 @@ python -c "from orchestrator import config; print('missing:', config.missing_doc
 > grant to execute or deploy.
 
 ```bash
-python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--run-id NAME]
+python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--run-id NAME] \
+    [--current-url URL] [--prior-url URL] [--next-url URL]
 ```
 
 | Flag | Meaning |
@@ -286,6 +287,9 @@ python -m orchestrator --input PATH_TO_POST.html [--full] [--dry] [--auto] [--ru
 | `--dry` | Stub the generative/analysis (LLM) nodes — walk the whole machine **without any model calls**. Great for verifying setup and the document/structure checks. |
 | `--auto` | Headless operator: gates use safe defaults. **The Phase 4 gate withholds approval by default**, so an `--auto` run halts at Phase 4 (by design). Omit `--auto` to approve interactively. |
 | `--run-id` | Name/reuse a run directory under `Output/runs/`. |
+| `--current-url` | This post's own live URL, if already published. Optional; used only as a fallback subject when the source has no schema/title and route extraction finds nothing. |
+| `--prior-url` | The series' prior post's live URL. If given, the orchestrator fetches it (best-effort; a network failure or 404 just means no lead-in is attempted) and writes a genuine lead-in referencing and linking it in the first body paragraph. |
+| `--next-url` | The series' next post's live URL. Same mechanism as `--prior-url`, but for a lead-out in the closing paragraph. |
 
 ### Common invocations
 
@@ -303,6 +307,14 @@ Real run (needs working writer + reviewer keys), approving interactively:
 ```bash
 python -m orchestrator --input mypost.html --full
 # ... review the Phase 4 summary, type 'y' to approve HTML generation ...
+```
+
+Real run that's part of a series, with a genuine lead-in/lead-out to the prior/next posts:
+```bash
+python -m orchestrator --input mypost.html --full --auto --approve-phase4 \
+    --current-url https://example.blogspot.com/2021/07/this-post.html \
+    --prior-url https://example.blogspot.com/2021/07/prior-post.html \
+    --next-url https://example.blogspot.com/2021/07/next-post.html
 ```
 
 When a run reaches `DONE`, the enhanced HTML is the `working.html` in the run
@@ -329,6 +341,9 @@ Output/runs/20260630T162908/
 ├── working.html        # the post HTML, mutated step-by-step (the deliverable when DONE)
 ├── status.json         # current node + per-node completion / gate state (G4)
 ├── log.jsonl           # append-only event log
+├── ai_transcript.txt   # every writer/reviewer prompt + response, in order, labeled
+│                       # ">>> SOURCE -> TARGET [node_id] (provider) timestamp" -- a
+│                       # full audit trail of every AI communication in the run
 └── artifacts/          # structured outputs
     ├── context.json                # extracted route/sections/stops
     ├── 1C_media_inventory.json
