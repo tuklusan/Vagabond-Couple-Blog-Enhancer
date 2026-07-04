@@ -309,10 +309,20 @@ def iterating_generative_node(node_id, phase, spec_factory, items_fn):
         items = items_fn(sctx)
         outputs, per_item = [], []
         for it in items:
-            spec = spec_factory()
-            ctx = dict(sctx.context)
-            ctx.update(it)
-            outcome = review_loop.run_generative_node(spec, ctx, state=sctx.state)
+            # run_generative_node already catches its own internal failures and
+            # returns an ESCALATE outcome rather than raising, but a per-item
+            # exception here (a bad spec_factory/items_fn value, an unexpected
+            # dict shape) must still never take down the whole node -- these are
+            # workshop-sanctioned skippable enhancers, not required content
+            # (TICKET-0143).
+            try:
+                spec = spec_factory()
+                ctx = dict(sctx.context)
+                ctx.update(it)
+                outcome = review_loop.run_generative_node(spec, ctx, state=sctx.state)
+            except Exception as e:
+                per_item.append({"item": it, "skipped": True, "reason": "error: " + str(e)[:160]})
+                continue
             if outcome["status"] == "CERTIFIED" and outcome["output"].strip():
                 outputs.append(outcome["output"])
                 per_item.append({"item": it, "output": outcome["output"],
@@ -429,7 +439,7 @@ def lead_context_node():
                 sctx.context[ctx_key] = post
                 continue
             sctx.context[ctx_key] = post
-            notes.append(ctx_key + ("=" + post["title"][:40] if post else "=unreachable"))
+            notes.append(ctx_key + ("=" + post.get("title", "")[:40] if post else "=unreachable"))
         return {"complete": True, "note": "lead context: " + (", ".join(notes) if notes else "none supplied")}
     return SeqNode("lead_context", "Setup - Prior/next post lead-in/lead-out context", "deterministic", handler)
 
