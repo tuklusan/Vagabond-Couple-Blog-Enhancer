@@ -161,6 +161,59 @@ def test_unknown_status_degrades_to_plausible():
           result["contradicted_count"] == 0 and result["corrections"] == [], result)
 
 
+def test_audit_survives_per_image_exception():
+    """One raising image must not abandon the rest of the audit (TICKET-0168)."""
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    src2 = "https://blogger.googleusercontent.com/img/x/s1600/p2.jpg"
+    orig_fetch, orig_inspect = vision_client.fetch_image, vision_client.inspect_image
+    current = {"src": None}
+
+    def fake_fetch(src):
+        current["src"] = src
+        return b"\xff\xd8fakejpeg", "image/jpeg"
+
+    def fake_inspect(image_bytes, mime, prompt, **kw):
+        if current["src"] == src1:
+            raise RuntimeError("simulated malformed provider response")
+        return {"visible_description": "x",
+                "alt": {"status": "MATCH", "reason": "", "corrected": ""},
+                "title": {"status": "MATCH", "reason": "", "corrected": ""},
+                "caption": {"status": "MATCH", "reason": "", "corrected": ""}}, "raw", "mock"
+
+    image_audit.vision_client.fetch_image = fake_fetch
+    image_audit.vision_client.inspect_image = fake_inspect
+    try:
+        result = image_audit.audit_images(HTML, state=None, limit=0)
+    finally:
+        image_audit.vision_client.fetch_image = orig_fetch
+        image_audit.vision_client.inspect_image = orig_inspect
+    check("exception_counted_as_review_failure", result["review_failures"] == 1, result)
+    check("exception_did_not_abort_audit", result["images_audited"] == 1, result)
+
+
+def test_audit_stops_after_consecutive_failures():
+    """A dead provider must stop the audit early, not retry every image."""
+    many = "<html><body><!--more-->" + "".join(
+        '<img src="https://blogger.googleusercontent.com/img/x/s1600/img%d.jpg"/>' % i
+        for i in range(10)) + "</body></html>"
+    orig_fetch = vision_client.fetch_image
+    calls = {"n": 0}
+
+    def dead_fetch(src):
+        calls["n"] += 1
+        return None, "fetch failed: simulated outage"
+
+    image_audit.vision_client.fetch_image = dead_fetch
+    try:
+        result = image_audit.audit_images(many, state=None, limit=0)
+    finally:
+        image_audit.vision_client.fetch_image = orig_fetch
+    check("dead_provider_stops_early",
+          calls["n"] == image_audit.MAX_CONSECUTIVE_FAILURES, calls["n"])
+    check("dead_provider_failures_recorded",
+          result["fetch_failures"] == image_audit.MAX_CONSECUTIVE_FAILURES, result)
+
+
 def test_caption_correction_must_retain_context():
     src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
     verdicts = {src1: {
@@ -207,6 +260,8 @@ def main():
     test_audit_contradicted_produces_gated_corrections()
     test_audit_rejects_rule_breaking_correction()
     test_unknown_status_degrades_to_plausible()
+    test_audit_survives_per_image_exception()
+    test_audit_stops_after_consecutive_failures()
     test_caption_correction_must_retain_context()
     test_apply_image_corrections()
     print()

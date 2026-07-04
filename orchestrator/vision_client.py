@@ -145,7 +145,13 @@ def inspect_image(image_bytes, mime, prompt, max_tokens=1100, temperature=0.0,
                         continue
                     break                     # next model
                 resp.raise_for_status()
-                text = resp.json()["choices"][0]["message"].get("content") or ""
+                try:
+                    text = resp.json()["choices"][0]["message"].get("content") or ""
+                except (ValueError, KeyError, IndexError, TypeError) as e:
+                    # A 200 with a malformed/non-JSON body must fail over to the
+                    # next model, not raise out of the audit loop (TICKET-0168).
+                    last_err = model + ": malformed response: " + str(e)[:80]
+                    break                     # next model
                 if not text.strip():
                     last_err = model + ": empty content"
                     break                     # next model

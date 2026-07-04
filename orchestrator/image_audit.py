@@ -48,6 +48,11 @@ try:
 except ValueError:
     AUDIT_LIMIT = 0
 
+# Consecutive per-image failures before concluding the provider/key/network is
+# down for this run and stopping early instead of burning full retry chains on
+# every remaining image (TICKET-0168). Scattered failures reset the streak.
+MAX_CONSECUTIVE_FAILURES = 5
+
 _VERDICT_STATUSES = ("MATCH", "PLAUSIBLE", "CONTRADICTED")
 
 _PROMPT = (
@@ -176,7 +181,7 @@ def audit_images(html, state=None, limit=None, log=None):
     progress = {}
     if state:
         progress = state.read_artifact("1J_image_audit_progress") or {}
-    audited = fetch_failures = review_failures = 0
+    audited = fetch_failures = review_failures = consecutive_failures = 0
     findings, corrections = [], []
     for rec in records:
         if limit and audited >= limit:
@@ -186,14 +191,36 @@ def audit_images(html, state=None, limit=None, log=None):
             continue
         if src in progress:
             verdict = progress[src]
+            consecutive_failures = 0
         else:
-            img_bytes, mime = vision_client.fetch_image(src)
-            if img_bytes is None:
-                fetch_failures += 1
-                _log("1J image " + str(rec["index"]) + ": fetch failed (" + str(mime) + ")")
+            # Per-image resilience (TICKET-0168, same precedent as TICKET-0143's
+            # per-item enhancers): one bad image/response must never abandon the
+            # rest of the audit -- catch, count, continue. A run of consecutive
+            # hard failures, though, means the provider/key/network is down for
+            # good; stop burning retries on the remaining images (the progress
+            # cache lets the next run resume right here).
+            try:
+                img_bytes, mime = vision_client.fetch_image(src)
+                if img_bytes is None:
+                    fetch_failures += 1
+                    consecutive_failures += 1
+                    _log("1J image " + str(rec["index"]) + ": fetch failed (" + str(mime) + ")")
+                    if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                        _log("1J: " + str(consecutive_failures)
+                             + " consecutive failures -- provider/network down; stopping audit early")
+                        break
+                    continue
+                raw_verdict, raw_text, model = vision_client.inspect_image(
+                    img_bytes, mime, _build_prompt(rec))
+            except Exception as e:
+                review_failures += 1
+                consecutive_failures += 1
+                _log("1J image " + str(rec["index"]) + ": error (" + str(e)[:120] + ")")
+                if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                    _log("1J: " + str(consecutive_failures)
+                         + " consecutive failures -- provider/network down; stopping audit early")
+                    break
                 continue
-            raw_verdict, raw_text, model = vision_client.inspect_image(
-                img_bytes, mime, _build_prompt(rec))
             if state:
                 state.log_ai_call("1J_image_audit", "orchestrator", "vlm:" + (model or "none"),
                                   model or "none",
@@ -201,8 +228,14 @@ def audit_images(html, state=None, limit=None, log=None):
                                   + "\n\nRESPONSE:\n" + (raw_text or "")[:4000])
             if raw_verdict is None:
                 review_failures += 1
+                consecutive_failures += 1
                 _log("1J image " + str(rec["index"]) + ": no verdict (" + (raw_text or "")[:80] + ")")
+                if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                    _log("1J: " + str(consecutive_failures)
+                         + " consecutive failures -- provider/network down; stopping audit early")
+                    break
                 continue
+            consecutive_failures = 0
             verdict = {"visible_description": str(raw_verdict.get("visible_description", ""))[:400],
                        "model": model}
             for field in ("alt", "title", "caption"):
