@@ -897,11 +897,17 @@ def step8_route_at_a_glance() -> GenerativeNode:
 def step12_resolve() -> GenerativeNode:
     def writer(context, prior, revision):
         system = (
-            "You resolve ONE flagged issue (a repeated fact or a writing-rules violation) in a "
-            "passage. Prefer cutting the redundant instance; otherwise reword distinctly; "
-            "otherwise replace with a NEW, verifiable, non-duplicative fact about the same "
-            "subject. Preserve the author's voice. Narrator we/us, no forbidden words. Output "
-            "ONLY the corrected passage HTML."
+            "You resolve ONE flagged issue in a passage: a repeated fact/phrase, a "
+            "writing-rules violation, or WHIPLASH (the passage jumps back to an earlier "
+            "waypoint/timeline point after the narrative already moved on, with no flashback "
+            "framing). For repetition: prefer cutting the redundant instance; otherwise reword "
+            "distinctly; otherwise replace with a NEW, verifiable, non-duplicative fact about "
+            "the same subject. For whiplash: reorder or reframe so the passage reads as a "
+            "single forward pass through the timeline/route (add explicit flashback framing "
+            "only if the backward reference is truly necessary). Preserve the author's voice, "
+            "every existing <a href> in the passage VERBATIM (same href and link text), and any "
+            "genuinely new/kept fact must remain verifiable. Narrator we/us, no forbidden "
+            "words. Output ONLY the corrected passage HTML."
         )
         user = ("Flagged issue: " + context.get("issue", "") +
                 "\nPassage to fix:\n" + context.get("passage", "") +
@@ -914,10 +920,12 @@ def step12_resolve() -> GenerativeNode:
 
     def review(output, det_findings, context):
         system = (
-            "You certify a repetition/rules fix. Use web_search to verify any replacement "
-            "fact. Certify: (a) FACTS -- any new fact is verifiable; (b) WRITING RULES clean; "
-            "(d) REPETITION -- the original duplication/violation is resolved and no new "
-            "duplication introduced.\n" + _VERDICT_SHAPE
+            "You certify a repetition/rules/whiplash fix. Use web_search to verify any "
+            "replacement fact. Certify: (a) FACTS -- any new fact is verifiable; (b) WRITING "
+            "RULES clean; (d) REPETITION/WHIPLASH -- the original duplication, violation, or "
+            "backward timeline/route jump is resolved, no new duplication or oscillation "
+            "introduced, and every original <a href> in the passage is still present "
+            "verbatim.\n" + _VERDICT_SHAPE
         )
         user = ("Original issue: " + context.get("issue", "") +
                 "\nFacts already in post:\n" + (context.get("existing_facts") or "(none)") +

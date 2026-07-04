@@ -545,6 +545,85 @@ def _drop_flagged_factoid(sctx, pass1):
     return None
 
 
+_STOPWORDS = {"the", "and", "with", "from", "into", "that", "this", "for", "was",
+              "were", "its", "are", "have", "has", "had", "but", "not", "you",
+              "your", "our", "after", "before", "then", "also", "each", "along",
+              "near", "over", "when", "while", "here", "there", "which", "still"}
+
+
+def _tokens(s):
+    return {w for w in re.findall(r"[A-Za-z]{4,}", (s or "").lower()) if w not in _STOPWORDS}
+
+
+def _root(node):
+    """Walk up from a Tag to the document root (the BeautifulSoup object itself is
+    the top of the tree), so a mutated node can be serialized back to full HTML."""
+    while node.parent is not None:
+        node = node.parent
+    return node
+
+
+def _locate_flagged_passage(html, needle):
+    """Find the single best-matching body paragraph/caption/list-item whose text
+    token-overlaps a Pass-1 finding (needle) the most -- the same token-overlap
+    approach already used to localize factoid drops (TICKET-0123), generalized so a
+    flagged REPETITION or SMOOTH_READ (whiplash) passage rooted in the post's own
+    prose can be localized and rewritten in place, rather than accepted as an
+    unfixable source defect (TICKET-0163). Returns the matching Tag (belonging to a
+    live, mutable soup) or None if nothing clears a minimal overlap bar."""
+    needle_toks = _tokens(needle)
+    if not needle_toks:
+        return None
+    best, best_score = None, 0
+    for el in validators.body_content_tags(html, ("p", "td", "li")):
+        text = el.get_text(" ", strip=True)
+        if len(text) < 20:
+            continue
+        score = len(_tokens(text) & needle_toks)
+        if score > best_score:
+            best, best_score = el, score
+    return best if best_score >= 2 else None
+
+
+def _remediate_flagged_passage(sctx, pass1):
+    """When a Pass-1 REVISE (REPETITION or SMOOTH_READ/whiplash finding) can't be
+    localized to a droppable factoid, localize it to the actual body passage and
+    have the writer rewrite it in place via the step12_resolve loop (TICKET-0163).
+    This applies regardless of whether the flagged wording originated in the
+    original author's prose or content this pipeline added -- repetition/whiplash
+    is a real defect either way, not an accepted stopping point. Returns a short
+    description of what was fixed, or None if it couldn't localize the passage or
+    the rewrite didn't certify (falls through to the operator halt)."""
+    crit = pass1.get("criteria") or {}
+    findings = []
+    for key in ("repetition", "smooth_read"):
+        findings.extend((crit.get(key) or {}).get("findings") or [])
+    needle = (pass1.get("revision_instructions") or "") + " " + " ".join(findings)
+    if not needle.strip():
+        return None
+    html = sctx.state.get_working_html()
+    node = _locate_flagged_passage(html, needle)
+    if node is None:
+        return None
+    passage_html = str(node)
+    ctx = dict(sctx.context)
+    ctx.update({
+        "issue": (findings[0] if findings else pass1.get("revision_instructions", ""))[:400],
+        "passage": passage_html,
+        "existing_facts": sctx.context.get("existing_facts", ""),
+    })
+    outcome = review_loop.run_generative_node(node_specs.step12_resolve(), ctx, state=sctx.state)
+    if outcome["status"] != "CERTIFIED" or not outcome["output"].strip():
+        return None
+    before_inv = validators.href_inventory(passage_html)
+    if not validators.diff_hrefs(before_inv, outcome["output"])["ok"]:
+        return None   # writer dropped a link from the passage -- don't apply (G3)
+    root = _root(node)   # capture BEFORE replace_with detaches `node` from the tree
+    node.replace_with(assembler._frag(outcome["output"]))
+    sctx.state.set_working_html(str(root))
+    return (findings[0] if findings else "flagged passage")[:80]
+
+
 def phase5_certification_node():
     def handler(sctx):
         for attempt in range(MAX_PASS1_BOUNCES + 1):
@@ -560,16 +639,23 @@ def phase5_certification_node():
             if failed:
                 return {"halt": True, "halt_reason": "Phase 5 G2 Pass-2 not clean",
                         "item": str(failed), "action": "fix the failing checks and re-run Phase 5"}
-            # Pass-1 (holistic) REVISE with a clean Pass-2: bounce -- drop the flagged
-            # factoid and reassemble, then re-certify (TICKET-0123).
+            # Pass-1 (holistic) REVISE with a clean Pass-2: bounce (TICKET-0123).
             if attempt >= MAX_PASS1_BOUNCES:
                 break
-            dropped = _drop_flagged_factoid(sctx, cert.get("pass1_reviewer") or {})
-            if not dropped:
-                break   # couldn't localize the REVISE to a factoid -> halt for operator
-            sctx.operator.info("Pass-1 flagged content; dropped the factoid for '"
-                               + dropped + "' and reassembling...")
-            _assemble_working(sctx)
+            pass1 = cert.get("pass1_reviewer") or {}
+            dropped = _drop_flagged_factoid(sctx, pass1)
+            if dropped:
+                sctx.operator.info("Pass-1 flagged content; dropped the factoid for '"
+                                   + dropped + "' and reassembling...")
+                _assemble_working(sctx)
+                continue
+            # Not a factoid -- try localizing + rewriting the actual flagged passage
+            # (repetition/whiplash rooted in the post's own prose, TICKET-0163).
+            fixed = _remediate_flagged_passage(sctx, pass1)
+            if not fixed:
+                break   # couldn't localize/certify a fix -> halt for operator
+            sctx.operator.info("Pass-1 flagged content; rewrote the passage about '"
+                               + fixed + "' and re-certifying...")
         # Exhausted bounces or unlocalizable REVISE.
         p1 = cert.get("pass1_reviewer") or {}
         return {"halt": True, "halt_reason": "Phase 5 G2 Pass-1 not clean",

@@ -32,18 +32,14 @@ def _soup(html: str) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
-def body_h2_tags(html):
-    """<h2> tags in the post BODY only (after <!--more-->), in document order.
-
-    An H2 in the PRE-FOLD zone is not a real content section -- some legacy
-    Blogger templates style the post's own TITLE as an H2 sitting above the
-    fold (observed on the alaska-cruise post). Treating it as a section
-    pollutes the summary block, RAAG, schema hasPart, and Step 9-F factoids
-    with a bogus entry that just restates the whole post's scope. This one
-    helper is the single source of truth for "real content sections" --
-    consolidated after the same fix was applied independently at 3+ call
-    sites (TICKET-0154/0158). Returns Tag objects (not soup, not text) so
-    callers can still walk siblings/find_next as needed.
+def body_content_tags(html, tag_names):
+    """Tags in the post BODY only (after <!--more-->), in document order, for any
+    tag whose name is in `tag_names`. A tag in the PRE-FOLD zone is not real body
+    content -- some legacy Blogger templates style the post's own TITLE as an
+    element sitting above the fold (observed on the alaska-cruise post). This is
+    the shared walk behind body_h2_tags (TICKET-0154/0158) and passage-location
+    for Pass-1 remediation (TICKET-0163). Returns Tag objects (not soup, not
+    text) so callers can still walk siblings/find_next/replace_with as needed.
     """
     soup = _soup(html)
     has_more = any(isinstance(c, Comment) and c.strip() == "more" for c in soup.descendants)
@@ -53,9 +49,18 @@ def body_h2_tags(html):
         if isinstance(el, Comment) and el.strip() == "more":
             more_seen = True
             continue
-        if more_seen and getattr(el, "name", None) == "h2":
+        if more_seen and getattr(el, "name", None) in tag_names:
             out.append(el)
     return out
+
+
+def body_h2_tags(html):
+    """<h2> tags in the post BODY only (after <!--more-->), in document order.
+    See body_content_tags for why pre-fold tags are excluded. This is the single
+    source of truth for "real content sections" -- consolidated after the same
+    fix was applied independently at 3+ call sites (TICKET-0154/0158).
+    """
+    return body_content_tags(html, ("h2",))
 
 
 def plain_text(html: str) -> str:
