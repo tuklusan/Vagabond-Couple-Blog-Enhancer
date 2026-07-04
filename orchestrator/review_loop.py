@@ -64,8 +64,12 @@ def _safe_certify(spec, rsys, ruser):
         return verdict, "", []
 
 
-def run_generative_node(spec, context, max_rounds=None, verbose=True):
-    """Run one generative node's writer<->reviewer loop. Returns an outcome dict."""
+def run_generative_node(spec, context, max_rounds=None, verbose=True, state=None):
+    """Run one generative node's writer<->reviewer loop. Returns an outcome dict.
+
+    state (optional): the run's RunState -- when given, every writer/reviewer
+    prompt and response is appended to the run's AI-communications transcript
+    (TICKET-0140), tagged with this node's id."""
     max_rounds = max_rounds or config.MAX_NODE_ROUNDS
     prior_output = ""
     revision = ""
@@ -94,6 +98,9 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
             return {"status": "ESCALATE", "output": output, "verdict": verdict,
                     "sources": sources, "rounds": rnd, "history": history,
                     "reason": "build_writer_prompt_failed: " + str(e)[:160]}
+        if state:
+            state.log_ai_call(spec.id, "orchestrator", "writer", "pending",
+                              "SYSTEM:\n" + wsys + "\n\nUSER:\n" + wuser)
         try:
             text, wprov = writer_client.chat(
                 [{"role": "system", "content": wsys}, {"role": "user", "content": wuser}],
@@ -103,9 +110,14 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
         except Exception as e:
             # Every writer provider is down -> escalate rather than crash.
             log(f"round {rnd}: writer unavailable -> ESCALATE ({e})")
+            if state:
+                state.log_ai_call(spec.id, "writer", "orchestrator", "none",
+                                  "ERROR: " + str(e)[:400])
             return {"status": "ESCALATE", "output": output, "verdict": verdict,
                     "sources": sources, "rounds": rnd, "history": history,
                     "reason": "writer_unavailable: " + str(e)[:160]}
+        if state:
+            state.log_ai_call(spec.id, "writer", "orchestrator", wprov, text)
 
         # postprocess + deterministic check are pure code, but a malformed writer
         # payload or a validator bug must not crash the whole loop (TICKET-0014).
@@ -138,7 +150,13 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
             return {"status": "ESCALATE", "output": output, "verdict": verdict,
                     "sources": sources, "rounds": rnd, "history": history,
                     "reason": "build_review_prompt_failed: " + str(e)[:160]}
+        if state:
+            state.log_ai_call(spec.id, "orchestrator", "reviewer", "pending",
+                              "SYSTEM:\n" + rsys + "\n\nUSER:\n" + ruser)
         verdict, _rtext, sources = _safe_certify(spec, rsys, ruser)
+        if state:
+            state.log_ai_call(spec.id, "reviewer", "orchestrator",
+                              str(verdict.get("reviewer_provider", "none")), _rtext or _safe_json(verdict))
         decision = str(verdict.get("decision", "ESCALATE")).upper()
         log(f"round {rnd}: review {decision} (writer={wprov}, reviewer={verdict.get('reviewer_provider')})")
         history.append({"round": rnd, "writer": wprov, "stage": "review",
@@ -152,7 +170,13 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True):
         reroll = 0
         while decision == "ESCALATE" and reroll < REVIEWER_ESCALATE_REROLLS:
             reroll += 1
+            if state:
+                state.log_ai_call(spec.id, "orchestrator", "reviewer", "pending",
+                                  "(re-roll " + str(reroll) + ") SYSTEM:\n" + rsys + "\n\nUSER:\n" + ruser)
             verdict, _rtext, sources = _safe_certify(spec, rsys, ruser)
+            if state:
+                state.log_ai_call(spec.id, "reviewer", "orchestrator",
+                                  str(verdict.get("reviewer_provider", "none")), _rtext or _safe_json(verdict))
             decision = str(verdict.get("decision", "ESCALATE")).upper()
             log(f"round {rnd}: reviewer re-roll {reroll} -> {decision} "
                 f"(reviewer={verdict.get('reviewer_provider')})")
@@ -238,7 +262,7 @@ _DOC_VERDICT_SHAPE = (
 )
 
 
-def _document_review(html, context=None):
+def _document_review(html, context=None, state=None):
     """G2 Pass 1 -- reviewer reads the whole post for the holistic criteria."""
     next_post = (context or {}).get("next_post")
     prior_post = (context or {}).get("prior_post")
@@ -280,8 +304,14 @@ def _document_review(html, context=None):
     # that couldn't be localized/bounced (TICKET-0124). Even 4096 wasn't always
     # enough on a particularly verbose reply (TICKET-0135) -- bumped further and
     # capped findings-per-criterion above so future replies stay well inside budget.
-    verdict, _text, _sources = reviewer_client.certify(system, "Post body:\n" + html[:200000],
-                                                       web_search=False, max_tokens=6144)
+    user = "Post body:\n" + html[:200000]
+    if state:
+        state.log_ai_call("phase5_cert", "orchestrator", "reviewer", "pending",
+                          "SYSTEM:\n" + system + "\n\nUSER:\n" + user)
+    verdict, _text, _sources = reviewer_client.certify(system, user, web_search=False, max_tokens=6144)
+    if state:
+        state.log_ai_call("phase5_cert", "reviewer", "orchestrator",
+                          str(verdict.get("reviewer_provider", "none")), _text or _safe_json(verdict))
     return verdict
 
 
@@ -327,7 +357,7 @@ def run_document_certification(state, run_reviewer=True, context=None):
     pass1 = None
     if run_reviewer:
         try:
-            pass1 = _document_review(html, context)
+            pass1 = _document_review(html, context, state)
         except Exception as e:
             pass1 = {"decision": "ESCALATE", "note": "reviewer unavailable: " + str(e)[:140]}
 

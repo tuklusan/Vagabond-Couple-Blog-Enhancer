@@ -231,7 +231,7 @@ def generative_node(node_id, phase, spec_factory, optional=False):
         if sctx.dry_generative:
             return {"complete": True, "note": "[dry] generative stubbed"}
         spec = spec_factory()
-        outcome = review_loop.run_generative_node(spec, sctx.context)
+        outcome = review_loop.run_generative_node(spec, sctx.context, state=sctx.state)
         certified = outcome["status"] == "CERTIFIED"
         sctx.state.save_artifact("gen_" + node_id, {
             # A skipped optional node must contribute no body content.
@@ -309,7 +309,7 @@ def iterating_generative_node(node_id, phase, spec_factory, items_fn):
             spec = spec_factory()
             ctx = dict(sctx.context)
             ctx.update(it)
-            outcome = review_loop.run_generative_node(spec, ctx)
+            outcome = review_loop.run_generative_node(spec, ctx, state=sctx.state)
             if outcome["status"] == "CERTIFIED" and outcome["output"].strip():
                 outputs.append(outcome["output"])
                 per_item.append({"item": it, "output": outcome["output"],

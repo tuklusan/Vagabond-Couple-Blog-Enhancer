@@ -156,3 +156,21 @@ class RunState:
                "event": event, "data": data or {}}
         with self.log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+    # ---- AI communications transcript (TICKET-0140) -----------------------
+    @property
+    def ai_transcript_path(self) -> Path:
+        return self.dir / "ai_transcript.txt"
+
+    def log_ai_call(self, node_id: str, source: str, target: str, provider: str, content: str):
+        """Append one leg of an AI communication (orchestrator->writer,
+        writer->orchestrator, orchestrator->reviewer, reviewer->orchestrator) to a
+        single human-readable transcript file in the run dir, so an operator can
+        audit every prompt/response that happened during a run, in order, with a
+        clear source/target label and which node/step it belongs to."""
+        header = (">>> " + source.upper() + " -> " + target.upper()
+                  + " [" + node_id + "] (" + provider + ") "
+                  + datetime.now().isoformat(timespec="seconds"))
+        block = header + "\n" + ("-" * len(header)) + "\n" + (content or "").rstrip() + "\n\n"
+        with self.ai_transcript_path.open("a", encoding="utf-8") as f:
+            f.write(block)
