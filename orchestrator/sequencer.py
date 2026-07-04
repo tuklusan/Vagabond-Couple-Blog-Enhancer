@@ -23,7 +23,10 @@ from . import config, validators, review_loop, assembler, context_extractor, nod
 
 # How many times a Pass-1 REVISE may bounce (drop the flagged factoid + reassemble
 # + re-certify) before halting for the operator (TICKET-0123).
-MAX_PASS1_BOUNCES = int(os.environ.get("ORCH_MAX_PASS1_BOUNCES", "3"))
+try:
+    MAX_PASS1_BOUNCES = int(os.environ.get("ORCH_MAX_PASS1_BOUNCES", "3"))
+except ValueError:
+    MAX_PASS1_BOUNCES = 3
 
 
 @dataclass

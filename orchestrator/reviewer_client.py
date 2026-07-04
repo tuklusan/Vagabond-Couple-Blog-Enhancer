@@ -43,7 +43,10 @@ DEEPSEEK_FALLBACK_NOTE = (
 # leaves no room: the reasoning consumes the whole budget and the JSON never lands,
 # yielding empty content -> spurious ESCALATE (even on valid, gate-passing output).
 # Give the reviewer generous headroom, independent of the node's writer-side cap.
-REVIEWER_DEEPSEEK_TOKEN_FLOOR = int(os.environ.get("REVIEWER_TOKEN_FLOOR", "3000"))
+try:
+    REVIEWER_DEEPSEEK_TOKEN_FLOOR = int(os.environ.get("REVIEWER_TOKEN_FLOOR", "3000"))
+except ValueError:
+    REVIEWER_DEEPSEEK_TOKEN_FLOOR = 3000
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SECRETS_DIR = PROJECT_ROOT / "Config" / "_SECRETS"

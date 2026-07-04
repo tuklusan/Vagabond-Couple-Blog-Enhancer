@@ -51,7 +51,10 @@ OPENROUTER_INCLUDE_USAGE = os.environ.get("OPENROUTER_INCLUDE_USAGE", "0") == "1
 # reasoning AND emit content; 800 was too low. This floor guarantees reasoning
 # headroom regardless of a node's short-output budget -- the prompt, not
 # max_tokens, controls how long the answer actually is.
-REASONING_TOKEN_FLOOR = int(os.environ.get("WRITER_TOKEN_FLOOR", "1600"))
+try:
+    REASONING_TOKEN_FLOOR = int(os.environ.get("WRITER_TOKEN_FLOOR", "1600"))
+except ValueError:
+    REASONING_TOKEN_FLOOR = 1600
 
 
 def safe_print(msg):

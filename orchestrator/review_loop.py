@@ -26,15 +26,25 @@ import os
 
 from . import config, writer_client, reviewer_client, validators
 
+def _int_env(name, default):
+    """int(os.environ.get(...)) that can't crash the whole module import on a
+    malformed override -- an invalid ORCH_* value falls back to the default
+    instead of raising ValueError at import time (TICKET-0141)."""
+    try:
+        return int(os.environ.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
 # Consecutive objective (deterministic) failures on the primary writer before the
 # loop escalates the writer to DeepSeek for the remaining rounds. Keeps the free
 # model primary (cost) while guaranteeing convergence on tight-constraint nodes.
-WRITER_ESCALATE_AFTER = int(os.environ.get("ORCH_WRITER_ESCALATE_AFTER", "2"))
+WRITER_ESCALATE_AFTER = _int_env("ORCH_WRITER_ESCALATE_AFTER", 2)
 
 # How many times to re-roll the (stochastic) reviewer on the SAME content when it
 # returns ESCALATE, before feeding the concern back for a content revision. Guards
 # against the web-less DeepSeek fallback's inconsistent over-escalation.
-REVIEWER_ESCALATE_REROLLS = int(os.environ.get("ORCH_REVIEWER_REROLLS", "2"))
+REVIEWER_ESCALATE_REROLLS = _int_env("ORCH_REVIEWER_REROLLS", 2)
 
 
 def _safe_json(obj, fallback=""):
