@@ -695,6 +695,8 @@ def assemble(html, fragments=None, context=None):
     build the canonical summary block from the Step-3 fragment (when the source has
     none) plus the TravelAction schema, with <!--more--> immediately after </script>.
     """
+    if not isinstance(html, str):
+        raise ValueError("assemble() requires html to be a string, got " + type(html).__name__)
     html, _ = remove_m1_internal(html)
     html, _ = reemit_youtube(html)
     html, _ = strip_body_inline_styles(html)
