@@ -26,7 +26,7 @@ import time
 import requests
 
 from . import writer_client
-from .context_extractor import _is_safe_public_url
+from .context_extractor import _is_safe_public_url, safe_get
 
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
@@ -92,8 +92,12 @@ def fetch_image(src):
         if not _is_safe_public_url(url):
             return None, "unsafe url"
         try:
-            resp = requests.get(url, timeout=FETCH_TIMEOUT, headers=FETCH_HEADERS)
+            # safe_get re-validates every redirect hop -- a public image host
+            # 302-ing to a private/metadata address is refused (TICKET-0178).
+            resp = safe_get(url, timeout=FETCH_TIMEOUT, headers=FETCH_HEADERS)
             resp.raise_for_status()
+        except ValueError:
+            return None, "unsafe url"
         except requests.exceptions.RequestException as e:
             last_reason = "fetch failed: " + str(e)[:120]
             continue

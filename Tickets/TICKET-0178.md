@@ -1,0 +1,8 @@
+# TICKET-0178: [vision_client.py] SSRF via unfollowed redirect validation
+Status: Closed
+Priority: High
+Type: Bug
+Created: 2026-07-04
+Description: fetch_image calls _is_safe_public_url on the initial URL but does not validate the URL after redirects (allow_redirects=True by default). An attacker can supply a URL that redirects to an internal server, bypassing SSRF protection and potentially causing information disclosure or internal scanning. | Suggestion: Set allow_redirects=False and manually handle redirect responses, validating each new Location against _is_safe_public_url before following it, or at minimum validate response.url before returning the content. | File: orchestrator/vision_client.py | Severity: critical
+Steps to Reproduce: 
+Notes: VALID, FIXED -- and the same hole existed in `context_extractor.fetch_post_gist` (the TICKET-0159 guard also only validated the first URL). Fixed once for both via a shared `context_extractor.safe_get(url, timeout, headers, max_redirects=3)`: redirects disabled on the wire (`allow_redirects=False`), each 3xx Location resolved with urljoin and re-validated by `_is_safe_public_url` before the next hop, ValueError on an unsafe hop or redirect-loop exhaustion. `vision_client.fetch_image` and `fetch_post_gist` now both fetch exclusively through it. Tests: test_fetch_rejects_redirect_to_private (mocked 302 from a public host to 169.254.169.254 -> refused, redirects confirmed disabled on the wire, metadata endpoint never contacted). Live regression check: Blogger `/s512-rj/` and Wikimedia 500px thumbnail fetches both still succeed through safe_get.

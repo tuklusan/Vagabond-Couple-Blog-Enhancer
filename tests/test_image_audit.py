@@ -86,6 +86,36 @@ def test_fetch_rejects_unsafe_url():
     check("fetch_scheme_blocked", data is None and reason == "unsafe url", reason)
 
 
+def test_fetch_rejects_redirect_to_private():
+    """A public host 302-ing to a private/metadata address must be refused at the
+    redirect hop, not followed (TICKET-0178)."""
+    from orchestrator import context_extractor
+    import requests as _requests
+
+    class FakeResp:
+        status_code = 302
+        headers = {"Location": "http://169.254.169.254/latest/meta-data"}
+        def raise_for_status(self): pass
+
+    orig_get = _requests.get
+    calls = []
+
+    def fake_get(url, **kw):
+        calls.append((url, kw.get("allow_redirects")))
+        return FakeResp()
+
+    _requests.get = fake_get
+    try:
+        data, reason = vision_client.fetch_image(
+            "https://blogger.googleusercontent.com/img/x/s1600/p.jpg")
+    finally:
+        _requests.get = orig_get
+    check("redirect_ssrf_blocked", data is None and reason == "unsafe url", (data, reason))
+    check("redirects_disabled_on_wire", all(ar is False for _u, ar in calls), calls)
+    check("metadata_endpoint_never_fetched",
+          not any("169.254.169.254" in u for u, _ar in calls), calls)
+
+
 def _mock_vision(verdicts_by_src):
     """Patch fetch_image + inspect_image; returns the originals for restore."""
     orig_fetch, orig_inspect = vision_client.fetch_image, vision_client.inspect_image
@@ -367,6 +397,7 @@ def main():
     test_collect_records()
     test_downscaled_url()
     test_fetch_rejects_unsafe_url()
+    test_fetch_rejects_redirect_to_private()
     test_audit_contradicted_produces_gated_corrections()
     test_audit_rejects_rule_breaking_correction()
     test_unknown_status_degrades_to_plausible()

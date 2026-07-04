@@ -281,6 +281,31 @@ def _is_safe_public_url(url):
         return False
 
 
+def safe_get(url, timeout=8, headers=None, max_redirects=3):
+    """requests.get with the SSRF guard enforced on EVERY hop, not just the
+    first URL (TICKET-0178): redirects are disabled and followed manually, each
+    Location re-validated by _is_safe_public_url -- so a public host that 302s
+    to localhost/a private range/the metadata endpoint is refused. Raises
+    requests' own exceptions on HTTP errors; raises ValueError on an unsafe URL
+    at any hop or on too many redirects."""
+    from urllib.parse import urljoin
+    current = str(url)
+    for _hop in range(max_redirects + 1):
+        if not _is_safe_public_url(current):
+            raise ValueError("unsafe url: " + current[:120])
+        resp = requests.get(current, timeout=timeout, headers=headers,
+                            allow_redirects=False)
+        if resp.status_code in (301, 302, 303, 307, 308):
+            loc = resp.headers.get("Location")
+            if not loc:
+                resp.raise_for_status()
+                return resp
+            current = urljoin(current, loc)
+            continue
+        return resp
+    raise ValueError("too many redirects for " + str(url)[:120])
+
+
 def fetch_post_gist(url, timeout=8):
     """Best-effort fetch of a live blog post's title + a short gist (its opening
     paragraph). Returns {'url','title','gist'} or None on ANY failure (network
@@ -290,10 +315,8 @@ def fetch_post_gist(url, timeout=8):
     subject matter, only reference what this actually fetched."""
     if not url or not str(url).strip():
         return None
-    if not _is_safe_public_url(url):
-        return None
     try:
-        resp = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+        resp = safe_get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
     except Exception:

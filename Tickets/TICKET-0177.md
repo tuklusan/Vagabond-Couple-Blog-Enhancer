@@ -1,0 +1,8 @@
+# TICKET-0177: [__main__.py] Path traversal via --run-id argument
+Status: Closed
+Priority: High
+Type: Bug
+Created: 2026-07-04
+Description: The --run-id argument is passed directly to RunState.load and RunState.create without sanitization. If these methods construct file paths using the run_id (e.g., to create a directory or open a state file), a malicious run_id containing path separators like '../' could allow an attacker to read or write arbitrary files on the system, leading to privilege escalation or data exfiltration. | Suggestion: Sanitize the run_id in main() before use: restrict it to a safe character set (e.g., alphanumeric, dash, underscore) and reject invalid ones. Alternatively, validate that the resolved path stays within the designated runs directory. | File: orchestrator/__main__.py | Severity: critical
+Steps to Reproduce: 
+Notes: FALSE POSITIVE, NO ACTION -- the premise "passed without sanitization" is wrong. Every RunState path component is sanitized at construction: `RunState.__init__` (orchestrator/state.py:63) calls `_sanitize_run_id` (state.py:33, TICKET-0018), which REJECTS anything outside [A-Za-z0-9_-] with a ValueError -- '../', separators, and drive letters cannot pass. Both `RunState.create` and `RunState.load` (the new --resume path) construct through `__init__`, and `__main__`'s existing `except ValueError` (TICKET-0066) reports the rejection cleanly. Sanitizing again in main() would be a duplicate of the layer that already exists at the correct (single) choke point. Verified directly against RunState: '../evil', 'a/b', '..', and 'C:\x' all raise ValueError at construction.
