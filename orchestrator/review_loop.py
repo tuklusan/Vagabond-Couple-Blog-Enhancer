@@ -352,13 +352,24 @@ def run_document_certification(state, run_reviewer=True, context=None):
     knows about an intentional lead-in/lead-out (prior_post/next_post, 0132) and
     doesn't flag it as off-topic (TICKET-0134).
     """
-    html = state.get_working_html()
+    try:
+        html = state.get_working_html()
+    except Exception as e:
+        # An I/O error reading the working HTML must degrade to "not certified",
+        # not crash the whole Phase-5 node (TICKET-0145).
+        return {"certified": False,
+                "pass2_deterministic": {"checks": {}, "ok": False,
+                                        "failed": ["working_html_read_error: " + str(e)[:160]]},
+                "pass1_reviewer": None}
     if not html:
         # Incomplete/empty working HTML -> not certified, don't crash (TICKET-0071).
         return {"certified": False,
                 "pass2_deterministic": {"checks": {}, "ok": False, "failed": ["no_working_html"]},
                 "pass1_reviewer": None}
-    inv = state.read_artifact("1C_media_inventory")
+    try:
+        inv = state.read_artifact("1C_media_inventory")
+    except Exception:
+        inv = None
     original_hrefs = None
     if inv:
         original_hrefs = (inv.get("internal_links") or []) + (inv.get("external_links") or [])
