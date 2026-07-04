@@ -207,6 +207,96 @@ def test_step12_resolve_node_splices_each_fix_and_records_skips():
     check("step12_node_records_fixed", len(art.get("fixed") or []) == 1)
 
 
+GAG = "Yes, we took the photo. No, we can’t control the weather."
+
+
+def test_dedupe_html_condenses_later_instances():
+    html = ("<html><body><!--more-->"
+            "<p>Margerie Glacier calving. " + GAG + "</p>"
+            "<p>Totem poles in Ketchikan. " + GAG + "</p>"
+            '<td>Skagway station, see <a href="https://x.example/a">map</a>. ' + GAG + "</td>"
+            "<p>Unrelated paragraph about Fairbanks.</p>"
+            "</body></html>")
+    out, n = sequencer._dedupe_html(html, "Yes, we took the photo. No, we can't control the weather")
+    check("dedupe_count", n == 2, n)
+    check("dedupe_first_kept", "control the weather" in out.split("Ketchikan")[0])
+    check("dedupe_later_removed", out.count("control the weather") == 1, out.count("control the weather"))
+    check("dedupe_other_content_kept", "Totem poles in Ketchikan." in out
+          and "Skagway station" in out and "Fairbanks" in out)
+    check("dedupe_href_untouched", 'href="https://x.example/a"' in out)
+
+
+def test_quoted_phrases_extraction():
+    text = ("Edit the captions to remove phrases like 'Yes, we took the photo. No, we "
+            "can’t control the weather' and \"Alaska delivered the usual mix of beauty\".")
+    got = sequencer._quoted_phrases(text)
+    check("quoted_two_found", len(got) == 2, got)
+    check("quoted_curly_apostrophe_ok", any("can’t control" in g for g in got))
+
+
+def test_drop_factoid_requires_output_evidence():
+    # Complaint about caption phrases mentions 'Ketchikan' -- must NOT match a
+    # factoid whose section title contains Ketchikan but whose text is unrelated.
+    state = RunState.create("<html><body><!--more--><p>x</p></body></html>",
+                            run_id="test_drop_evidence")
+    state.save_artifact("gen_step9f_factoid", {"items": [
+        {"item": {"section_topic": "Vancouver to Ketchikan: Where Time Zones Become Suggestions"},
+         "output": "<p>The Inside Passage shelters ships from Pacific swells.</p>"}]})
+    sctx = sequencer.StepContext(state=state, context={}, operator=Operator(auto=True))
+    pass1 = {"revision_instructions":
+             "Edit the captions to remove repeated phrases like 'Yes, we took the photo. "
+             "No, we can't control the weather' near Ketchikan and Vancouver.",
+             "criteria": {}}
+    dropped = sequencer._drop_flagged_factoid(sctx, pass1)
+    check("no_drop_without_evidence", dropped is None, dropped)
+    # But a complaint quoting text that IS in the factoid does drop it -- and
+    # preserves the output for recovery.
+    pass1b = {"revision_instructions":
+              "Remove the factoid claim 'The Inside Passage shelters ships from Pacific swells'.",
+              "criteria": {}}
+    dropped_b = sequencer._drop_flagged_factoid(sctx, pass1b)
+    fac = state.read_artifact("gen_step9f_factoid")
+    check("drop_with_evidence", dropped_b is not None, dropped_b)
+    check("dropped_output_preserved",
+          "Inside Passage" in (fac["items"][0].get("dropped_output") or ""))
+
+
+def test_resume_skips_completed_nodes():
+    """G4 restart-survival (TICKET-0174): a re-run over existing durable state
+    re-executes ONLY incomplete nodes."""
+    state = RunState.create(_src_html(), run_id="test_resume")
+    op = Operator(auto=True)  # withholds Phase 4 -> halt with everything before complete
+    sctx = sequencer.StepContext(state=state, context={}, operator=op, mode="auto")
+    seq = sequencer.build_phase1_deterministic_sequence()
+    result = sequencer.run_sequence(seq, sctx)
+    check("resume_setup_halted", result["status"] == "HALT" and result["at"] == "phase4_gate", result)
+
+    # Resume over the SAME state (RunState.load path), now approving: completed
+    # deterministic nodes must be skipped (their handlers not re-run).
+    ran = []
+    seq2 = sequencer.build_phase1_deterministic_sequence()
+    for node in seq2:
+        orig_handler = node.handler
+        def wrapped(sctx, _h=orig_handler, _id=node.id):
+            ran.append(_id)
+            return _h(sctx)
+        node.handler = wrapped
+    state2 = RunState.load("test_resume")
+    op2 = Operator(auto=False, input_fn=lambda *_a: "y")
+    sctx2 = sequencer.StepContext(state=state2, context={}, operator=op2, mode="step")
+    result2 = sequencer.run_sequence(seq2, sctx2)
+    check("resume_completes", result2["status"] == "DONE", result2)
+    check("resume_only_gate_ran", ran == ["phase4_gate"], ran)
+
+
+def test_locate_single_word_needle():
+    html = ("<html><body><!--more-->"
+            "<p>We chose to leverage the midnight sun for extra sightseeing hours.</p>"
+            "</body></html>")
+    node = sequencer._locate_flagged_passage(html, "Leverage")
+    check("locate_single_word_ok", node is not None and "midnight sun" in node.get_text())
+
+
 def main():
     test_gate_blocks_at_phase4()
     test_gate_passes_when_approved()
@@ -217,6 +307,11 @@ def main():
     test_remediate_flagged_passage_rejects_dropped_href()
     test_repetition_rule_items_reads_1H_1I_findings()
     test_step12_resolve_node_splices_each_fix_and_records_skips()
+    test_dedupe_html_condenses_later_instances()
+    test_quoted_phrases_extraction()
+    test_drop_factoid_requires_output_evidence()
+    test_resume_skips_completed_nodes()
+    test_locate_single_word_needle()
     print()
     if FAILS:
         print(_ascii("FAILED: " + str(FAILS)))

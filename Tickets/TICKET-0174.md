@@ -1,0 +1,8 @@
+# TICKET-0174: [__main__.py/sequencer.py] No resume path -- a halted run re-executes everything despite G4's durable state
+Status: Closed
+Priority: High
+Type: Bug
+Created: 2026-07-04
+Description: G4 promises restart-survivable durable state, and every node's artifacts persist -- but nothing exploited them: `RunState.create` reinitialises an existing run_id (overwriting status and working.html) and `run_sequence` re-executed every node unconditionally. Observed cost on alaska2v1: the run halted at phase5_cert after ~1h of work (424 VLM image verdicts, 17 certified factoids, all pre-fold fragments); rerunning would have re-paid all of it. For production use on unprocessed blogs, a halt must be resumable at the failed node.
+Steps to Reproduce: Run --full to a Phase 5 halt; re-invoke with the same --run-id; observe full re-execution (and reinitialisation warning).
+Notes: Fixed minimally: (1) `run_sequence` now SKIPS any node already marked complete in durable state (emits "[already complete -- resumed]"); on a fresh run nothing is complete, so behavior is unchanged. (2) New CLI flag `--resume` (requires --run-id): loads the existing RunState (`RunState.load`, no reinitialisation, working.html untouched) and rehydrates `sctx.context` from the saved `context` and `lead_context` artifacts (the setup nodes that derived them are skipped). (3) `lead_context_node` now persists its fetched prior/next gists as the `lead_context` artifact so series context survives a resume. Test: test_resume_skips_completed_nodes (halt at Phase 4, resume via RunState.load, assert ONLY the gate handler re-ran). First real use: resuming alaska2v1 at phase5_generate/phase5_cert with the TICKET-0171/0172/0173 fixes active, reusing all 423 cached image verdicts.

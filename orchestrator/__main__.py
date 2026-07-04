@@ -56,6 +56,10 @@ def main():
     ap.add_argument("--approve-phase4", action="store_true",
                     help="auto-operator: grant the Phase 4 approval gate (test/CI opt-in; real runs approve interactively)")
     ap.add_argument("--run-id", default=None, help="reuse/name a run id")
+    ap.add_argument("--resume", action="store_true",
+                    help="resume an existing (halted) run in place: requires --run-id, "
+                         "keeps all durable state, skips nodes already complete, "
+                         "re-executes only the incomplete node(s) (TICKET-0174)")
     ap.add_argument("--current-url", default=None, help="this post's own live URL, if already published")
     ap.add_argument("--prior-url", default=None,
                     help="the series' prior post's live URL -- fetched for a genuine, linked lead-in")
@@ -83,7 +87,22 @@ def main():
                      + "); reading with replacement characters"))
         html = src.read_text(encoding="utf-8", errors="replace")
     try:
-        state = RunState.create(html, run_id=args.run_id)
+        if args.resume:
+            if not args.run_id:
+                print(_ascii("--resume requires --run-id"))
+                sys.exit(1)
+            # Resume in place: durable state (status, artifacts, working.html) is
+            # the source of truth; do NOT reinitialise or overwrite working.html
+            # with the source -- Phase 5 may already have assembled it.
+            try:
+                state = RunState.load(args.run_id)
+            except FileNotFoundError as e:
+                print(_ascii(str(e)))
+                sys.exit(1)
+            print(_ascii("[resume] continuing run '" + args.run_id
+                         + "' from durable state (completed nodes will be skipped)"))
+        else:
+            state = RunState.create(html, run_id=args.run_id)
     except ValueError as e:                                  # bad --run-id (TICKET-0066)
         print(_ascii("invalid --run-id: " + str(e)))
         sys.exit(1)
@@ -91,6 +110,14 @@ def main():
     lead_ctx = {k: v for k, v in (
         ("current_url", args.current_url), ("prior_url", args.prior_url), ("next_url", args.next_url),
     ) if v}
+    if args.resume:
+        # Rehydrate the generative context the (skipped) setup nodes derived on
+        # the original run -- downstream nodes and the Phase-5 bounce paths need
+        # origin/destination/sections/prior_post for reassembly and review notes.
+        for art in ("context", "lead_context"):
+            saved = state.read_artifact(art)
+            if isinstance(saved, dict):
+                lead_ctx.update(saved)
     sctx = sequencer.StepContext(state=state, context=lead_ctx, operator=op,
                                  mode="auto" if args.auto else "step",
                                  dry_generative=args.dry,

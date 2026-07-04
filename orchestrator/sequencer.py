@@ -70,9 +70,20 @@ def _halt(sctx, node, reason, item, action):
 
 
 def run_sequence(nodes, sctx):
-    """Run an ordered list of SeqNodes with the G4 step-entry gate."""
+    """Run an ordered list of SeqNodes with the G4 step-entry gate.
+
+    A node already marked complete in durable state is SKIPPED, not re-run --
+    this is what makes G4's "survives restarts" promise real (TICKET-0174): a
+    halted run resumed via --resume re-executes only the incomplete node(s),
+    reusing every persisted artifact (424 cached image verdicts, certified
+    fragments) instead of regenerating them. On a fresh run no node is complete
+    yet, so this is a no-op."""
     prev_id = None
     for node in nodes:
+        if sctx.state.node_complete(node.id):
+            emit_indicator(node.phase + "  [already complete -- resumed]")
+            prev_id = node.id
+            continue
         # --- G4 step-entry gate ---
         if prev_id is not None and not sctx.state.node_complete(prev_id):
             return _halt(sctx, node, "step-entry gate: prior step incomplete",
@@ -324,7 +335,8 @@ def _repetition_rule_items(sctx):
     rules = sctx.state.read_artifact("analysis_1I_writing_rules") or {}
     items = []
     for sent in (rep.get("repeated_sentences") or [])[:5]:
-        items.append({"needle": sent, "issue": "Repeated sentence/phrase in the post: " + sent})
+        items.append({"needle": sent, "kind": "repetition",
+                      "issue": "Repeated sentence/phrase in the post: " + sent})
     for hit in (rules.get("forbidden") or []):
         term = hit.get("term", "")
         if not term or term.lower() in assembler._FORBIDDEN_SYNONYMS:
@@ -359,6 +371,15 @@ def step12_resolve_node():
         items = _repetition_rule_items(sctx)
         fixed, skipped = [], []
         for it in items:
+            # A sentence repeated across many nodes (a running gag in captions)
+            # is condensed deterministically -- keep the first instance, strip
+            # the rest -- rather than rewriting one node at a time (TICKET-0172).
+            if it.get("kind") == "repetition":
+                n = _dedupe_repeated_phrase(sctx, it["needle"])
+                if n:
+                    fixed.append({"item": it, "output": "(deterministic dedupe: "
+                                  + str(n) + " duplicate instance(s) condensed)"})
+                    continue
             html = sctx.state.get_working_html()
             node = _locate_flagged_passage(html, it["needle"])
             if node is None:
@@ -571,6 +592,11 @@ def lead_context_node():
                 continue
             sctx.context[ctx_key] = post
             notes.append(ctx_key + ("=" + post.get("title", "")[:40] if post else "=unreachable"))
+        # Persist so a --resume can rehydrate the series context without
+        # re-fetching (this node is skipped on resume, TICKET-0174).
+        sctx.state.save_artifact("lead_context", {
+            k: sctx.context.get(k) for k in ("prior_post", "next_post")
+            if sctx.context.get(k) is not None})
         return {"complete": True, "note": "lead context: " + (", ".join(notes) if notes else "none supplied")}
     return SeqNode("lead_context", "Setup - Prior/next post lead-in/lead-out context", "deterministic", handler)
 
@@ -648,26 +674,47 @@ def _drop_flagged_factoid(sctx, pass1):
     """Remove the section-closing factoid whose section the Pass-1 review flags
     (e.g. a chronology/placement problem). Factoids are optional (0053), so dropping
     the offending one yields a clean post while keeping the rest. Returns the dropped
-    section name, or None if the REVISE can't be localized to a factoid (TICKET-0123)."""
+    section name, or None if the REVISE can't be localized to a factoid (TICKET-0123).
+
+    Evidence gate (TICKET-0171): a factoid is only dropped when the review's
+    complaint demonstrably concerns the factoid's own TEXT -- a quoted flagged
+    phrase appears in its output, or the finding tokens overlap its output
+    substantially. Scoring section NAMES alone was observed live (alaska2v1)
+    destroying three innocent factoids: a complaint about repeated CAPTION
+    phrases mentioned 'Ketchikan'/'Vancouver', which matched factoid section
+    titles despite the factoids never containing the flagged phrases. The
+    dropped output is preserved in 'dropped_output' (not destroyed) so a bad
+    drop is recoverable."""
     fac = sctx.state.read_artifact("gen_step9f_factoid")
     if not fac or not fac.get("items"):
         return None
-    rev = ((pass1.get("revision_instructions") or "") + " "
-           + json.dumps(pass1.get("criteria", {}), ensure_ascii=False)).lower()
+    rev_text = ((pass1.get("revision_instructions") or "") + " "
+                + json.dumps(pass1.get("criteria", {}), ensure_ascii=False))
+    rev = rev_text.lower()
+    quoted = [_normalize_text(q) for q in _quoted_phrases(rev_text)]
     stop = {"into", "the", "and", "with", "from", "past", "journey", "night"}
-    # Score every factoid section by how many of its distinctive tokens appear in the
-    # revision text, and drop the BEST match -- not just the first section that shares
-    # a common word like 'Dhaba' (TICKET-0123).
     best, best_score = None, 0
     for it in fac["items"]:
         if not it.get("output"):
             continue
+        out_norm = _normalize_text(it["output"])
+        # Direct evidence: a quoted flagged phrase is IN this factoid's text.
+        if any(q and q in out_norm for q in quoted):
+            best, best_score = it, 999
+            break
+        # Circumstantial: substantial overlap between the finding text and the
+        # factoid's OUTPUT (not merely its section title).
         sec = (it.get("item") or {}).get("section_topic", "")
-        toks = {w.lower() for w in re.findall(r"[A-Za-z]{4,}", sec) if w.lower() not in stop}
-        score = sum(1 for w in toks if w in rev)
+        sec_toks = {w.lower() for w in re.findall(r"[A-Za-z]{4,}", sec) if w.lower() not in stop}
+        out_toks = _tokens(it["output"])
+        score = sum(1 for w in sec_toks if w in rev) + sum(1 for w in out_toks if w in rev)
         if score > best_score:
             best, best_score = it, score
-    if best is not None and best_score > 0:
+    # Require output-level evidence: either a quoted-phrase hit, or enough of the
+    # factoid's own body tokens echoed in the complaint (>= 4 beats coincidental
+    # place-name overlap from section titles alone).
+    if best is not None and best_score >= 4:
+        best["dropped_output"] = best["output"]   # preserve; never destroy (0171)
         best["output"] = ""
         best["dropped_pass1"] = True
         sctx.state.save_artifact("gen_step9f_factoid", fac)
@@ -679,6 +726,90 @@ _STOPWORDS = {"the", "and", "with", "from", "into", "that", "this", "for", "was"
               "were", "its", "are", "have", "has", "had", "but", "not", "you",
               "your", "our", "after", "before", "then", "also", "each", "along",
               "near", "over", "when", "while", "here", "there", "which", "still"}
+
+
+def _normalize_text(s):
+    """Lowercase, alnum+space only, collapsed -- makes phrase matching immune to
+    apostrophe variants (can't / can’t), punctuation, and case."""
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", "", (s or "").lower())).strip()
+
+
+def _quoted_phrases(text, min_len=15):
+    """Concrete flagged phrases quoted inside a reviewer's finding text
+    ('...' or \"...\"), long enough to be a real phrase and not a stray word."""
+    out = []
+    for m in re.finditer(r"'([^']{%d,220}?)'|\"([^\"]{%d,220}?)\"" % (min_len, min_len), text or ""):
+        out.append(m.group(1) or m.group(2))
+    return out
+
+
+_SENTENCE_RE = re.compile(r"[^.!?]*[.!?]+|[^.!?]+$")
+
+
+def _dedupe_html(html, phrase):
+    """Deterministically condense a phrase repeated across the document
+    (TICKET-0172): keep its FIRST occurrence, remove the sentence(s) carrying it
+    from every later body paragraph/caption/list item. Matching is normalized
+    (case/punctuation/apostrophe-proof); edits touch only the NavigableString
+    that holds the sentence, so markup and every <a href> survive verbatim (G3).
+    A sentence is removed when its normalized text contains the phrase OR is a
+    substantial (>=10 chars) fragment of it (handles a two-sentence running gag
+    where the deterministic 1H scan only keyed on one half). Returns
+    (new_html, instances_condensed)."""
+    from bs4 import BeautifulSoup, NavigableString
+    norm_phrase = _normalize_text(phrase)
+    if len(norm_phrase) < 10:
+        return html, 0
+    soup = BeautifulSoup(html, "html.parser")
+    first_kept = False
+    condensed = 0
+    # Walk text nodes in document order, tracking whether we're past <!--more-->.
+    from bs4 import Comment
+    more_seen = not ("<!--more-->" in html)
+    for node in soup.descendants:
+        if isinstance(node, Comment) and node.strip() == "more":
+            more_seen = True
+            continue
+        if not more_seen or not isinstance(node, NavigableString) or isinstance(node, Comment):
+            continue
+        parent = node.parent.name if node.parent else ""
+        if parent in ("script", "style"):
+            continue
+        text = str(node)
+        if norm_phrase not in _normalize_text(text):
+            continue
+        if not first_kept:
+            first_kept = True          # the first instance stays as-is
+            continue
+        sentences = _SENTENCE_RE.findall(text)
+        kept = []
+        removed_any = False
+        for s in sentences:
+            ns = _normalize_text(s)
+            if ns and (norm_phrase in ns or (len(ns) >= 10 and ns in norm_phrase)):
+                removed_any = True
+                continue
+            kept.append(s)
+        if removed_any:
+            node.replace_with(NavigableString("".join(kept)))
+            condensed += 1
+    return str(soup), condensed
+
+
+def _dedupe_repeated_phrase(sctx, phrase):
+    """Apply _dedupe_html to the working HTML AND the saved pre-assembly source
+    (when it exists), so a later bounce's reassembly-from-source does not
+    resurrect the duplicates just removed. Returns instances condensed."""
+    html = sctx.state.get_working_html()
+    new_html, n = _dedupe_html(html, phrase)
+    if not n:
+        return 0
+    sctx.state.set_working_html(new_html)
+    source = sctx.state.read_artifact("pre_assembly_source")
+    if isinstance(source, dict) and source.get("html"):
+        src_new, _src_n = _dedupe_html(source["html"], phrase)
+        sctx.state.save_artifact("pre_assembly_source", {"html": src_new})
+    return n
 
 
 def _tokens(s):
@@ -712,7 +843,10 @@ def _locate_flagged_passage(html, needle):
         score = len(_tokens(text) & needle_toks)
         if score > best_score:
             best, best_score = el, score
-    return best if best_score >= 2 else None
+    # A short needle (a single forbidden word like 'Leverage') can only ever
+    # score 1, so the bar must scale with the needle -- a fixed >=2 silently
+    # made every single-word Step-12 item unlocalizable (TICKET-0173).
+    return best if best_score >= min(2, len(needle_toks)) else None
 
 
 def _splice_passage_fix(sctx, node, new_html):
@@ -784,6 +918,23 @@ def phase5_certification_node():
             if attempt >= MAX_PASS1_BOUNCES:
                 break
             pass1 = cert.get("pass1_reviewer") or {}
+            # FIRST: a repeated phrase quoted in the findings that occurs in
+            # multiple body/caption text nodes is condensed deterministically --
+            # keep the first instance, strip the rest (TICKET-0172). This
+            # targets the reviewer's ACTUAL complaint before any content is
+            # sacrificed; observed live (alaska2v1): a 9-caption running gag
+            # burned all 3 bounces on innocent factoids and still halted.
+            rep_findings = " ".join(
+                ((pass1.get("criteria") or {}).get("repetition") or {}).get("findings") or [])
+            deduped_total = 0
+            for phrase in _quoted_phrases((pass1.get("revision_instructions") or "")
+                                          + " " + rep_findings):
+                deduped_total += _dedupe_repeated_phrase(sctx, phrase)
+            if deduped_total:
+                sctx.operator.info("Pass-1 flagged repeated phrase(s); condensed "
+                                   + str(deduped_total)
+                                   + " duplicate instance(s) and re-certifying...")
+                continue
             dropped = _drop_flagged_factoid(sctx, pass1)
             if dropped:
                 sctx.operator.info("Pass-1 flagged content; dropped the factoid for '"
