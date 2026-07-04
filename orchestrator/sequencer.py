@@ -301,6 +301,87 @@ def _image_pair_items(sctx):
     return items
 
 
+def _repetition_rule_items(sctx):
+    """One Step-12 item per real 1H/1I finding: a repeated sentence, a forbidden
+    word/phrase NOT already handled by the deterministic curated-synonym swap
+    (assembler._FORBIDDEN_SYNONYMS, applied at Phase 5 assembly -- after this node
+    runs), or a first-person narrator violation. Each item carries a `needle` (fed
+    to _locate_flagged_passage to find the actual flagged passage) and an `issue`
+    description for the writer/reviewer prompts. Before this (TICKET-0164),
+    step12_resolve ran as a plain, non-iterating node whose prompts read
+    context['issue']/context['passage'] -- keys nothing ever populated -- so it
+    silently built an empty prompt every run and never resolved a single 1H/1I
+    finding."""
+    rep = sctx.state.read_artifact("analysis_1H_repetition") or {}
+    rules = sctx.state.read_artifact("analysis_1I_writing_rules") or {}
+    items = []
+    for sent in (rep.get("repeated_sentences") or [])[:5]:
+        items.append({"needle": sent, "issue": "Repeated sentence/phrase in the post: " + sent})
+    for hit in (rules.get("forbidden") or []):
+        term = hit.get("term", "")
+        if not term or term.lower() in assembler._FORBIDDEN_SYNONYMS:
+            continue   # curated swap fixes this deterministically at Phase 5
+        items.append({"needle": term, "issue": "Forbidden " + hit.get("kind", "word")
+                      + " '" + term + "' used in the post"})
+    if rules.get("narrator"):
+        html = sctx.state.get_working_html()
+        text = validators.plain_text(validators._body_below_more(html))
+        narrator_hits = 0
+        for sent in validators._sentences(text):
+            if narrator_hits >= 3:
+                break
+            if re.search(r"\bI\b", sent) or re.search(r"\bme\b", sent, re.IGNORECASE):
+                items.append({"needle": sent, "issue": "First-person narrator voice: " + sent[:200]})
+                narrator_hits += 1
+    return items
+
+
+def step12_resolve_node():
+    """Step 12: resolve real 1H/1I findings against the actual body passage, one
+    item per finding, splicing each certified writer fix in place as it lands
+    (TICKET-0164). Uses a custom handler (not the generic iterating_generative_node,
+    which only collects outputs for _collect_fragments) because each fix must be
+    spliced into the live working HTML immediately -- the next item's passage must
+    be located in the POST-splice tree, not a stale copy."""
+    node_id = "step12_resolve"
+
+    def handler(sctx):
+        if sctx.dry_generative:
+            return {"complete": True, "note": "[dry] step12_resolve stubbed"}
+        items = _repetition_rule_items(sctx)
+        fixed, skipped = [], []
+        for it in items:
+            html = sctx.state.get_working_html()
+            node = _locate_flagged_passage(html, it["needle"])
+            if node is None:
+                skipped.append({"item": it, "reason": "could not localize passage"})
+                continue
+            ctx = dict(sctx.context)
+            ctx.update({"issue": it["issue"], "passage": str(node),
+                       "existing_facts": sctx.context.get("existing_facts", "")})
+            try:
+                outcome = review_loop.run_generative_node(node_specs.step12_resolve(), ctx, state=sctx.state)
+            except Exception as e:
+                # Never let one bad finding take down the rest of the node -- these
+                # are best-effort resolutions, not required content (TICKET-0143 precedent).
+                skipped.append({"item": it, "reason": "error: " + str(e)[:160]})
+                continue
+            if outcome["status"] != "CERTIFIED" or not outcome["output"].strip():
+                skipped.append({"item": it, "reason": outcome.get("reason", outcome["status"])})
+                continue
+            if not _splice_passage_fix(sctx, node, outcome["output"]):
+                skipped.append({"item": it, "reason": "href diff failed (G3)"})
+                continue
+            fixed.append({"item": it, "output": outcome["output"], "rounds": outcome.get("rounds")})
+        sctx.state.save_artifact("gen_" + node_id, {
+            "status": "CERTIFIED" if fixed else "SKIP",
+            "fixed": fixed, "skipped": skipped,
+        })
+        return {"complete": True, "output_ref": "gen_" + node_id,
+                "note": "resolved " + str(len(fixed)) + "/" + str(len(items)) + " finding(s)"}
+    return SeqNode(node_id, "Phase 3 / Step 12 - Resolve repetition/rules", "generative", handler)
+
+
 def iterating_generative_node(node_id, phase, spec_factory, items_fn):
     """Run a generative node ONCE PER ITEM (Step 9-F per section, Step 13 per image
     pair -- TICKET-0053). Each item builds its own per-item context; certified
@@ -585,6 +666,22 @@ def _locate_flagged_passage(html, needle):
     return best if best_score >= 2 else None
 
 
+def _splice_passage_fix(sctx, node, new_html):
+    """Splice a Step-12-style passage fix into the live working HTML in place,
+    preserving every original <a href> in the passage (G3). Shared by the Pass-1
+    bounce remediation (TICKET-0163) and the Step 12 findings-resolution node
+    (TICKET-0164) so the splice logic (href diff -> replace_with -> re-serialize
+    from the root) is derived once. Returns False (no-op) if the fix would drop a
+    link, True once applied."""
+    before_inv = validators.href_inventory(str(node))
+    if not validators.diff_hrefs(before_inv, new_html)["ok"]:
+        return False   # writer dropped a link from the passage -- don't apply (G3)
+    root = _root(node)   # capture BEFORE replace_with detaches `node` from the tree
+    node.replace_with(assembler._frag(new_html))
+    sctx.state.set_working_html(str(root))
+    return True
+
+
 def _remediate_flagged_passage(sctx, pass1):
     """When a Pass-1 REVISE (REPETITION or SMOOTH_READ/whiplash finding) can't be
     localized to a droppable factoid, localize it to the actual body passage and
@@ -605,22 +702,17 @@ def _remediate_flagged_passage(sctx, pass1):
     node = _locate_flagged_passage(html, needle)
     if node is None:
         return None
-    passage_html = str(node)
     ctx = dict(sctx.context)
     ctx.update({
         "issue": (findings[0] if findings else pass1.get("revision_instructions", ""))[:400],
-        "passage": passage_html,
+        "passage": str(node),
         "existing_facts": sctx.context.get("existing_facts", ""),
     })
     outcome = review_loop.run_generative_node(node_specs.step12_resolve(), ctx, state=sctx.state)
     if outcome["status"] != "CERTIFIED" or not outcome["output"].strip():
         return None
-    before_inv = validators.href_inventory(passage_html)
-    if not validators.diff_hrefs(before_inv, outcome["output"])["ok"]:
-        return None   # writer dropped a link from the passage -- don't apply (G3)
-    root = _root(node)   # capture BEFORE replace_with detaches `node` from the tree
-    node.replace_with(assembler._frag(outcome["output"]))
-    sctx.state.set_working_html(str(root))
+    if not _splice_passage_fix(sctx, node, outcome["output"]):
+        return None
     return (findings[0] if findings else "flagged passage")[:80]
 
 
@@ -706,9 +798,10 @@ def build_full_sequence():
         ig("step9f_factoid", "Phase 3 / Step 9-F - Section-closing factoids",
            n.step9f_factoid, _section_items),
         g("step10_journey_significance", "Phase 3 / Step 10 - Journey significance", n.step10_journey_significance),
-        # Step 12 resolves violations flagged by 1H/1I; kept optional (skips cleanly
-        # when there is nothing concrete to resolve).
-        g("step12_resolve", "Phase 3 / Step 12 - Resolve repetition/rules", n.step12_resolve, optional=True),
+        # Step 12 resolves violations flagged by 1H/1I: one item per real finding,
+        # spliced into working.html as each certifies (TICKET-0164). Never halts --
+        # unresolved findings are just skipped and recorded.
+        step12_resolve_node(),
         ig("step13_separator", "Phase 3 / Step 13 - Image separators",
            n.step13_separator, _image_pair_items),
         # Phase 4 -- operator approval (blocks HTML generation)

@@ -153,6 +153,60 @@ def test_remediate_flagged_passage_rejects_dropped_href():
     check("remediate_left_original_intact", "example.com/salmon" in state.get_working_html())
 
 
+def test_repetition_rule_items_reads_1H_1I_findings():
+    state = RunState.create("<html><body><!--more--><p>x</p></body></html>", run_id="test_rep_items")
+    state.save_artifact("analysis_1H_repetition",
+                        {"repeated_sentences": ["yes we took the photo no we cant control the weather"]})
+    state.save_artifact("analysis_1I_writing_rules", {
+        "forbidden": [{"term": "realm", "kind": "word"},      # curated -> should be skipped
+                      {"term": "Foster", "kind": "word"}],     # NOT curated -> should be an item
+        "narrator": ["first-person 'I' present"],
+    })
+    sctx = sequencer.StepContext(state=state, context={}, operator=Operator(auto=True))
+    items = sequencer._repetition_rule_items(sctx)
+    needles = [it["needle"] for it in items]
+    check("rep_items_includes_repeated_sentence",
+          any("took the photo" in n for n in needles))
+    check("rep_items_skips_curated_word", not any(n.lower() == "realm" for n in needles))
+    check("rep_items_includes_noncurated_word", any(n == "Foster" for n in needles))
+
+
+def test_step12_resolve_node_splices_each_fix_and_records_skips():
+    html = (
+        "<html><body><!--more-->"
+        '<p>Yes, we took the photo. No, we can\'t control the weather, see <a href="https://example.com/w">link</a>.</p>'
+        "<p>Foster the ducks along the way.</p>"
+        "</body></html>"
+    )
+    state = RunState.create(html, run_id="test_step12_node")
+    state.save_artifact("analysis_1H_repetition",
+                        {"repeated_sentences": ["yes we took the photo no we cant control the weather"]})
+    state.save_artifact("analysis_1I_writing_rules",
+                        {"forbidden": [{"term": "Foster", "kind": "word"}], "narrator": []})
+    sctx = sequencer.StepContext(state=state, context={"existing_facts": ""}, operator=Operator(auto=True))
+
+    def fake_run_generative_node(spec, ctx, state=None):
+        if "Foster" in ctx.get("issue", ""):
+            return {"status": "ESCALATE", "output": ""}   # simulate an unresolved finding
+        return {"status": "CERTIFIED",
+                "output": '<p>Weather photos vary, see <a href="https://example.com/w">link</a>.</p>'}
+
+    orig = review_loop.run_generative_node
+    review_loop.run_generative_node = fake_run_generative_node
+    try:
+        node = sequencer.step12_resolve_node()
+        result = node.handler(sctx)
+    finally:
+        review_loop.run_generative_node = orig
+    check("step12_node_completes", result.get("complete") is True)
+    new_html = state.get_working_html()
+    check("step12_node_applied_fix", "Weather photos vary" in new_html)
+    check("step12_node_preserved_href", 'href="https://example.com/w"' in new_html)
+    art = state.read_artifact("gen_step12_resolve")
+    check("step12_node_records_skip", len(art.get("skipped") or []) == 1)
+    check("step12_node_records_fixed", len(art.get("fixed") or []) == 1)
+
+
 def main():
     test_gate_blocks_at_phase4()
     test_gate_passes_when_approved()
@@ -161,6 +215,8 @@ def main():
     test_locate_flagged_passage_no_match_returns_none()
     test_remediate_flagged_passage_rewrites_and_preserves_hrefs()
     test_remediate_flagged_passage_rejects_dropped_href()
+    test_repetition_rule_items_reads_1H_1I_findings()
+    test_step12_resolve_node_splices_each_fix_and_records_skips()
     print()
     if FAILS:
         print(_ascii("FAILED: " + str(FAILS)))
