@@ -445,19 +445,28 @@ def apply_prefold(html, summary_fragment, context, schema_script=None):
 _SIGNOFF_RE = re.compile(
     r"until next time|fellow wanderers|vagabond couple|safe travels|happy trails",
     re.IGNORECASE)
+# A short, standalone closing line -- 'The End.', 'Fin.', 'The end of the road.'
+# -- is a sign-off even without one of the phrases above (observed on the
+# alaska-cruise post: trailing generated content landed AFTER the author's own
+# "The End." because this exact style wasn't recognized, TICKET-0160). Matched
+# as the ENTIRE paragraph text (not a substring search) so this never
+# misfires on ordinary prose that happens to contain "the end" mid-sentence
+# (e.g. "by the end of our trip").
+_STANDALONE_SIGNOFF_RE = re.compile(r"^(the\s+end|fin|end)\.?$", re.IGNORECASE)
 
 
 def _outro_anchor(soup):
     """The node BEFORE which trailing generated content (journey-significance,
     last-section factoid) must be inserted so the post's sign-off/outro stays last
-    (TICKET-0060). Prefer a 'Next Stop' H2; else the sign-off paragraph; else None
-    (meaning: append to the end)."""
+    (TICKET-0060/0160). Prefer a 'Next Stop' H2; else the sign-off paragraph; else
+    None (meaning: append to the end)."""
     for h in soup.find_all("h2"):
         if h.get_text(strip=True).lower().startswith("next stop"):
             return h
     # else: the earliest trailing <p> that reads like a sign-off
     for p in soup.find_all("p"):
-        if _SIGNOFF_RE.search(p.get_text(" ", strip=True)):
+        text = p.get_text(" ", strip=True)
+        if _SIGNOFF_RE.search(text) or _STANDALONE_SIGNOFF_RE.match(text):
             return p
     return None
 

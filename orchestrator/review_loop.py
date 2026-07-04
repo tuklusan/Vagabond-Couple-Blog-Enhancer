@@ -311,12 +311,20 @@ def _document_review(html, context=None, state=None):
             "up false claims about what the other post covers."
         )
     system = (
-        "You are the final certifying reviewer for a travel blog post body. Read it as a "
-        "first-time human with no prior context. Judge ONLY these three criteria: "
+        "You are an 18-year-old high-school student reading this travel blog post for the "
+        "very first time, start to finish, WITHOUT SKIMMING -- every paragraph and every "
+        "image caption, no truncation. You know nothing about this trip beyond what the post "
+        "tells you. Judge ONLY these three criteria: "
         "(c) HTML SANITY -- it reads as clean, well-structured content with no broken/odd "
-        "markup; (d) REPETITION -- no idea, fact, or phrase repeats across sections; "
-        "(e) SMOOTH READ -- it flows naturally and makes sense in chronological and "
-        "geographical order, with no jarring transitions and one consistent authorial voice."
+        "markup; (d) REPETITION -- no idea, fact, or phrase (in body text OR captions) "
+        "repeats across sections; (e) SMOOTH READ -- as you read straight through, does the "
+        "experience ever feel disrupted? Specifically: does the TIMELINE oscillate (jumping "
+        "backward/forward, or restating something as if for the first time after it already "
+        "happened)? Does the GEOGRAPHIC ROUTE oscillate (place names appearing out of travel "
+        "order, or a location revisited with no explanation of returning there)? Are there "
+        "jarring transitions, a shift in authorial voice, or content that appears AFTER the "
+        "post's own closing/sign-off line (e.g. after 'The End.', 'Until next time', or "
+        "similar) as if the post kept going after it already said goodbye?"
         + series_note +
         " Do NOT fact-check individual claims here -- factual accuracy is handled in other "
         "steps; ignore possible factual errors for this pass. Set decision to CERTIFIED if "
@@ -324,16 +332,22 @@ def _document_review(html, context=None, state=None):
         "per criterion -- do not enumerate every instance; be concise so your reply is never "
         "cut off.\n" + _DOC_VERDICT_SHAPE
     )
-    # Send the WHOLE post -- a mid-document cut makes the reviewer report false
-    # "truncated content / unclosed tag" findings (deepseek-v4-pro has a 1M-token
-    # context, so the generous cap only guards against pathological input).
+    # Send the WHOLE post, uncut. The prior 200,000-CHARACTER cap was a stale
+    # holdover that conflated characters with tokens -- deepseek-v4-pro's 1M-TOKEN
+    # context is roughly 4M+ characters, so 200K chars covered under a quarter of
+    # a large real post (observed: an 826KB alaska-cruise post) and the reviewer
+    # never even reached the ending, missing a real defect there entirely
+    # (TICKET-0161). Raised well past any post size seen so far while still
+    # guarding against a truly pathological multi-megabyte input. A mid-document
+    # cut makes the reviewer report false "truncated content/unclosed tag"
+    # findings, so don't lower this without also re-verifying that risk.
     # A document-level verdict can carry several findings per criterion (e.g.
     # multiple repetition hits) -- 2048 tokens was too tight and let DeepSeek's
     # JSON get cut off mid-object, which forced an unparseable-verdict ESCALATE
     # that couldn't be localized/bounced (TICKET-0124). Even 4096 wasn't always
     # enough on a particularly verbose reply (TICKET-0135) -- bumped further and
     # capped findings-per-criterion above so future replies stay well inside budget.
-    user = "Post body:\n" + html[:200000]
+    user = "Post body:\n" + html[:3000000]
     if state:
         state.log_ai_call("phase5_cert", "orchestrator", "reviewer", "pending",
                           "SYSTEM:\n" + system + "\n\nUSER:\n" + user)

@@ -1,0 +1,8 @@
+# TICKET-0160: Trailing generated content landed AFTER the author's own 'The End.' sign-off
+Status: closed
+Priority: Critical
+Type: Bug
+Created: 2026-07-04
+Description: assembler._outro_anchor()'s sign-off detector (_SIGNOFF_RE) only recognized specific phrases from the USA-13 test post's own sign-off style ('until next time, fellow wanderers', 'safe travels', 'happy trails', etc.). The alaska-cruise post's original author instead signed off with a simple standalone 'The End.' -- not matched by any of those phrases -- so _outro_anchor() returned None, and BOTH the last-section factoid (Step 9-F) and the journey-significance paragraph (Step 10) fell through to soup.append() (append at the very end), landing directly AFTER the author's own definitive closing line. Result (reported by the user): the assembled post reads '...Read the full story here: [link].\n\nThe End.\n\nWe travel the Denali Highway...\n\nThrough Ketchikan's misted channels...' -- generated content literally continuing after 'The End.', which is jarring and unnatural. FIX: added _STANDALONE_SIGNOFF_RE -- matches a short paragraph whose ENTIRE text is 'The End.'/'Fin.'/'End.' (exact match, not substring search, so this never misfires on ordinary prose that happens to contain 'the end' mid-sentence, e.g. 'by the end of our trip'). _outro_anchor() now recognizes both signoff styles. Verify: re-run the alaska-cruise post and confirm the factoid + journey-significance paragraph land BEFORE 'The End.', not after it.
+Steps to Reproduce: 
+Notes: Fixed and verified: re-ran the alaska-cruise post twice; 'The End.' is now correctly the final line, with the journey-significance paragraph and last-section factoid landing before it, not after.
