@@ -119,6 +119,19 @@ def _build_prompt(rec):
             + "\nVISIBLE CAPTION: " + (rec["caption"] or "(none)"))
 
 
+def _transcript(state, model, content):
+    """Best-effort append to the run's AI-communications transcript (0140).
+    The transcript is an audit trail, not a load-bearing artifact -- a disk/IO
+    hiccup writing it must never abort the image audit itself."""
+    if not state:
+        return
+    try:
+        state.log_ai_call("1J_image_audit", "orchestrator",
+                          "vlm:" + (model or "none"), model or "none", content)
+    except Exception:
+        pass
+
+
 def _text_key(rec):
     """Digest of the text a verdict was judged against. A cached verdict is
     only valid for the alt/title/caption it actually saw -- if any of them has
@@ -218,6 +231,8 @@ def audit_images(html, state=None, limit=None, log=None):
                     fetch_failures += 1
                     consecutive_failures += 1
                     _log("1J image " + str(rec["index"]) + ": fetch failed (" + str(mime) + ")")
+                    _transcript(state, None, "IMAGE: " + src
+                                + "\nFETCH FAILED (no VLM call made): " + str(mime))
                     if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
                         _log("1J: " + str(consecutive_failures)
                              + " consecutive failures -- provider/network down; stopping audit early")
@@ -229,16 +244,15 @@ def audit_images(html, state=None, limit=None, log=None):
                 review_failures += 1
                 consecutive_failures += 1
                 _log("1J image " + str(rec["index"]) + ": error (" + str(e)[:120] + ")")
+                _transcript(state, None, "IMAGE: " + src
+                            + "\nERROR (call aborted): " + str(e)[:300])
                 if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
                     _log("1J: " + str(consecutive_failures)
                          + " consecutive failures -- provider/network down; stopping audit early")
                     break
                 continue
-            if state:
-                state.log_ai_call("1J_image_audit", "orchestrator", "vlm:" + (model or "none"),
-                                  model or "none",
-                                  "IMAGE: " + src + "\nPROMPT:\n" + _build_prompt(rec)
-                                  + "\n\nRESPONSE:\n" + (raw_text or "")[:4000])
+            _transcript(state, model, "IMAGE: " + src + "\nPROMPT:\n" + _build_prompt(rec)
+                        + "\n\nRESPONSE:\n" + (raw_text or "")[:4000])
             if raw_verdict is None:
                 review_failures += 1
                 consecutive_failures += 1

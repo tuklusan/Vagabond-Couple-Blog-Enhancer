@@ -215,9 +215,11 @@ def test_audit_stops_after_consecutive_failures():
 
 
 class _FakeState:
-    """Just enough of RunState for the progress-cache tests."""
-    def __init__(self, artifacts=None):
+    """Just enough of RunState for the progress-cache/transcript tests."""
+    def __init__(self, artifacts=None, transcript_raises=False):
         self.artifacts = dict(artifacts or {})
+        self.transcript = []
+        self.transcript_raises = transcript_raises
 
     def read_artifact(self, name):
         return self.artifacts.get(name)
@@ -225,8 +227,46 @@ class _FakeState:
     def save_artifact(self, name, obj):
         self.artifacts[name] = obj
 
-    def log_ai_call(self, *a, **kw):
-        pass
+    def log_ai_call(self, node_id, source, target, provider, content):
+        if self.transcript_raises:
+            raise IOError("simulated transcript disk failure")
+        self.transcript.append(content)
+
+
+def test_failure_paths_logged_to_transcript():
+    """Fetch failures and per-image exceptions land in ai_transcript.txt too,
+    and a transcript write failure never aborts the audit."""
+    orig_fetch, orig_inspect = vision_client.fetch_image, vision_client.inspect_image
+    current = {"src": None}
+
+    def fake_fetch(src):
+        current["src"] = src
+        if "p1" in src:
+            return None, "fetch failed: simulated 404"
+        return b"\xff\xd8fakejpeg", "image/jpeg"
+
+    def fake_inspect(image_bytes, mime, prompt, **kw):
+        raise RuntimeError("simulated provider explosion")
+
+    image_audit.vision_client.fetch_image = fake_fetch
+    image_audit.vision_client.inspect_image = fake_inspect
+    try:
+        state = _FakeState()
+        result = image_audit.audit_images(HTML, state=state, limit=0)
+        check("transcript_has_fetch_failure",
+              any("FETCH FAILED" in t and "simulated 404" in t for t in state.transcript),
+              state.transcript)
+        check("transcript_has_error_entry",
+              any("ERROR (call aborted)" in t and "provider explosion" in t
+                  for t in state.transcript), state.transcript)
+        # transcript write failure must not abort the audit
+        state2 = _FakeState(transcript_raises=True)
+        result2 = image_audit.audit_images(HTML, state=state2, limit=0)
+        check("transcript_failure_never_aborts_audit",
+              result2["fetch_failures"] == 1 and result2["review_failures"] == 1, result2)
+    finally:
+        image_audit.vision_client.fetch_image = orig_fetch
+        image_audit.vision_client.inspect_image = orig_inspect
 
 
 def test_progress_cache_reuse_and_staleness():
@@ -322,6 +362,7 @@ def main():
     test_audit_survives_per_image_exception()
     test_audit_stops_after_consecutive_failures()
     test_progress_cache_reuse_and_staleness()
+    test_failure_paths_logged_to_transcript()
     test_caption_correction_must_retain_context()
     test_apply_image_corrections()
     print()
