@@ -66,6 +66,17 @@ def test_downscaled_url():
           == "https://x/img/s320-rj/p.jpg")
     check("no_token_unchanged",
           vision_client.downscaled_url("https://x/img/p.jpg") == "https://x/img/p.jpg")
+    check("rewrite_wikimedia_thumb",
+          vision_client.downscaled_url(
+              "https://upload.wikimedia.org/wikipedia/commons/d/d5/MS_Statendam%28js%2902.jpg")
+          == "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/"
+             "MS_Statendam%28js%2902.jpg/500px-MS_Statendam%28js%2902.jpg")
+    check("rewrite_wikimedia_retry_250px",
+          "250px-" in vision_client.downscaled_url(
+              "https://upload.wikimedia.org/wikipedia/commons/d/d5/x.jpg",
+              vision_client.RETRY_SIZE_TOKEN))
+    check("ua_header_present", "User-Agent" in vision_client.FETCH_HEADERS
+          and "python-requests" not in vision_client.FETCH_HEADERS["User-Agent"])
 
 
 def test_fetch_rejects_unsafe_url():

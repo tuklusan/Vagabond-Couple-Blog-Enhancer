@@ -49,12 +49,36 @@ RETRY_SIZE_TOKEN = "s320-rj"
 MAX_IMAGE_BYTES = 160_000        # stay under NIM's inline-b64 request ceiling
 FETCH_TIMEOUT = 20
 
+# Some image hosts (observed live: upload.wikimedia.org, 403) reject requests
+# bearing the default python-requests User-Agent. Identify honestly per
+# Wikimedia's UA policy: tool name + contact URL (TICKET-0170).
+FETCH_HEADERS = {"User-Agent": "VagabondCoupleBlogEnhancer/1.0 "
+                               "(+https://github.com/tuklusan/Vagabond-Couple-Blog-Enhancer; "
+                               "image caption audit)"}
+
+
+# Wikimedia Commons original: .../wikipedia/commons/<x>/<xy>/<File.ext>
+# Its thumbnail form:          .../wikipedia/commons/thumb/<x>/<xy>/<File.ext>/<N>px-<File.ext>
+_WIKIMEDIA_RE = re.compile(
+    r"^(https://upload\.wikimedia\.org/wikipedia/[^/]+)/([0-9a-f])/([0-9a-f]{2})/([^/]+)$")
+
 
 def downscaled_url(src, token=FETCH_SIZE_TOKEN):
-    """Rewrite a Blogger image URL's size token to the audit fetch size. URLs
-    with no recognizable size token are returned unchanged (the size cap in
+    """Rewrite an image URL to the audit fetch size: Blogger URLs via their
+    size token; Wikimedia originals via the thumbnail path scheme (observed
+    live: a post embedding a 5.6MB Commons original with no size token,
+    TICKET-0170). Unrecognized URLs are returned unchanged (the size cap in
     fetch_image still protects the request payload)."""
-    return _SIZE_TOKEN_RE.sub("/" + token, str(src or ""), count=1)
+    src = str(src or "")
+    m = _WIKIMEDIA_RE.match(src)
+    if m:
+        # Wikimedia only serves the standard thumbnail widths to unauthenticated
+        # clients (rejects arbitrary px with 400, verified live); 500/250 are on
+        # the standard list.
+        px = "250" if token == RETRY_SIZE_TOKEN else "500"
+        return (m.group(1) + "/thumb/" + m.group(2) + "/" + m.group(3) + "/"
+                + m.group(4) + "/" + px + "px-" + m.group(4))
+    return _SIZE_TOKEN_RE.sub("/" + token, src, count=1)
 
 
 def fetch_image(src):
@@ -68,7 +92,7 @@ def fetch_image(src):
         if not _is_safe_public_url(url):
             return None, "unsafe url"
         try:
-            resp = requests.get(url, timeout=FETCH_TIMEOUT)
+            resp = requests.get(url, timeout=FETCH_TIMEOUT, headers=FETCH_HEADERS)
             resp.raise_for_status()
         except requests.exceptions.RequestException as e:
             last_reason = "fetch failed: " + str(e)[:120]
