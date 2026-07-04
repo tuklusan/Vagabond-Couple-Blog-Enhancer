@@ -726,7 +726,12 @@ def step3_summary_block() -> GenerativeNode:
         id="step3_summary_block", label="Step 3 - Summary block content",
         build_writer_prompt=writer, deterministic_check=deterministic,
         build_review_prompt=review, web_search=False,
-        writer_max_tokens=900, review_max_tokens=1536, temperature=0.2,
+        # 900/1536 was tuned against posts with ~6-14 sections. A post with many
+        # more sections (observed: 17, the alaska-cruise post) needs a full label
+        # + narrative + one complete row per section in a single completion --
+        # the writer kept truncating well short of all rows at the old budget
+        # (TICKET-0156). Bumped generously so row count scales with real posts.
+        writer_max_tokens=2200, review_max_tokens=2400, temperature=0.2,
     )
 
 

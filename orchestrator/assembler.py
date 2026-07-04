@@ -241,6 +241,35 @@ def _video_id(src):
     return m.group(1) if m else None
 
 
+def _safe_caption_html(nodes):
+    """Render a list of caption nodes (mixed NavigableString/Tag) to a caption
+    HTML fragment that preserves a genuine <a href="http(s)://...">...</a> link
+    (e.g. a 'Watch: <a href=...>Video credit</a>' legacy caption) but drops any
+    OTHER tag/attribute and rejects any non-http(s) href -- so this can never
+    reopen the XSS surface TICKET-0061 closed, while no longer silently
+    dropping a real source href out of a video caption (TICKET-0152)."""
+    from bs4 import NavigableString, Comment, Tag
+    out = []
+
+    def walk(n):
+        if isinstance(n, Comment):
+            return
+        if isinstance(n, NavigableString):
+            out.append(_esc(str(n)))
+        elif isinstance(n, Tag):
+            if n.name == "a":
+                href = n.get("href", "") or ""
+                if re.match(r"^https?://", href, re.IGNORECASE):
+                    out.append('<a href="' + _attr(href) + '">' + _esc(n.get_text()) + "</a>")
+                    return
+            for child in n.children:
+                walk(child)
+
+    for node in nodes:
+        walk(node)
+    return "".join(out).strip()
+
+
 def reemit_youtube(html):
     """Normalise every YouTube embed to the project template (preserve id+caption)."""
     template = _youtube_template()
@@ -268,27 +297,31 @@ def reemit_youtube(html):
                  and len(p2.find_all(True, recursive=False)) <= 2)
         wrapper = p2 if climb else p1
         # caption: nearest tr-caption <p> in the embed wrapper, else iframe title
-        caption = ""
+        caption_html, caption_text = "", ""
         if wrapper is not None and hasattr(wrapper, "find"):
             cap = wrapper.find("p", class_=lambda c: c and "tr-caption" in c)
             if cap:
-                caption = cap.get_text(" ", strip=True)
-        if not caption and not climb and wrapper is not None and hasattr(wrapper, "contents"):
+                caption_html = _safe_caption_html(list(cap.children))
+                caption_text = cap.get_text(" ", strip=True)
+        if not caption_html and not climb and wrapper is not None and hasattr(wrapper, "contents"):
             # Legacy Blogger embed: no tr-caption <p> at all -- the caption is
-            # loose text sitting right after a <br/>, a direct sibling of the
-            # iframe inside the same wrapper (e.g. '<iframe>...</iframe><br />
-            # Watch: Exploring ...'). Grab that loose text (TICKET-0126).
-            loose = " ".join(
-                s.strip() for s in wrapper.find_all(string=True, recursive=False)
-                if isinstance(s, NavigableString) and not isinstance(s, Comment) and s.strip()
-            )
-            if loose:
-                caption = loose
+            # loose text/links sitting right after a <br/>, direct siblings of
+            # the iframe in the same wrapper (e.g. '<iframe>...</iframe><br />
+            # Watch: <a href="...">Video credit</a>'). Collect every direct
+            # child of the wrapper EXCEPT the iframe itself (TICKET-0126/0152).
+            caption_nodes = [c for c in wrapper.contents if c is not iframe]
+            caption_html = _safe_caption_html(caption_nodes)
+            caption_text = "".join(
+                c.get_text(" ", strip=True) if hasattr(c, "get_text") else str(c)
+                for c in caption_nodes
+            ).strip()
         # Escape source-provided title/caption before templating (TICKET-0061):
-        # title lands in a double-quoted attribute; caption in element text.
+        # title lands in a double-quoted attribute (plain text only -- a tag
+        # can't go in an attribute), caption in element content (safe HTML,
+        # TICKET-0152).
         block = (template.replace("[VIDEO_ID]", vid)
-                 .replace("[VIDEO TITLE]", _attr(title or caption or "Video"))
-                 .replace("[CAPTION TEXT]", _esc(caption or title or "")))
+                 .replace("[VIDEO TITLE]", _attr(title or caption_text or "Video"))
+                 .replace("[CAPTION TEXT]", caption_html or _esc(title or "")))
         new_node = _frag(block)
         target = wrapper if (wrapper is not None and wrapper.name == "div") else iframe
         target.replace_with(new_node)

@@ -14,7 +14,7 @@ route, sections, stops, and landmarks without any operator data entry.
 import json
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 
 from . import validators
 
@@ -196,8 +196,11 @@ def extract_context(html, allow_llm=False):
         ctx["covers"] = (schema.get("description", "") or "")[:220]
         ctx["existing_facts"] = "\n".join(facts[:25])
 
-    # sections: body H2s first, else summary-block descriptors
-    h2s = [h.get_text(strip=True) for h in soup.find_all("h2")]
+    # sections: body H2s first, else summary-block descriptors. validators.
+    # body_h2_tags() excludes any H2 in the pre-fold zone (before <!--more-->)
+    # -- not a real content section (some legacy Blogger posts style the
+    # post's own TITLE as an H2 above the fold; TICKET-0154/0158).
+    h2s = [h.get_text(strip=True) for h in validators.body_h2_tags(html)]
     sections = [t for t in h2s if t.lower() not in ("route at a glance", "next stop")]
     if not sections:
         sections = _summary_row_sections(html)

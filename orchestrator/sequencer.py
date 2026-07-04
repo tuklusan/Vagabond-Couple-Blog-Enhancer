@@ -266,12 +266,15 @@ def generative_node(node_id, phase, spec_factory, optional=False):
 
 
 def _section_items(sctx):
-    """Per-section items for Step 9-F: each top-level H2 (excluding nav headings)."""
+    """Per-section items for Step 9-F: each top-level H2 (excluding nav headings).
+    validators.body_h2_tags() excludes any H2 in the pre-fold zone (before
+    <!--more-->) -- not a real content section (some legacy Blogger posts
+    style the post's own TITLE as an H2 above the fold; TICKET-0154/0158) --
+    generating a section-closing factoid for it would waste a round-trip and
+    read as a redundant restatement of the whole post's scope."""
     html = sctx.state.get_working_html()
-    from bs4 import BeautifulSoup
-    soup = BeautifulSoup(html, "html.parser")
     out = []
-    for h in soup.find_all("h2"):
+    for h in validators.body_h2_tags(html):
         t = h.get_text(strip=True)
         if t and t.lower() not in ("route at a glance", "next stop", "route summary"):
             out.append({"section_topic": t, "subject": t})

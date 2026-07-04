@@ -20,7 +20,9 @@ import json
 
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
+
+from . import validators
 
 # The author block is a rev-14 constant across every post (validators.author_ok
 # checks it exactly).
@@ -49,6 +51,17 @@ _US_STATES = {
     "WI": "Wisconsin", "WY": "Wyoming",
 }
 
+# Canadian province/territory abbreviations -> full name, for the same schema
+# place-name normalization as US states (TICKET-0157) -- 'Vancouver, BC' should
+# read as consistently as 'Fairbanks, Alaska, USA', not asymmetrically bare.
+_CA_PROVINCES = {
+    "AB": "Alberta", "BC": "British Columbia", "MB": "Manitoba",
+    "NB": "New Brunswick", "NL": "Newfoundland and Labrador",
+    "NS": "Nova Scotia", "NT": "Northwest Territories", "NU": "Nunavut",
+    "ON": "Ontario", "PE": "Prince Edward Island", "QC": "Quebec",
+    "SK": "Saskatchewan", "YT": "Yukon",
+}
+
 
 def _place_key(name):
     """Dedup key = the leading place token before any comma, lowercased. Collapses
@@ -63,21 +76,29 @@ def _is_state_fragment(name):
 
 
 def _full_place_name(name):
-    """Expand a trailing 2-letter US state and append USA -- 'Oakhurst, CA' ->
-    'Oakhurst, California, USA' (TICKET-0108). Only a place that actually names a
-    US state gets 'USA' appended -- a non-US place ('Kyiv, Ukraine') must be left
-    alone, not have the wrong country forced onto it (TICKET-0128). Already-full
-    names are untouched either way."""
+    """Expand a trailing 2-letter US state/Canadian province and append the
+    country -- 'Oakhurst, CA' -> 'Oakhurst, California, USA' (TICKET-0108),
+    'Vancouver, BC' -> 'Vancouver, British Columbia, Canada' (TICKET-0157).
+    Only a place that actually names a recognized state/province gets a country
+    appended -- a non-US/non-CA place ('Kyiv, Ukraine') must be left alone, not
+    have the wrong country forced onto it (TICKET-0128). Already-full names are
+    untouched either way."""
     n = (name or "").strip()
     if not n:
         return n
     parts = [p.strip() for p in n.split(",") if p.strip()]
-    is_us_state = len(parts) >= 2 and parts[-1].upper() in _US_STATES
+    last = parts[-1].upper() if parts else ""
+    is_us_state = len(parts) >= 2 and last in _US_STATES
+    is_ca_province = len(parts) >= 2 and not is_us_state and last in _CA_PROVINCES
     if is_us_state:
-        parts[-1] = _US_STATES[parts[-1].upper()]
+        parts[-1] = _US_STATES[last]
+    elif is_ca_province:
+        parts[-1] = _CA_PROVINCES[last]
     full = ", ".join(parts)
     if is_us_state and not re.search(r"\b(usa|u\.s\.a\.|united states)\b", full, re.IGNORECASE):
         full += ", USA"
+    elif is_ca_province and not re.search(r"\bcanada\b", full, re.IGNORECASE):
+        full += ", Canada"
     return full
 
 
@@ -98,7 +119,13 @@ def _instrument(context):
     if isinstance(v, str) and v.strip():
         return {"@type": "Vehicle", "name": v.strip()}
     method = (context.get("method") or "").strip()
-    if method:
+    # A real transit/vehicle NAME is a short noun phrase ('escalator', 'ferry')
+    # -- a multi-clause VERB phrase like 'sailed and drove' (a combined cruise
+    # + road-trip journey) is grammatically wrong as a Vehicle name and must
+    # not be used verbatim; fall back to the safe generic default instead of
+    # fabricating or mangling a compound method into a fake proper noun
+    # (TICKET-0154).
+    if method and len(method.split()) <= 2 and " and " not in method.lower():
         return {"@type": "Vehicle", "name": method[:1].upper() + method[1:]}
     return {"@type": "Vehicle", "name": "Overland vehicle"}
 
@@ -114,10 +141,13 @@ def _tourist_type(context):
 
 
 def _post_h2_sections(html):
-    """Real top-level H2 section names in the (assembled) post body, in order."""
-    soup = BeautifulSoup(html, "html.parser")
+    """Real top-level H2 section names in the (assembled) post body, in order.
+    validators.body_h2_tags() excludes any H2 in the pre-fold zone (before
+    <!--more-->) -- not a real content section (some legacy Blogger posts
+    style the post's own TITLE as an H2 above the fold), and that must not
+    become a hasPart entity (TICKET-0154/0158)."""
     out = []
-    for h in soup.find_all("h2"):
+    for h in validators.body_h2_tags(html):
         t = h.get_text(strip=True)
         if t and t.lower() not in _SKIP_H2:
             out.append(t)
@@ -193,10 +223,9 @@ def build_haspart(context, html=""):
     seen = set()
 
     # Map H2 element -> its distinctive terms, for section-leg descriptions (0108).
-    soup = BeautifulSoup(html, "html.parser") if html else None
     h2_terms = {}
-    if soup is not None:
-        for h in soup.find_all("h2"):
+    if html:
+        for h in validators.body_h2_tags(html):
             t = h.get_text(strip=True)
             if t and t.lower() not in _SKIP_H2:
                 h2_terms[t.strip().lower()] = _section_terms(h)

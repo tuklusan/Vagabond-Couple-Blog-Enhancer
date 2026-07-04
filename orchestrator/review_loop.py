@@ -224,10 +224,29 @@ def run_generative_node(spec, context, max_rounds=None, verbose=True, state=None
 # ===========================================================================
 # Tier-2 -- document-level certification (Step 14 + Phase 5, Rule G2 two-pass)
 # ===========================================================================
-def document_deterministic_checklist(html, original_hrefs=None):
+def _new_forbidden_hits(html, baseline_forbidden):
+    """Forbidden-term hits in the assembled doc that are NEW or MORE FREQUENT than
+    in the original, untouched source (as already audited, read-only, by Phase
+    1I). A long, prose-rich original post routinely contains a word like
+    'naturally' or 'testament to' in ordinary human writing -- Phase 1I already
+    surfaces that as an advisory finding, so Phase 5 hard-blocking on the SAME
+    pre-existing occurrence makes long posts uncertifiable for content the
+    orchestrator was never asked to touch. Only a hit count that increased (a
+    generated fragment introduced or repeated a banned term) blocks (TICKET-0152)."""
+    hits = validators.scan_forbidden(validators.plain_text(html))
+    if not baseline_forbidden:
+        return hits
+    baseline_counts = {(h["term"], h["kind"]): h["count"] for h in baseline_forbidden}
+    return [h for h in hits if h["count"] > baseline_counts.get((h["term"], h["kind"]), 0)]
+
+
+def document_deterministic_checklist(html, original_hrefs=None, baseline_forbidden=None):
     """
     G2 Pass 2 -- re-derive every mechanical fact from the assembled output (not
     from memory of the per-node verdicts). Pure code; no LLM.
+
+    baseline_forbidden (optional): the Phase 1I forbidden-term hits on the
+    ORIGINAL source, so no_forbidden only fails on NEW hits (TICKET-0152).
     """
     # Each check is wrapped so a validator bug/edge case marks that check failed
     # rather than aborting the whole certification (TICKET-0015).
@@ -245,7 +264,7 @@ def document_deterministic_checklist(html, original_hrefs=None):
     _chk("no_consecutive_images", lambda: len(validators.consecutive_image_pairs(html)) == 0)
     _chk("summary_present", lambda: validators.summary_block(html)["present"])
     _chk("no_ufffd", lambda: validators.scan_question_marks(html)["ufffd_count"] == 0)
-    _chk("no_forbidden", lambda: len(validators.scan_forbidden(validators.plain_text(html))) == 0)
+    _chk("no_forbidden", lambda: len(_new_forbidden_hits(html, baseline_forbidden)) == 0)
     # Route at a Glance is one item per GEOGRAPHIC stop in travel order (workflow
     # line 356) -- deliberately decoupled from the H2 section count (that is the
     # summary block's job). So only require RAAG, if present, to be a non-empty list.
@@ -374,7 +393,13 @@ def run_document_certification(state, run_reviewer=True, context=None):
     if inv:
         original_hrefs = (inv.get("internal_links") or []) + (inv.get("external_links") or [])
 
-    pass2 = document_deterministic_checklist(html, original_hrefs)
+    try:
+        audit_1i = state.read_artifact("analysis_1I_writing_rules")
+    except Exception:
+        audit_1i = None
+    baseline_forbidden = (audit_1i or {}).get("forbidden")
+
+    pass2 = document_deterministic_checklist(html, original_hrefs, baseline_forbidden)
     pass1 = None
     if run_reviewer:
         try:

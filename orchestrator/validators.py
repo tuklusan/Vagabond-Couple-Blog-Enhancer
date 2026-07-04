@@ -32,6 +32,32 @@ def _soup(html: str) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
+def body_h2_tags(html):
+    """<h2> tags in the post BODY only (after <!--more-->), in document order.
+
+    An H2 in the PRE-FOLD zone is not a real content section -- some legacy
+    Blogger templates style the post's own TITLE as an H2 sitting above the
+    fold (observed on the alaska-cruise post). Treating it as a section
+    pollutes the summary block, RAAG, schema hasPart, and Step 9-F factoids
+    with a bogus entry that just restates the whole post's scope. This one
+    helper is the single source of truth for "real content sections" --
+    consolidated after the same fix was applied independently at 3+ call
+    sites (TICKET-0154/0158). Returns Tag objects (not soup, not text) so
+    callers can still walk siblings/find_next as needed.
+    """
+    soup = _soup(html)
+    has_more = any(isinstance(c, Comment) and c.strip() == "more" for c in soup.descendants)
+    out = []
+    more_seen = not has_more
+    for el in soup.descendants:
+        if isinstance(el, Comment) and el.strip() == "more":
+            more_seen = True
+            continue
+        if more_seen and getattr(el, "name", None) == "h2":
+            out.append(el)
+    return out
+
+
 def plain_text(html: str) -> str:
     """Visible prose only (excludes tags AND HTML comments)."""
     return BeautifulSoup(html, "html.parser").get_text(separator=" ", strip=True)
@@ -429,7 +455,7 @@ def summary_block(html: str):
 # ===========================================================================
 def raag_vs_h2(html: str):
     soup = _soup(html)
-    h2s = [h.get_text(strip=True) for h in soup.find_all("h2")]
+    h2s = [h.get_text(strip=True) for h in body_h2_tags(html)]
     section_h2 = [t for t in h2s if t.lower() not in ("route at a glance", "next stop")]
     raag = None
     for h in soup.find_all("h2"):
