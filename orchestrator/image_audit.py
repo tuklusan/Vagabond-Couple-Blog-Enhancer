@@ -30,8 +30,11 @@ Anti-hallucination policy (the heart of this pass):
 Resumability (G4): verdicts are cached per-image in the run's
 `1J_image_audit_progress` artifact as they land, so a 400-photo audit that
 dies at image 250 resumes from 251, and a re-run never re-pays for images
-already audited.
+already audited. Each cached verdict carries a digest of the alt/title/caption
+it was judged against; if that text has changed since (operator edit, applied
+correction), the entry is stale and the image is re-audited (TICKET-0169).
 """
+import hashlib
 import json
 import os
 import re
@@ -116,6 +119,15 @@ def _build_prompt(rec):
             + "\nVISIBLE CAPTION: " + (rec["caption"] or "(none)"))
 
 
+def _text_key(rec):
+    """Digest of the text a verdict was judged against. A cached verdict is
+    only valid for the alt/title/caption it actually saw -- if any of them has
+    changed since (operator edit, prior applied correction), the cache entry is
+    stale and the image must be re-audited (TICKET-0169)."""
+    blob = "\x1f".join((rec["alt"], rec["title"], rec["caption"]))
+    return hashlib.sha256(blob.encode("utf-8", "replace")).hexdigest()[:16]
+
+
 def _clean_field(verdict, field):
     """Normalize one field's sub-verdict; unknown/missing statuses degrade to
     PLAUSIBLE (never invent a contradiction the model didn't assert)."""
@@ -189,8 +201,9 @@ def audit_images(html, state=None, limit=None, log=None):
         src = rec["src"]
         if not src:
             continue
-        if src in progress:
-            verdict = progress[src]
+        cached = progress.get(src)
+        if cached and cached.get("text_key") == _text_key(rec):
+            verdict = cached
             consecutive_failures = 0
         else:
             # Per-image resilience (TICKET-0168, same precedent as TICKET-0143's
@@ -237,7 +250,7 @@ def audit_images(html, state=None, limit=None, log=None):
                 continue
             consecutive_failures = 0
             verdict = {"visible_description": str(raw_verdict.get("visible_description", ""))[:400],
-                       "model": model}
+                       "model": model, "text_key": _text_key(rec)}
             for field in ("alt", "title", "caption"):
                 verdict[field] = _clean_field(raw_verdict, field)
             progress[src] = verdict

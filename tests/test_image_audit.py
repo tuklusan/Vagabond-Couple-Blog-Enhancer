@@ -214,6 +214,65 @@ def test_audit_stops_after_consecutive_failures():
           result["fetch_failures"] == image_audit.MAX_CONSECUTIVE_FAILURES, result)
 
 
+class _FakeState:
+    """Just enough of RunState for the progress-cache tests."""
+    def __init__(self, artifacts=None):
+        self.artifacts = dict(artifacts or {})
+
+    def read_artifact(self, name):
+        return self.artifacts.get(name)
+
+    def save_artifact(self, name, obj):
+        self.artifacts[name] = obj
+
+    def log_ai_call(self, *a, **kw):
+        pass
+
+
+def test_progress_cache_reuse_and_staleness():
+    """A cached verdict is reused only for the exact alt/title/caption it was
+    judged against; changed text forces a re-audit (TICKET-0169)."""
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    clean = {"status": "MATCH", "reason": "", "corrected": ""}
+    verdict = {"visible_description": "x", "model": "mock",
+               "alt": clean, "title": clean, "caption": clean}
+    rec = image_audit.collect_image_records(CAPTIONED)[0]
+    fresh_key = image_audit._text_key(rec)
+
+    calls = {"n": 0}
+    orig_fetch, orig_inspect = vision_client.fetch_image, vision_client.inspect_image
+
+    def fake_fetch(src):
+        return b"\xff\xd8fakejpeg", "image/jpeg"
+
+    def fake_inspect(image_bytes, mime, prompt, **kw):
+        calls["n"] += 1
+        return {"visible_description": "x", "alt": clean, "title": clean,
+                "caption": clean}, "raw", "mock"
+
+    image_audit.vision_client.fetch_image = fake_fetch
+    image_audit.vision_client.inspect_image = fake_inspect
+    try:
+        # 1) cache entry judged against the CURRENT text -> reused, no VLM call
+        state = _FakeState({"1J_image_audit_progress":
+                            {src1: dict(verdict, text_key=fresh_key)}})
+        result = image_audit.audit_images(CAPTIONED, state=state, limit=0)
+        check("cache_hit_no_vlm_call", calls["n"] == 0 and result["images_audited"] == 1,
+              (calls["n"], result["images_audited"]))
+        # 2) cache entry judged against STALE text -> re-audited
+        state = _FakeState({"1J_image_audit_progress":
+                            {src1: dict(verdict, text_key="0123456789abcdef")}})
+        result = image_audit.audit_images(CAPTIONED, state=state, limit=0)
+        check("cache_stale_reaudited", calls["n"] == 1 and result["images_audited"] == 1,
+              (calls["n"], result["images_audited"]))
+        # and the refreshed entry carries the current text_key
+        refreshed = state.artifacts["1J_image_audit_progress"][src1]
+        check("cache_refreshed_key", refreshed.get("text_key") == fresh_key)
+    finally:
+        image_audit.vision_client.fetch_image = orig_fetch
+        image_audit.vision_client.inspect_image = orig_inspect
+
+
 def test_caption_correction_must_retain_context():
     src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
     verdicts = {src1: {
@@ -262,6 +321,7 @@ def main():
     test_unknown_status_degrades_to_plausible()
     test_audit_survives_per_image_exception()
     test_audit_stops_after_consecutive_failures()
+    test_progress_cache_reuse_and_staleness()
     test_caption_correction_must_retain_context()
     test_apply_image_corrections()
     print()
