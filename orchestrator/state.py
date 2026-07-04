@@ -20,6 +20,7 @@ Layout (under Output/runs/<run_id>/):
 import json
 import os
 import re
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -47,10 +48,12 @@ def _safe_artifact_name(name: str) -> str:
 
 def _atomic_write_text(path: Path, text: str):
     """Write via a temp file + atomic replace so a crash mid-write never leaves a
-    truncated/partial file for a concurrent reader (TICKET-0019/0020). The temp name
-    includes the pid so concurrent writers don't clobber each other's temp file
-    (TICKET-0075)."""
-    tmp = path.with_suffix(path.suffix + "." + str(os.getpid()) + ".tmp")
+    truncated/partial file for a concurrent reader (TICKET-0019/0020). The temp
+    name includes the pid so concurrent PROCESSES don't clobber each other's temp
+    file (TICKET-0075) -- plus the thread id so concurrent THREADS within the same
+    process (sharing one pid) don't either (TICKET-0144)."""
+    tmp = path.with_suffix(
+        path.suffix + "." + str(os.getpid()) + "-" + str(threading.get_ident()) + ".tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
 
