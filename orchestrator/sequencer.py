@@ -181,6 +181,14 @@ def build_phase4_summary(state):
     qm = state.read_artifact("1G_encoding")
     if qm:
         parts.append("Encoding (1G): suspect=" + str(qm["suspect"]) + " ufffd=" + str(qm["ufffd_count"]))
+    ia = state.read_artifact("1J_image_audit")
+    if ia and ia.get("status") == "ok":
+        parts.append("Image audit (1J): audited " + str(ia.get("images_audited", 0)) + "/"
+                     + str(ia.get("images_total", 0)) + " images; contradicted="
+                     + str(ia.get("contradicted_count", 0)) + ", corrections to apply="
+                     + str(len(ia.get("corrections") or [])))
+    elif ia:
+        parts.append("Image audit (1J): " + str(ia.get("status")))
     return "\n".join(parts) if parts else "(no analysis artifacts available)"
 
 
@@ -469,6 +477,45 @@ def analysis_node(node_id, phase):
     return SeqNode(node_id, phase, "analysis", handler)
 
 
+def image_audit_node():
+    """Phase 1 / 1J -- visual image audit (TICKET-0167): a NIM vision model looks
+    at every photograph and flags alt/title/caption text the visible content
+    CONTRADICTS (subject-category impossibility only -- proper nouns are
+    unverifiable from pixels and never flagged). Gated corrections land in the
+    1J artifact and are applied deterministically at Phase 5 assembly. Opt out
+    with ORCH_IMAGE_AUDIT=0. An audit outage (no key, all models down) records
+    status=unavailable and continues -- this pass improves the post, it must
+    never block the pipeline."""
+    def handler(sctx):
+        if sctx.dry_generative:
+            return {"complete": True, "note": "[dry] image audit stubbed"}
+        if os.environ.get("ORCH_IMAGE_AUDIT", "1") == "0":
+            sctx.state.save_artifact("1J_image_audit", {"status": "disabled"})
+            return {"complete": True, "note": "image audit disabled (ORCH_IMAGE_AUDIT=0)"}
+        from . import image_audit
+        try:
+            result = image_audit.audit_images(sctx.state.get_working_html(),
+                                              state=sctx.state,
+                                              log=lambda m: print(_ascii("   " + m)))
+        except Exception as e:
+            sctx.state.save_artifact("1J_image_audit",
+                                     {"status": "unavailable", "error": str(e)[:200]})
+            return {"complete": True,
+                    "note": "image audit unavailable (" + str(e)[:120] + ") -- continuing"}
+        result["status"] = "ok"
+        sctx.state.save_artifact("1J_image_audit", result)
+        return {"complete": True, "output_ref": "1J_image_audit",
+                "note": ("audited " + str(result["images_audited"]) + "/"
+                         + str(result["images_total"]) + " image(s); contradicted="
+                         + str(result["contradicted_count"]) + " corrections="
+                         + str(len(result["corrections"]))
+                         + (" fetch_fail=" + str(result["fetch_failures"])
+                            if result["fetch_failures"] else "")
+                         + (" review_fail=" + str(result["review_failures"])
+                            if result["review_failures"] else ""))}
+    return SeqNode("1J_image_audit", "Phase 1 / 1J - Visual image audit (VLM)", "analysis", handler)
+
+
 def context_extraction_node():
     """Derive the generative context (route, sections, stops, landmarks) from the
     source post -- deterministically, from its existing schema + structure."""
@@ -579,7 +626,9 @@ def _assemble_working(sctx):
     desc_art = sctx.state.read_artifact("gen_step2f_search_description")
     if desc_art and desc_art.get("status") == "CERTIFIED" and desc_art.get("output"):
         sctx.context["schema_description"] = desc_art["output"].strip()
-    assembled = assembler.assemble(src_html, fragments or None, context=sctx.context)
+    ia = sctx.state.read_artifact("1J_image_audit") or {}
+    assembled = assembler.assemble(src_html, fragments or None, context=sctx.context,
+                                   image_corrections=ia.get("corrections"))
     sctx.state.set_working_html(assembled)
     return len(fragments)
 
@@ -781,6 +830,7 @@ def build_full_sequence():
         d("1F_summary_block", "Phase 1 / 1F - Summary block audit", validators.summary_block),
         a("1H_repetition", "Phase 1 / 1H - Repetition scan"),
         a("1I_writing_rules", "Phase 1 / 1I - Writing-rules audit (existing prose)"),
+        image_audit_node(),   # 1J -- visual image audit (TICKET-0167)
         # Phase 2
         phase2_url_lock_node(),
         # Phase 3 -- pre-fold zone

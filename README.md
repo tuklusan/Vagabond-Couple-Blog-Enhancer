@@ -96,6 +96,13 @@ It will, for a given post:
 
 - Audit media/links, character encoding, the summary block, schema, and
   `<!--more-->` placement.
+- **Visually audit every photograph** (Phase 1/1J, TICKET-0167): an NVIDIA NIM
+  vision model looks at each image and flags alt/title/caption text the visible
+  content contradicts (wrong primary subject only — proper nouns, vantage
+  points, and details beyond the frame are unverifiable from pixels and never
+  flagged). Gated corrections are applied at Phase 5 assembly; risky ones
+  (linked captions, place-name-dropping caption rewrites) are recorded as
+  operator findings instead of auto-applied.
 - Generate (and **fact-check**) a route-first first paragraph, a route summary
   box, a "Route at a Glance" list, section-closing factoids, a journey-
   significance paragraph, image separators, an SEO title, and a search
@@ -162,7 +169,7 @@ one writer and one reviewer.
 | **OpenRouter** | Writer (primary) | <https://openrouter.ai/keys> | Free models available (`openrouter/free`). Key looks like `sk-or-v1-…`. |
 | **DeepSeek** | Writer fallback **+ Reviewer fallback** | <https://platform.deepseek.com/api_keys> | Paid but inexpensive. Used as the **universal reviewer fallback** when Claude is unusable. |
 | **Anthropic (Claude)** | Reviewer (primary, **web-grounded**) | <https://console.anthropic.com/settings/keys> | Key looks like `sk-ant-…`. **Requires a positive credit balance** (Plans & Billing) or every call returns `400: credit balance too low`. Web-grounded fact-checking only works here. |
-| **NVIDIA NIM** | Writer fallback | <https://build.nvidia.com/> | Optional; last-resort writer fallback. |
+| **NVIDIA NIM** | Writer fallback + 1J vision audit | <https://build.nvidia.com/> | Optional for writing (last-resort writer fallback); **required for the Phase 1/1J visual image audit** (the only provider in the stack that can look at a photograph — without this key 1J records `unavailable` and the run continues). |
 
 > **Minimum viable setup:** OpenRouter (free) for the writer + DeepSeek for the
 > reviewer. Fact-checking then runs on DeepSeek's own knowledge (no live web). Add
@@ -370,6 +377,10 @@ All optional; sensible defaults shown.
 | `ORCH_RUN_ROOT` | `Output/runs` | Where run state is written. |
 | `ORCH_MAX_NODE_ROUNDS` | `6` | Writer↔reviewer rounds per node before escalating to the operator. |
 | `ORCH_GATE_FAIL_CLOSED` | `0` | `1` = block on a total review outage instead of failing open. |
+| `ORCH_IMAGE_AUDIT` | `1` | `0` disables the Phase 1/1J visual image audit entirely. |
+| `ORCH_IMAGE_AUDIT_LIMIT` | `0` (all images) | Cap the number of images audited per run (smoke tests / metered runs). |
+| `ORCH_VLM_MODEL` | `meta/llama-3.2-90b-vision-instruct` | Primary NIM vision model for 1J; fixed fallbacks `nvidia/nemotron-nano-12b-v2-vl` then `microsoft/phi-4-multimodal-instruct`. |
+| `ORCH_MAX_PASS1_BOUNCES` | `3` | Phase 5 Pass-1 REVISE bounces (factoid drop / passage rewrite) before halting for the operator. |
 | `OPENROUTER_MODEL` | `openrouter/free` | Writer model. `openrouter/free` is a non-deterministic router (a different model per call). Set to **`auto`** to have the code query OpenRouter's `/models` and pick the best available **free instruct** model (stable + clean content), or pin a specific `…:free` id yourself. |
 | `OPENROUTER_REASONING_EFFORT` | `` (off; `none` auto-applied on a pinned/`auto` instruct model) | OpenRouter reasoning effort. `none` returns the answer directly (no chain-of-thought) — valid only on a specific instruct model, **not** the `openrouter/free` router (which rejects it with 400). |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter endpoint. |
@@ -389,7 +400,8 @@ python tests/test_context.py           # source-context extraction
 python tests/test_assembler.py         # HTML transforms + fragment splicing
 python tests/test_sequencer.py         # G4 gate, Phase 4 block/pass
 python tests/test_document_cert.py     # G2 Pass 2 (deterministic re-derivation)
-python tests/test_full_sequence.py     # full 24-node canonical dry walk
+python tests/test_full_sequence.py     # full 28-node canonical dry walk
+python tests/test_image_audit.py       # 1J visual image audit (VLM mocked)
 ```
 
 Live tests (consume tokens; need writer + reviewer keys):

@@ -14,7 +14,7 @@ their canonical positions.
 """
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 from . import config
 from .validators import INTERNAL_HOST, CAPTION_TABLE_CLASS
@@ -688,15 +688,49 @@ def strip_empty_paragraphs(html):
 # ---------------------------------------------------------------------------
 # Top-level assembly
 # ---------------------------------------------------------------------------
-def assemble(html, fragments=None, context=None):
+def apply_image_corrections(html, corrections):
+    """Apply gated 1J image-audit corrections (TICKET-0167): per image src,
+    replace the alt/title attributes and (only when the audit certified it as
+    link-free) the visible caption text. Purely deterministic -- the judgment
+    happened at Phase 1/1J; this just applies what the artifact recorded.
+    Returns (html, applied_count)."""
+    if not corrections:
+        return html, 0
+    by_src = {c.get("src"): c for c in corrections if c.get("src")}
+    soup = BeautifulSoup(html, "html.parser")
+    applied = 0
+    for img in soup.find_all("img"):
+        corr = by_src.get(img.get("src") or "")
+        if not corr:
+            continue
+        for attr in ("alt", "title"):
+            if corr.get(attr):
+                img[attr] = corr[attr]
+                applied += 1
+        if corr.get("caption"):
+            table = img.find_parent("table", class_=lambda c: c and "tr-caption-container" in c)
+            cap = table.find("td", class_=lambda c: c and "tr-caption" in c) if table else None
+            if cap is not None and not cap.find("a"):   # re-verify link-free before touching (G3)
+                cap.clear()
+                cap.append(NavigableString(corr["caption"]))
+                applied += 1
+    return str(soup), applied
+
+
+def assemble(html, fragments=None, context=None, image_corrections=None):
     """Run the deterministic transforms (and splice fragments if provided).
 
     context (the extracted route/section context) enables pre-fold generation:
     build the canonical summary block from the Step-3 fragment (when the source has
     none) plus the TravelAction schema, with <!--more--> immediately after </script>.
+
+    image_corrections (optional): the gated corrections list from the 1J visual
+    image audit artifact, applied as one more deterministic transform.
     """
     if not isinstance(html, str):
         raise ValueError("assemble() requires html to be a string, got " + type(html).__name__)
+    if image_corrections:
+        html, _ = apply_image_corrections(html, image_corrections)
     html, _ = remove_m1_internal(html)
     html, _ = reemit_youtube(html)
     html, _ = strip_body_inline_styles(html)

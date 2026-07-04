@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Supratim Sanyal, SANYALnet Labs. All rights reserved.
+# Limited Source-Code Viewing License -- view-only. No execution, modification,
+# redistribution, production use, or AI/ML training. Full terms: see LICENSE
+# (repo root) or https://github.com/tuklusan/Vagabond-Couple-Blog-Enhancer/blob/master/LICENSE
+"""
+Tests for the 1J visual image audit (TICKET-0167). The VLM and network are
+mocked -- these verify the deterministic halves: record collection, the
+downscale URL rewrite, verdict gating (visible-contradiction only, writing
+rules, linked captions), and the Phase 5 correction application.
+"""
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+from orchestrator import assembler, image_audit, vision_client  # noqa: E402
+
+FAILS = []
+
+
+def check(name, cond, detail=""):
+    print((("[PASS] " if cond else "[FAIL] ") + name + " " + str(detail))
+          .encode("ascii", "replace").decode("ascii"))
+    if not cond:
+        FAILS.append(name)
+
+
+CAPTIONED = (
+    '<table class="tr-caption-container"><tbody>'
+    '<tr><td><a href="https://example.com/full.jpg">'
+    '<img src="https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg" '
+    'alt="Totem pole at Stanley Park" title="Stanley Park, Vancouver"/></a></td></tr>'
+    '<tr><td class="tr-caption">Totem pole at Stanley Park, Vancouver</td></tr>'
+    '</tbody></table>'
+)
+LINKED_CAPTION = (
+    '<table class="tr-caption-container"><tbody>'
+    '<tr><td><img src="https://blogger.googleusercontent.com/img/x/s1600/p2.jpg" '
+    'alt="Ship dining room" title="MS Statendam dining"/></td></tr>'
+    '<tr><td class="tr-caption">Watch: <a href="https://youtu.be/abc">dining room tour</a></td></tr>'
+    '</tbody></table>'
+)
+HTML = "<html><body><!--more-->" + CAPTIONED + LINKED_CAPTION + "</body></html>"
+
+
+def test_collect_records():
+    recs = image_audit.collect_image_records(HTML)
+    check("collect_two_records", len(recs) == 2, len(recs))
+    check("collect_alt", recs[0]["alt"] == "Totem pole at Stanley Park")
+    check("collect_caption", "Stanley Park" in recs[0]["caption"])
+    check("collect_caption_no_links", recs[0]["caption_has_links"] is False)
+    check("collect_caption_links_flagged", recs[1]["caption_has_links"] is True)
+
+
+def test_downscaled_url():
+    check("rewrite_w_h_token",
+          vision_client.downscaled_url("https://x/img/w640-h480/p.jpg") == "https://x/img/s512-rj/p.jpg")
+    check("rewrite_s_token",
+          vision_client.downscaled_url("https://x/img/s1600/p.jpg") == "https://x/img/s512-rj/p.jpg")
+    check("rewrite_token_with_options",
+          vision_client.downscaled_url("https://x/img/s1600-rw/p.jpg") == "https://x/img/s512-rj/p.jpg")
+    check("rewrite_retry_token",
+          vision_client.downscaled_url("https://x/img/s1600/p.jpg", vision_client.RETRY_SIZE_TOKEN)
+          == "https://x/img/s320-rj/p.jpg")
+    check("no_token_unchanged",
+          vision_client.downscaled_url("https://x/img/p.jpg") == "https://x/img/p.jpg")
+
+
+def test_fetch_rejects_unsafe_url():
+    data, reason = vision_client.fetch_image("http://169.254.169.254/latest/meta-data")
+    check("fetch_ssrf_blocked", data is None and reason == "unsafe url", reason)
+    data, reason = vision_client.fetch_image("file:///etc/passwd")
+    check("fetch_scheme_blocked", data is None and reason == "unsafe url", reason)
+
+
+def _mock_vision(verdicts_by_src):
+    """Patch fetch_image + inspect_image; returns the originals for restore."""
+    orig_fetch, orig_inspect = vision_client.fetch_image, vision_client.inspect_image
+    current = {"src": None}
+
+    def fake_fetch(src):
+        current["src"] = src
+        return b"\xff\xd8fakejpeg", "image/jpeg"
+
+    def fake_inspect(image_bytes, mime, prompt, **kw):
+        v = verdicts_by_src.get(current["src"], {})
+        return v, "raw", "mock-model"
+
+    image_audit.vision_client.fetch_image = fake_fetch
+    image_audit.vision_client.inspect_image = fake_inspect
+    return orig_fetch, orig_inspect
+
+
+def _restore_vision(orig):
+    image_audit.vision_client.fetch_image = orig[0]
+    image_audit.vision_client.inspect_image = orig[1]
+
+
+def test_audit_contradicted_produces_gated_corrections():
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    src2 = "https://blogger.googleusercontent.com/img/x/s1600/p2.jpg"
+    verdicts = {
+        src1: {"visible_description": "A cruise ship dining room with set tables",
+               "alt": {"status": "CONTRADICTED", "reason": "no totem pole visible",
+                       "corrected": "Cruise ship dining room with set tables"},
+               "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+               "caption": {"status": "CONTRADICTED", "reason": "no totem pole",
+                           "corrected": "Dining room aboard the ship, en route from Vancouver"}},
+        # linked caption contradicted -> must be finding-only, never applied
+        src2: {"visible_description": "A totem pole in a park",
+               "alt": {"status": "MATCH", "reason": "", "corrected": ""},
+               "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+               "caption": {"status": "CONTRADICTED", "reason": "shows a totem pole",
+                           "corrected": "Totem pole in Stanley Park"}},
+    }
+    orig = _mock_vision(verdicts)
+    try:
+        result = image_audit.audit_images(HTML, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("audit_counts", result["images_audited"] == 2 and result["images_total"] == 2, result)
+    check("audit_findings", result["contradicted_count"] == 3, result["contradicted_count"])
+    corr = {c["src"]: c for c in result["corrections"]}
+    check("audit_correction_alt", corr.get(src1, {}).get("alt", "").startswith("Cruise ship"))
+    check("audit_correction_caption", "Vancouver" in corr.get(src1, {}).get("caption", ""))
+    check("audit_linked_caption_not_corrected", src2 not in corr, list(corr))
+    linked = [f for f in result["findings"] if f["src"] == src2]
+    check("audit_linked_caption_finding_recorded",
+          len(linked) == 1 and linked[0]["applied"] is False)
+
+
+def test_audit_rejects_rule_breaking_correction():
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    verdicts = {src1: {
+        "visible_description": "x",
+        "alt": {"status": "CONTRADICTED", "reason": "r",
+                "corrected": "I saw a nestled realm of tapestry"},  # forbidden + first person
+        "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+        "caption": {"status": "PLAUSIBLE", "reason": "", "corrected": ""}}}
+    orig = _mock_vision(verdicts)
+    try:
+        result = image_audit.audit_images(CAPTIONED, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("audit_rule_breaker_finding_kept", result["contradicted_count"] == 1)
+    check("audit_rule_breaker_not_applied", result["corrections"] == [], result["corrections"])
+
+
+def test_unknown_status_degrades_to_plausible():
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    verdicts = {src1: {"alt": {"status": "BANANAS", "corrected": "whatever"},
+                       "title": "not-a-dict", "caption": None}}
+    orig = _mock_vision(verdicts)
+    try:
+        result = image_audit.audit_images(CAPTIONED, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("audit_unknown_status_safe",
+          result["contradicted_count"] == 0 and result["corrections"] == [], result)
+
+
+def test_caption_correction_must_retain_context():
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    verdicts = {src1: {
+        "visible_description": "city skyline",
+        "alt": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+        "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+        # a "correction" that deletes every place word -- must be finding-only
+        "caption": {"status": "CONTRADICTED", "reason": "r",
+                    "corrected": "City skyline across water with a clear sky"}}}
+    orig = _mock_vision(verdicts)
+    try:
+        result = image_audit.audit_images(CAPTIONED, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("caption_context_drop_rejected", result["corrections"] == [], result["corrections"])
+    check("caption_context_drop_finding_kept",
+          result["contradicted_count"] == 1 and result["findings"][0]["applied"] is False)
+
+
+def test_apply_image_corrections():
+    corrections = [{"src": "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg",
+                    "alt": "Cruise ship dining room",
+                    "title": "Dining room, departure night",
+                    "caption": "Dining room aboard the ship"}]
+    out, applied = assembler.apply_image_corrections(HTML, corrections)
+    check("apply_count", applied == 3, applied)
+    check("apply_alt", 'alt="Cruise ship dining room"' in out)
+    check("apply_title", 'title="Dining room, departure night"' in out)
+    check("apply_caption", "Dining room aboard the ship" in out)
+    check("apply_original_caption_gone", "Totem pole at Stanley Park, Vancouver" not in out)
+    check("apply_full_link_kept", 'href="https://example.com/full.jpg"' in out)
+    # a caption correction against the LINKED caption must be refused at apply time too
+    out2, applied2 = assembler.apply_image_corrections(
+        HTML, [{"src": "https://blogger.googleusercontent.com/img/x/s1600/p2.jpg",
+                "caption": "should not land"}])
+    check("apply_linked_caption_refused", "should not land" not in out2 and applied2 == 0)
+    check("apply_linked_caption_href_kept", 'href="https://youtu.be/abc"' in out2)
+
+
+def main():
+    test_collect_records()
+    test_downscaled_url()
+    test_fetch_rejects_unsafe_url()
+    test_audit_contradicted_produces_gated_corrections()
+    test_audit_rejects_rule_breaking_correction()
+    test_unknown_status_degrades_to_plausible()
+    test_caption_correction_must_retain_context()
+    test_apply_image_corrections()
+    print()
+    if FAILS:
+        print("FAILED: " + str(FAILS))
+        sys.exit(1)
+    print("IMAGE-AUDIT TESTS PASSED")
+
+
+if __name__ == "__main__":
+    main()
