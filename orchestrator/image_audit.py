@@ -56,6 +56,14 @@ except ValueError:
 # every remaining image (TICKET-0168). Scattered failures reset the streak.
 MAX_CONSECUTIVE_FAILURES = 5
 
+# Whether gated corrections are APPLIED at Phase 5 (1) or recorded as
+# findings-only for the operator (0, default). Human review of the first full
+# 318-correction run graded ~50% genuine improvements but ~30% information-
+# degrading and ~2% grammatical nonsense (TICKET-0175) -- until the visual
+# certification loop lands, detection is trustworthy but auto-application is
+# opt-in for supervised runs only.
+APPLY_CORRECTIONS = os.environ.get("ORCH_IMAGE_AUDIT_APPLY", "0") == "1"
+
 _VERDICT_STATUSES = ("MATCH", "PLAUSIBLE", "CONTRADICTED")
 
 _PROMPT = (
@@ -299,5 +307,9 @@ def audit_images(html, state=None, limit=None, log=None):
         "review_failures": review_failures,
         "contradicted_count": len(findings),
         "findings": findings,
+        # Findings-only by default (TICKET-0175): the corrections list is still
+        # computed and recorded (so the operator sees exactly what WOULD change)
+        # but Phase 5 only applies it when ORCH_IMAGE_AUDIT_APPLY=1.
         "corrections": corrections,
+        "apply_enabled": APPLY_CORRECTIONS,
     }

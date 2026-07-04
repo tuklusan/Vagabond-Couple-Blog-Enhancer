@@ -653,8 +653,11 @@ def _assemble_working(sctx):
     if desc_art and desc_art.get("status") == "CERTIFIED" and desc_art.get("output"):
         sctx.context["schema_description"] = desc_art["output"].strip()
     ia = sctx.state.read_artifact("1J_image_audit") or {}
+    # Corrections apply only when the audit ran with apply enabled
+    # (ORCH_IMAGE_AUDIT_APPLY=1); otherwise they stay findings-only (TICKET-0175).
+    corrections = ia.get("corrections") if ia.get("apply_enabled") else None
     assembled = assembler.assemble(src_html, fragments or None, context=sctx.context,
-                                   image_corrections=ia.get("corrections"))
+                                   image_corrections=corrections)
     sctx.state.set_working_html(assembled)
     return len(fragments)
 

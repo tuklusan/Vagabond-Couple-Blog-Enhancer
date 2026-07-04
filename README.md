@@ -379,6 +379,7 @@ All optional; sensible defaults shown.
 | `ORCH_GATE_FAIL_CLOSED` | `0` | `1` = block on a total review outage instead of failing open. |
 | `ORCH_IMAGE_AUDIT` | `1` | `0` disables the Phase 1/1J visual image audit entirely. |
 | `ORCH_IMAGE_AUDIT_LIMIT` | `0` (all images) | Cap the number of images audited per run (smoke tests / metered runs). |
+| `ORCH_IMAGE_AUDIT_APPLY` | `0` (findings-only) | `1` = apply gated 1J corrections at Phase 5. Off by default until the visual certification loop lands (TICKET-0175): detection is reliable; auto-correction graded ~50% improvement / ~30% info-degrading on the first full run. |
 | `ORCH_VLM_MODEL` | `meta/llama-3.2-90b-vision-instruct` | Primary NIM vision model for 1J; fixed fallbacks `nvidia/nemotron-nano-12b-v2-vl` then `microsoft/phi-4-multimodal-instruct`. |
 | `ORCH_MAX_PASS1_BOUNCES` | `3` | Phase 5 Pass-1 REVISE bounces (factoid drop / passage rewrite) before halting for the operator. |
 | `OPENROUTER_MODEL` | `openrouter/free` | Writer model. `openrouter/free` is a non-deterministic router (a different model per call). Set to **`auto`** to have the code query OpenRouter's `/models` and pick the best available **free instruct** model (stable + clean content), or pin a specific `…:free` id yourself. |
