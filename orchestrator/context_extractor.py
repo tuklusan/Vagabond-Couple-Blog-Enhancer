@@ -258,14 +258,39 @@ def title_from_url_slug(url):
     return " ".join(w.capitalize() for w in words)
 
 
+def _is_safe_public_url(url):
+    """Reject anything that isn't a plain http(s) URL resolving to a public IP --
+    guards fetch_post_gist against SSRF (a malicious/mistaken --prior-url/
+    --next-url pointing at localhost, a private network, or a cloud metadata
+    endpoint like 169.254.169.254) (TICKET-0159). Fails closed: any parse/DNS
+    error is treated as unsafe."""
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(str(url))
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            return False
+        for info in socket.getaddrinfo(parsed.hostname, None):
+            ip = ipaddress.ip_address(info[4][0])
+            if (ip.is_private or ip.is_loopback or ip.is_link_local
+                    or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+                return False
+        return True
+    except Exception:
+        return False
+
+
 def fetch_post_gist(url, timeout=8):
     """Best-effort fetch of a live blog post's title + a short gist (its opening
     paragraph). Returns {'url','title','gist'} or None on ANY failure (network
-    down, 404, timeout, parse error) -- never raises, never halts the run. This
-    is the ONLY source of truth for lead-in/lead-out content: step6/step10 must
-    not invent a prior/next post's subject matter, only reference what this
-    actually fetched."""
+    down, 404, timeout, parse error, or a URL that fails the SSRF safety check)
+    -- never raises, never halts the run. This is the ONLY source of truth for
+    lead-in/lead-out content: step6/step10 must not invent a prior/next post's
+    subject matter, only reference what this actually fetched."""
     if not url or not str(url).strip():
+        return None
+    if not _is_safe_public_url(url):
         return None
     try:
         resp = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
