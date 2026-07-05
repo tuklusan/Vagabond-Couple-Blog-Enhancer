@@ -22,6 +22,7 @@ from typing import Callable
 from bs4 import BeautifulSoup
 
 from . import validators
+from .schema_builder import _US_STATES, _CA_PROVINCES
 
 
 def _strip_fences(text: str) -> str:
@@ -397,7 +398,6 @@ def title_deterministic_check(output, context):
         # Y, and Z, Alaska' -- the TICKET-0176 recommended form), so the full
         # state/province names for any 2-letter codes present in the context
         # count as known, not fabricated waypoints.
-        from .schema_builder import _US_STATES, _CA_PROVINCES
         codes = re.findall(r",\s([A-Z]{2})\b", " ".join([
             context.get("origin") or "", context.get("destination") or "",
             " ".join(context.get("waypoints") or [])]))
