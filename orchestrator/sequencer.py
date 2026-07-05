@@ -306,18 +306,86 @@ def _image_pair_items(sctx):
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html, "html.parser")
     tables = soup.find_all("table", class_=lambda c: c and "tr-caption-container" in c)
-    caps = []
+    caps, srcs = [], []
     for tbl in tables:
         cap = tbl.find("td", class_=lambda c: c and "tr-caption" in c)
         caps.append(cap.get_text(" ", strip=True) if cap else "")
+        img = tbl.find("img")
+        srcs.append(img.get("src") if img is not None else "")
     items = []
     for pair in validators.consecutive_image_pairs(html):
         i, j = pair["image_index"], pair["next_index"]
         subj = " / ".join(x for x in (caps[i] if i < len(caps) else "",
                                       caps[j] if j < len(caps) else "") if x)
         items.append({"subject": subj or "the two adjacent photos",
-                      "section_topic": sctx.context.get("post_title", "")})
+                      "section_topic": sctx.context.get("post_title", ""),
+                      "pair_srcs": [srcs[i] if i < len(srcs) else "",
+                                    srcs[j] if j < len(srcs) else ""]})
+    for it in items:
+        _enrich_separator_item(it, sctx)
     return items
+
+
+def _enrich_separator_item(item, sctx):
+    """Vision-nudged, context-driven research for one separator pair
+    (TICKET-0208): a VLM identifies what the two adjacent photos actually show
+    (opt-in, ORCH_STEP13_VISION=1 -- vision runs only on explicit operator
+    instruction); those subjects plus the captions and destination drive
+    retrieval from open libraries/academic sources (research_client, always
+    on -- keyless, free), producing the numbered evidence packet the writer is
+    confined to and the web-less reviewer verifies entailment against. Best
+    effort: any failure leaves the item unenriched and the old prompt path
+    applies."""
+    from . import research_client
+    subjects, visible = [], ""
+    if os.environ.get("ORCH_STEP13_VISION") == "1":
+        try:
+            from . import vision_client
+            images = []
+            for src in item.get("pair_srcs", []):
+                if src:
+                    data, mime = vision_client.fetch_image(src)
+                    if data:
+                        images.append((data, mime))
+            if images:
+                verdict, _raw, model = vision_client.inspect_image_pair(
+                    images,
+                    "These are two adjacent photos from a travel blog. Identify what is "
+                    "visibly shown (place, monument, activity, any readable signage). "
+                    'Reply ONLY JSON: {"subjects": ["2-4 short searchable subject phrases"], '
+                    '"visible": "one factual sentence describing each photo"}')
+                if isinstance(verdict, dict):
+                    subjects = [str(s) for s in (verdict.get("subjects") or []) if s][:4]
+                    visible = str(verdict.get("visible", ""))[:400]
+                _transcript_seq(sctx, "step13_vision", model,
+                                "PAIR: " + " | ".join(item.get("pair_srcs", []))
+                                + "\nSUBJECTS: " + ", ".join(subjects)
+                                + "\nVISIBLE: " + visible)
+        except Exception:
+            pass
+    # Context-driven queries: visual subjects first, then the captions; anchor
+    # each to the destination country/region so the search lands locally.
+    place = (sctx.context.get("destination") or sctx.context.get("origin") or "")
+    place_tail = place.split(",")[-1].strip() if place else ""
+    queries = subjects or [c.strip() for c in item.get("subject", "").split("/") if c.strip()][:2]
+    queries = [(q + " " + place_tail).strip() for q in queries]
+    try:
+        snippets = research_client.research(queries)
+    except Exception:
+        snippets = []
+    if visible:
+        item["visible"] = visible
+    if snippets:
+        item["evidence"] = research_client.format_evidence(snippets)
+
+
+def _transcript_seq(sctx, node_id, model, content):
+    """Best-effort transcript append from sequencer-side enrichment."""
+    try:
+        sctx.state.log_ai_call(node_id, "orchestrator", "vlm:" + (model or "none"),
+                               model or "none", content)
+    except Exception:
+        pass
 
 
 def _repetition_rule_items(sctx):

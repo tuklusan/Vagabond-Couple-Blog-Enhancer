@@ -228,19 +228,36 @@ def inspect_image(image_bytes, mime, prompt, max_tokens=1100, temperature=0.0,
                                 timeout=timeout, retries=retries)
 
 
+def inspect_image_pair(images, prompt, max_tokens=700, temperature=0.0, timeout=90):
+    """One VLM call over MULTIPLE images (a consecutive photo pair) -- used by
+    the vision-nudged separator research (TICKET-0208) to identify what the
+    adjacent photos actually show before searching for facts about it.
+    `images` is a list of (bytes, mime). Returns (verdict_or_None, raw, model)."""
+    return _inspect_with_models(images, None, prompt, VLM_MODELS,
+                                max_tokens=max_tokens, temperature=temperature,
+                                timeout=timeout, retries=1)
+
+
 def _inspect_with_models(image_bytes, mime, prompt, models, max_tokens=1100,
                          temperature=0.0, timeout=90, retries=2):
-    """The shared image+prompt -> JSON-verdict engine behind inspect_image and
-    certify_correction; `models` sets the fallback order (the certifier rotates
-    it so the second opinion comes from a different model when available)."""
+    """The shared image(s)+prompt -> JSON-verdict engine behind inspect_image,
+    inspect_image_pair, and certify_correction; `models` sets the fallback
+    order (the certifier rotates it so the second opinion comes from a
+    different model when available). image_bytes may be a single bytes blob
+    (with `mime`) or a list of (bytes, mime) pairs for multi-image prompts."""
     key = writer_client.load_nvidia_key()
     if not key:
         return None, "NVIDIA_API_KEY_CODING not found", ""
-    b64 = base64.b64encode(image_bytes).decode()
-    messages = [{"role": "user", "content": [
-        {"type": "text", "text": prompt},
-        {"type": "image_url", "image_url": {"url": "data:" + mime + ";base64," + b64}},
-    ]}]
+    if isinstance(image_bytes, list):
+        pairs = image_bytes
+    else:
+        pairs = [(image_bytes, mime)]
+    content = [{"type": "text", "text": prompt}]
+    for data, m in pairs:
+        b64 = base64.b64encode(data).decode()
+        content.append({"type": "image_url",
+                        "image_url": {"url": "data:" + m + ";base64," + b64}})
+    messages = [{"role": "user", "content": content}]
     headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
     last_err = ""
     for model in models:

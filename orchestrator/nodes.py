@@ -702,19 +702,31 @@ def step10_journey_significance() -> GenerativeNode:
 # ---------------------------------------------------------------------------
 def step13_separator() -> GenerativeNode:
     def writer(context, prior, revision):
+        evidence = context.get("evidence") or ""
         system = (
             "You write ONE separator paragraph (2-4 sentences) to sit between two adjacent "
             "photos. It must add genuine, factual information about what the photos show -- "
             "history, construction, cultural significance, or sensory reality -- NOT restate "
-            "anything already in the post. PREFER well-established, widely-documented facts "
-            "(the kind found in any guidebook) over obscure specifics -- a modest verifiable "
-            "fact beats an impressive unverifiable one. Narrator we/us where natural; no "
-            "forbidden words, no category-colon openers. Output ONLY a single <p>...</p>."
+            "anything already in the post. " + (
+                "RESEARCH SNIPPETS from real library/academic sources are given below: every "
+                "factual claim you make MUST be directly supported by one of the numbered "
+                "snippets (paraphrase them; no [n] markers in the output prose). You may also "
+                "plainly describe what the photos visibly show. Do NOT add any fact from "
+                "memory that the snippets do not support."
+                if evidence else
+                "PREFER well-established, widely-documented facts (the kind found in any "
+                "guidebook) over obscure specifics -- a modest verifiable fact beats an "
+                "impressive unverifiable one."
+            ) + " Narrator we/us where natural; no forbidden words, no category-colon "
+            "openers. Output ONLY a single <p>...</p>."
             + temporal_rule(context)
         )
         user = (
             "Between photos of: " + (context.get("subject") or "") +
+            ("\nVisible in the photos: " + context["visible"] if context.get("visible") else "") +
             "\nSection: " + (context.get("section_topic") or "") +
+            ("\n\nRESEARCH SNIPPETS (your ONLY permitted fact sources):\n" + evidence
+             if evidence else "") +
             "\nFacts already in the post (do not repeat):\n" + (context.get("existing_facts") or "(none)")
         )
         if prior:
@@ -724,18 +736,29 @@ def step13_separator() -> GenerativeNode:
         return system, user
 
     def review(output, det_findings, context):
+        evidence = context.get("evidence") or ""
         system = (
-            "You certify an image-separator paragraph. Use web_search to verify its factual "
-            "claims. Certify: (a) FACTS verifiable;"
+            "You certify an image-separator paragraph. Certify: (a) " + (
+                "EVIDENCE ENTAILMENT -- every factual claim in the paragraph must be "
+                "directly supported by one of the numbered RESEARCH SNIPPETS given below "
+                "(or be a plain description of the stated visible photo content). FAIL any "
+                "claim the snippets do not support, even if you believe it is true -- the "
+                "snippets are the only admissible sources;"
+                if evidence else
+                "FACTS verifiable (use web_search to verify);"
+            )
             + temporal_rule(context, for_reviewer=True) +
             " (b) WRITING RULES -- narrator we/us, no "
             "forbidden words, no label openers; (d) REPETITION -- adds nothing already in the "
             "post.\n" + _VERDICT_SHAPE +
-            "\nNever CERTIFY an unverifiable factual claim -- REVISE or ESCALATE. When the "
-            "claim is wrong or shaky but the SUBJECT is well-known, prefer REVISE with a "
-            "concrete steer toward a widely-documented fact about that subject over ESCALATE."
+            "\nNever CERTIFY an unsupported factual claim -- REVISE or ESCALATE. When a "
+            "claim is unsupported but the evidence contains usable facts, prefer REVISE "
+            "steering the writer to the supported facts over ESCALATE."
         )
-        user = ("Facts already in post:\n" + (context.get("existing_facts") or "(none)") +
+        user = (("RESEARCH SNIPPETS (the only admissible sources):\n" + evidence +
+                 ("\nVisible in the photos: " + context["visible"] if context.get("visible") else "")
+                 + "\n\n") if evidence else "") + \
+               ("Facts already in post:\n" + (context.get("existing_facts") or "(none)") +
                 "\n\nSeparator to certify:\n" + output)
         return system, user
 
