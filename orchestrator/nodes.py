@@ -393,10 +393,20 @@ def title_deterministic_check(output, context):
     # after "via" must appear in the known origin/destination/waypoints/landmarks.
     m = re.search(r"\bvia\s+(.+)$", t, re.IGNORECASE)
     if m:
+        # A trailing region name is legitimate shared-suffix usage ('... via X,
+        # Y, and Z, Alaska' -- the TICKET-0176 recommended form), so the full
+        # state/province names for any 2-letter codes present in the context
+        # count as known, not fabricated waypoints.
+        from .schema_builder import _US_STATES, _CA_PROVINCES
+        codes = re.findall(r",\s([A-Z]{2})\b", " ".join([
+            context.get("origin") or "", context.get("destination") or "",
+            " ".join(context.get("waypoints") or [])]))
+        region_names = " ".join((_US_STATES.get(c) or _CA_PROVINCES.get(c) or "")
+                                for c in codes)
         known = " ".join([
             context.get("origin") or "", context.get("destination") or "",
             " ".join(context.get("waypoints") or []), context.get("landmarks") or "",
-            context.get("post_title") or "",
+            context.get("post_title") or "", region_names,
         ]).lower()
         dest = (context.get("destination") or context.get("origin") or "the destination")
         for term in re.split(r",| and ", m.group(1)):
@@ -408,6 +418,24 @@ def title_deterministic_check(output, context):
                     "invent any other place name to replace it either. Output EXACTLY this "
                     "format instead: '" + dest + ": <2-6 word real theme from the post subject "
                     "or Known high-value landmarks>' -- no 'Overland via' clause at all.")
+    # TICKET-0176: stacked state/province suffixes read as keyword-stuffing
+    # (seen live: '... via Ketchikan, AK, Glacier Bay, AK, and Denali National
+    # Park, AK'). State the shared region ONCE, on the last term.
+    suffixes = re.findall(r",\s([A-Z]{2})\b", t)
+    for code in set(suffixes):
+        if suffixes.count(code) >= 2:
+            findings.append("state/province suffix ', " + code + "' appears "
+                            + str(suffixes.count(code)) + "x -- name the shared region once, "
+                            "after the LAST waypoint only (e.g. '... via Ketchikan, Glacier "
+                            "Bay, and Denali National Park, Alaska')")
+    # TICKET-0176: 'Overland' is wrong for a journey that is partly by sea
+    # (context method like 'sailed and drove' -- the hybrid-journey assumption
+    # problem again, same family as TICKET-0155).
+    method = (context.get("method") or "").lower()
+    if "overland" in t.lower() and any(w in method for w in ("sail", "cruise", "boat", "ferr", "ship")):
+        findings.append("title says 'Overland' but the journey method is '"
+                        + context.get("method", "") + "' -- use a mode-accurate phrase "
+                        "instead (e.g. 'Cruise & Road Trip' or 'by Sea and Road')")
     return (len(findings) == 0, findings)
 
 
@@ -431,13 +459,18 @@ def step1_title() -> GenerativeNode:
                 "landmark (e.g. a lobby/room), not a separate place. Use this format instead: "
                 "'" + subject + ": [2-6 word real theme/subject]'."
                 if single_location else ""
-            ) + " NO emoji, NO parentheticals, NO business brand names, no forbidden words. "
+            ) + " When several waypoints share one state/province, write the region ONCE "
+            "after the LAST of them, never after each (', AK, ..., AK' is keyword-stuffing). "
+            "Use 'Overland' only for an all-land journey; for a mixed sea+road journey use a "
+            "mode-accurate phrase like 'Cruise & Road Trip'. "
+            "NO emoji, NO parentheticals, NO business brand names, no forbidden words. "
             "Output ONLY the title text on one line."
         )
         user = (
             "Origin: " + origin + "\nDestination: " + dest +
             "\nWaypoints/themes available: " + ", ".join(context.get("waypoints", [])) +
-            "\nKnown high-value landmarks: " + (context.get("landmarks") or "")
+            "\nKnown high-value landmarks: " + (context.get("landmarks") or "") +
+            "\nJourney method: " + (context.get("method") or "unknown")
         )
         if prior:
             user += "\n\nYour previous draft:\n" + prior

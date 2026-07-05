@@ -193,6 +193,11 @@ def _acceptable_correction(original, corrected, require_context=False):
     Park'), and the prompt already instructs retention where it applies."""
     if not corrected or corrected == original:
         return False
+    # No-op suppression (TICKET-0175): a "correction" differing only in case or
+    # punctuation is churn, not a fix (observed live: punctuation-only rewrites).
+    _norm = lambda s: re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", "", s.lower())).strip()
+    if _norm(corrected) == _norm(original):
+        return False
     if len(corrected) < 8 or len(corrected) > 400:
         return False
     if writing_rules_findings(corrected):
@@ -275,6 +280,28 @@ def audit_images(html, state=None, limit=None, log=None):
                        "model": model, "text_key": _text_key(rec)}
             for field in ("alt", "title", "caption"):
                 verdict[field] = _clean_field(raw_verdict, field)
+                sub = verdict[field]
+                # Visual certification (TICKET-0175): every proposal that could
+                # ever be applied gets a SECOND VLM opinion (rotated model chain)
+                # while the image bytes are in hand -- accuracy, natural prose,
+                # and no unjustified proper-noun/vantage deletion. Fails closed:
+                # an uncertified proposal stays findings-only. The result is
+                # cached in the verdict, so resumed runs never re-pay for it.
+                if (sub["status"] == "CONTRADICTED"
+                        and _acceptable_correction(rec[field], sub["corrected"],
+                                                   require_context=(field == "caption"))):
+                    try:
+                        approved, why = vision_client.certify_correction(
+                            img_bytes, mime, field, rec[field], sub["corrected"])
+                    except Exception as e:
+                        approved, why = False, "certifier error: " + str(e)[:120]
+                    sub["certified"] = approved
+                    sub["certify_reason"] = why
+                    _transcript(state, "certifier",
+                                "IMAGE: " + src + "\nCERTIFY " + field.upper()
+                                + "\nPROPOSED: " + sub["corrected"][:300]
+                                + "\nVERDICT: " + ("APPROVE" if approved else "REJECT")
+                                + " -- " + why)
             progress[src] = verdict
             if state:
                 state.save_artifact("1J_image_audit_progress", progress)
@@ -288,9 +315,12 @@ def audit_images(html, state=None, limit=None, log=None):
             finding = {"index": rec["index"], "src": src, "field": field,
                        "original": original[:200], "reason": sub["reason"],
                        "visible": verdict.get("visible_description", "")[:200],
-                       "corrected": sub["corrected"][:300], "applied": False}
-            ok = _acceptable_correction(original, sub["corrected"],
-                                        require_context=(field == "caption"))
+                       "corrected": sub["corrected"][:300], "applied": False,
+                       "certified": bool(sub.get("certified")),
+                       "certify_reason": sub.get("certify_reason", "")}
+            ok = (_acceptable_correction(original, sub["corrected"],
+                                         require_context=(field == "caption"))
+                  and bool(sub.get("certified")))   # uncertified -> findings-only (0175)
             if field == "caption" and rec["caption_has_links"]:
                 ok = False           # linked caption: never auto-edit (G3); operator finding
                 finding["reason"] += " [caption contains links -- not auto-edited]"

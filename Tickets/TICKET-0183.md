@@ -1,5 +1,5 @@
 # TICKET-0183: [.claude/dev_review.py/.githooks] Push gate has no finding memory and reviews whole files -- repeated-noise loop on large batches
-Status: Open
+Status: Closed
 Priority: Medium
 Type: Enhancement
 Created: 2026-07-04
@@ -11,3 +11,4 @@ Notes: Candidate improvements (any subset helps):
 3. **Claim verification pass:** before BLOCKING, ask the model a second question per Critical finding -- "quote the exact lines proving this" -- and drop findings whose evidence doesn't appear in the diff (0179/0181/0182 would all have failed this).
 4. **Confidence floor / two-vote rule:** only block when the finding survives two independent reviews (temperature 0 responses still vary run-to-run; observed: the identical file set passed cleanly on the very next attempt after 0165/0166).
 The gate's value is real (0159, 0162, 0168, 0178 were all genuine catches) -- the goal is precision on re-review, not removal.
+Resolution: IMPLEMENTED (2026-07-04) -- option 1 (finding memory), the cheapest high-value subset. `.githooks/_review_gate.py`: `load_dismissed_fingerprints` scans Tickets/*.md for Status: Closed tickets whose Notes open with FALSE POSITIVE / DUPLICATE / NO ACTION and fingerprints them as (file basename, title tokens); `decide()` suppresses a fresh Critical finding matching a fingerprint (same basename + >=0.6 Jaccard title-token overlap), printing it as 'suppressed (previously triaged false positive)' instead of blocking, and tickets are filed only for non-suppressed blockers. Genuinely-FIXED tickets deliberately do NOT contribute (a regression must still block); open tickets do not contribute. Options 2-4 (diff-scoping, evidence-quote verification, two-vote) remain future work if noise persists. Tests: tests/test_review_gate.py (block, suppress, same-title-different-file NOT suppressed, different-title NOT suppressed, fail-open, fingerprint loading incl. FIXED/Open exclusions).

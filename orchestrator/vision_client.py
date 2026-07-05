@@ -141,6 +141,44 @@ def _parse_json_verdict(text):
     return None
 
 
+_CERTIFY_PROMPT = (
+    "You are an independent examiner. Another model proposed replacing a travel "
+    "photo's %s text. Look at the image and judge ONLY the PROPOSED text against "
+    "these three rules:\n"
+    "(1) ACCURATE -- the proposed text truthfully describes what is visible; it "
+    "invents nothing the frame cannot support.\n"
+    "(2) NATURAL PROSE -- grammatical, sensible writing. REJECT generic-noun "
+    "substitution artifacts (e.g. 'A body of water entered cruise service in "
+    "2011' -- a scene noun jammed into the old sentence structure) and any "
+    "sentence that reads as nonsense.\n"
+    "(3) NO UNJUSTIFIED DELETION -- if the ORIGINAL text names places, people, "
+    "ships, coordinates, or a vantage point that the image CANNOT DISPROVE, the "
+    "proposal must keep them; dropping a compatible proper noun (e.g. deleting "
+    "'Vancouver' from a skyline that could be Vancouver) fails this rule. Only a "
+    "proper noun the visible content actually contradicts may be dropped.\n"
+    "Reply ONLY with JSON: {\"approve\": true|false, \"reason\": \"<under 25 words>\"}\n"
+    "ORIGINAL %s: %s\nPROPOSED %s: %s\n"
+)
+
+
+def certify_correction(image_bytes, mime, field, original, proposed,
+                       timeout=90, retries=1):
+    """Second-opinion visual certification of a proposed alt/title/caption
+    correction (TICKET-0175). Rotates the model chain so the certifier is a
+    DIFFERENT model from the primary proposer whenever more than one model is
+    up. Returns (approved: bool, reason: str). Fails CLOSED: no verdict ->
+    not approved (the correction stays findings-only)."""
+    prompt = _CERTIFY_PROMPT % (field, field.upper(), original or "(none)",
+                                field.upper(), proposed or "")
+    rotated = VLM_MODELS[1:] + VLM_MODELS[:1]
+    verdict, raw, model = _inspect_with_models(image_bytes, mime, prompt, rotated,
+                                               max_tokens=300, temperature=0.0,
+                                               timeout=timeout, retries=retries)
+    if not isinstance(verdict, dict):
+        return False, "certifier unavailable/unparseable: " + (raw or "")[:100]
+    return bool(verdict.get("approve")), str(verdict.get("reason", ""))[:200]
+
+
 def inspect_image(image_bytes, mime, prompt, max_tokens=1100, temperature=0.0,
                   timeout=90, retries=2):
     """Send one image + one instruction to the NIM vision chain; return
@@ -149,6 +187,16 @@ def inspect_image(image_bytes, mime, prompt, max_tokens=1100, temperature=0.0,
     truncated object) falls through to the next model in the chain -- observed
     live: models occasionally answer in markdown despite the JSON-only
     instruction, and a different model then answers correctly."""
+    return _inspect_with_models(image_bytes, mime, prompt, VLM_MODELS,
+                                max_tokens=max_tokens, temperature=temperature,
+                                timeout=timeout, retries=retries)
+
+
+def _inspect_with_models(image_bytes, mime, prompt, models, max_tokens=1100,
+                         temperature=0.0, timeout=90, retries=2):
+    """The shared image+prompt -> JSON-verdict engine behind inspect_image and
+    certify_correction; `models` sets the fallback order (the certifier rotates
+    it so the second opinion comes from a different model when available)."""
     key = writer_client.load_nvidia_key()
     if not key:
         return None, "NVIDIA_API_KEY_CODING not found", ""
@@ -159,7 +207,7 @@ def inspect_image(image_bytes, mime, prompt, max_tokens=1100, temperature=0.0,
     ]}]
     headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
     last_err = ""
-    for model in VLM_MODELS:
+    for model in models:
         payload = {"model": model, "messages": messages,
                    "max_tokens": max_tokens, "temperature": temperature}
         for attempt in range(retries + 1):

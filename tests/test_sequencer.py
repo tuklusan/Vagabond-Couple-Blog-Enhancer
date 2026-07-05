@@ -289,6 +289,24 @@ def test_resume_skips_completed_nodes():
     check("resume_only_gate_ran", ran == ["phase4_gate"], ran)
 
 
+def test_title_check_flags_stacked_state_suffixes():
+    from orchestrator import nodes
+    ctx = {"origin": "Vancouver, BC", "destination": "Fairbanks, AK",
+           "waypoints": ["Ketchikan", "Glacier Bay", "Denali National Park"],
+           "method": "sailed and drove"}
+    ok, findings = nodes.title_deterministic_check(
+        "Vancouver, BC to Fairbanks, AK Overland via Ketchikan, AK, Glacier Bay, AK, "
+        "and Denali National Park, AK", ctx)
+    check("title_stacked_suffix_flagged",
+          not ok and any("', AK' appears" in f for f in findings), findings)
+    check("title_overland_on_cruise_flagged",
+          any("'Overland'" in f for f in findings), findings)
+    ok2, findings2 = nodes.title_deterministic_check(
+        "Vancouver to Fairbanks Cruise & Road Trip via Ketchikan, Glacier Bay, "
+        "and Denali National Park, Alaska", ctx)
+    check("title_clean_form_passes", ok2, findings2)
+
+
 def test_locate_single_word_needle():
     html = ("<html><body><!--more-->"
             "<p>We chose to leverage the midnight sun for extra sightseeing hours.</p>"
@@ -311,6 +329,7 @@ def main():
     test_quoted_phrases_extraction()
     test_drop_factoid_requires_output_evidence()
     test_resume_skips_completed_nodes()
+    test_title_check_flags_stacked_state_suffixes()
     test_locate_single_word_needle()
     print()
     if FAILS:

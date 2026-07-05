@@ -1,8 +1,9 @@
 # TICKET-0176: [nodes.py] SEO title stacks redundant state suffixes ("Ketchikan, AK, Glacier Bay, AK, and Denali National Park, AK")
-Status: Open
+Status: Closed
 Priority: Low
 Type: Bug
 Created: 2026-07-04
 Description: alaska2v1's certified Step 1 title: "Vancouver, BC to Fairbanks, AK Overland via Ketchikan, AK, Glacier Bay, AK, and Denali National Park, AK" (104 chars). Three consecutive ", AK" suffixes read as keyword-stuffing, "Glacier Bay, AK" is awkward for a bay/park, and "Overland" is wrong for a route whose first half is a cruise (the hybrid cruise+drive assumption problem again -- same root cause family as TICKET-0155). A human title would state the state once: "... via Ketchikan, Glacier Bay, and Denali National Park, Alaska".
 Steps to Reproduce: gen_step1_title artifact of run alaska2v1.
 Notes: Candidate fixes: (a) title writer prompt: when multiple waypoints share a state/region, suffix only the last; avoid "Overland" when context['method'] indicates a mixed/cruise journey (context extraction already produces "sailed and drove"); (b) add a deterministic check flagging >=2 repeated ", XX" state suffixes so the reviewer loop must fix it. Low priority: title is usable and factually right, just stylistically weak vs the human gold standard.
+Resolution: IMPLEMENTED (2026-07-04). title_deterministic_check now flags (a) any state/province suffix ', XX' appearing >=2x (with the exact recommended rewrite in the finding) and (b) 'Overland' when context['method'] indicates sea travel (sail/cruise/boat/ferry/ship). Writer prompt updated to state the shared region once after the last waypoint and to pick a mode-accurate journey phrase; the writer now receives 'Journey method:' in its context. The via-clause fabrication check (TICKET-0127) was taught that full state/province names expanded from context 2-letter codes are legitimate trailing regions, not fabricated waypoints (so the recommended '... Denali National Park, Alaska' form passes). Tests: test_title_check_flags_stacked_state_suffixes (bad form flags both ways, recommended form passes clean).

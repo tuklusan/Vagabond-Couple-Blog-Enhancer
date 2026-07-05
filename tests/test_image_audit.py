@@ -116,9 +116,12 @@ def test_fetch_rejects_redirect_to_private():
           not any("169.254.169.254" in u for u, _ar in calls), calls)
 
 
-def _mock_vision(verdicts_by_src):
-    """Patch fetch_image + inspect_image; returns the originals for restore."""
-    orig_fetch, orig_inspect = vision_client.fetch_image, vision_client.inspect_image
+def _mock_vision(verdicts_by_src, certify=lambda field, orig, prop: (True, "ok")):
+    """Patch fetch_image + inspect_image + certify_correction (the second-VLM
+    certifier approves everything unless overridden); returns originals."""
+    orig_fetch = vision_client.fetch_image
+    orig_inspect = vision_client.inspect_image
+    orig_certify = vision_client.certify_correction
     current = {"src": None}
 
     def fake_fetch(src):
@@ -129,14 +132,19 @@ def _mock_vision(verdicts_by_src):
         v = verdicts_by_src.get(current["src"], {})
         return v, "raw", "mock-model"
 
+    def fake_certify(image_bytes, mime, field, original, proposed, **kw):
+        return certify(field, original, proposed)
+
     image_audit.vision_client.fetch_image = fake_fetch
     image_audit.vision_client.inspect_image = fake_inspect
-    return orig_fetch, orig_inspect
+    image_audit.vision_client.certify_correction = fake_certify
+    return orig_fetch, orig_inspect, orig_certify
 
 
 def _restore_vision(orig):
     image_audit.vision_client.fetch_image = orig[0]
     image_audit.vision_client.inspect_image = orig[1]
+    image_audit.vision_client.certify_correction = orig[2]
 
 
 def test_audit_contradicted_produces_gated_corrections():
@@ -354,6 +362,66 @@ def test_progress_cache_reuse_and_staleness():
         image_audit.vision_client.inspect_image = orig_inspect
 
 
+def test_certifier_rejection_demotes_to_finding_only():
+    """A proposal the second-VLM certifier rejects must never be applied
+    (TICKET-0175) -- and the rejection reason is recorded."""
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    verdicts = {src1: {
+        "visible_description": "a dining room",
+        "alt": {"status": "CONTRADICTED", "reason": "wrong subject",
+                "corrected": "A body of water entered cruise service in 2011"},
+        "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+        "caption": {"status": "PLAUSIBLE", "reason": "", "corrected": ""}}}
+    orig = _mock_vision(verdicts,
+                        certify=lambda f, o, p: (False, "generic-noun substitution nonsense"))
+    try:
+        result = image_audit.audit_images(CAPTIONED, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("certifier_reject_no_correction", result["corrections"] == [], result["corrections"])
+    f = result["findings"][0]
+    check("certifier_reject_finding_kept",
+          f["applied"] is False and f["certified"] is False
+          and "nonsense" in f["certify_reason"], f)
+
+
+def test_certifier_approval_allows_correction():
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    verdicts = {src1: {
+        "visible_description": "a dining room",
+        "alt": {"status": "CONTRADICTED", "reason": "wrong subject",
+                "corrected": "Cruise ship dining room with set tables"},
+        "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+        "caption": {"status": "PLAUSIBLE", "reason": "", "corrected": ""}}}
+    orig = _mock_vision(verdicts)   # default certifier approves
+    try:
+        result = image_audit.audit_images(CAPTIONED, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("certifier_approve_applied",
+          len(result["corrections"]) == 1
+          and result["corrections"][0]["alt"].startswith("Cruise ship"), result["corrections"])
+    check("certifier_approve_recorded", result["findings"][0]["certified"] is True)
+
+
+def test_noop_correction_suppressed():
+    """Case/punctuation-only 'corrections' are churn, never applied (0175)."""
+    src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
+    rec = image_audit.collect_image_records(CAPTIONED)[0]
+    verdicts = {src1: {
+        "visible_description": "x",
+        "alt": {"status": "CONTRADICTED", "reason": "r",
+                "corrected": rec["alt"].upper() + "."},   # same text, case/punct only
+        "title": {"status": "PLAUSIBLE", "reason": "", "corrected": ""},
+        "caption": {"status": "PLAUSIBLE", "reason": "", "corrected": ""}}}
+    orig = _mock_vision(verdicts)
+    try:
+        result = image_audit.audit_images(CAPTIONED, state=None, limit=0)
+    finally:
+        _restore_vision(orig)
+    check("noop_not_applied", result["corrections"] == [], result["corrections"])
+
+
 def test_caption_correction_must_retain_context():
     src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
     verdicts = {src1: {
@@ -405,6 +473,9 @@ def main():
     test_audit_stops_after_consecutive_failures()
     test_progress_cache_reuse_and_staleness()
     test_failure_paths_logged_to_transcript()
+    test_certifier_rejection_demotes_to_finding_only()
+    test_certifier_approval_allows_correction()
+    test_noop_correction_suppressed()
     test_caption_correction_must_retain_context()
     test_apply_image_corrections()
     print()
