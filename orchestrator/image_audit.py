@@ -104,6 +104,13 @@ def collect_image_records(html):
     """Deterministic: every <img> in the document paired with its alt, title,
     and (when the image sits in a Blogger tr-caption-container table) the
     caption cell's text and whether that cell contains <a> links."""
+    # BeautifulSoup raises TypeError on a non-string (e.g. None) rather than
+    # returning an empty parse (TICKET-0193, same class as assemble()'s
+    # TICKET-0162 guard) -- fail to an empty record list instead of an
+    # uncaught crash; get_working_html() always returns a string in the real
+    # pipeline, but this keeps the function safe standalone.
+    if not isinstance(html, str):
+        return []
     soup = BeautifulSoup(html, "html.parser")
     records = []
     for idx, img in enumerate(soup.find_all("img")):

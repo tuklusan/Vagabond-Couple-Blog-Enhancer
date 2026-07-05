@@ -54,6 +54,14 @@ def test_collect_records():
     check("collect_caption_links_flagged", recs[1]["caption_has_links"] is True)
 
 
+def test_collect_records_rejects_non_string_input():
+    """TICKET-0193: a non-string html argument must not raise out of
+    collect_image_records (previously a bare TypeError from BeautifulSoup)."""
+    for bad in (None, 12345, [], {}):
+        check("collect_non_string_safe " + repr(bad),
+              image_audit.collect_image_records(bad) == [])
+
+
 def test_downscaled_url():
     check("rewrite_w_h_token",
           vision_client.downscaled_url("https://x/img/w640-h480/p.jpg") == "https://x/img/s512-rj/p.jpg")
@@ -463,6 +471,7 @@ def test_apply_image_corrections():
 
 def main():
     test_collect_records()
+    test_collect_records_rejects_non_string_input()
     test_downscaled_url()
     test_fetch_rejects_unsafe_url()
     test_fetch_rejects_redirect_to_private()
