@@ -46,7 +46,12 @@ VLM_MODELS = [
 _SIZE_TOKEN_RE = re.compile(r"/(s\d+|w\d+-h\d+)(-[a-z0-9]+)*(?=/)")
 FETCH_SIZE_TOKEN = "s512-rj"
 RETRY_SIZE_TOKEN = "s320-rj"
-MAX_IMAGE_BYTES = 160_000        # stay under NIM's inline-b64 request ceiling
+# Cap on RAW image bytes. NIM's inline transport ceiling (~180KB) applies to
+# the BASE64 payload, which is 4/3 the raw size -- so raw must stay under
+# ~135KB; 130KB leaves headroom for the JSON envelope (TICKET-0187). Typical
+# s512-rj fetches run 50-90KB, and the s320-rj retry covers the rare image
+# that lands between this cap and the old 160KB one.
+MAX_IMAGE_BYTES = 130_000
 FETCH_TIMEOUT = 20
 
 # Some image hosts (observed live: upload.wikimedia.org, 403) reject requests

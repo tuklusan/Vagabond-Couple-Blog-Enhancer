@@ -1,0 +1,8 @@
+# TICKET-0186: [image_audit.py] Server-Side Request Forgery (SSRF) via image src
+Status: Closed
+Priority: High
+Type: Bug
+Created: 2026-07-05
+Description: The collect_image_records function extracts src attributes from img tags without any validation. If the HTML input is malicious or user-controlled, an attacker can supply URLs pointing to internal services (e.g., http://localhost/admin, file:///etc/passwd). vision_client.fetch_image is called with these unvalidated URLs, which can lead to SSRF, internal network scanning, or local file disclosure. | Suggestion: In collect_image_records or before calling vision_client.fetch_image, validate that the URL scheme is http or https and optionally restrict to known safe domains. Implement a deny-list for private IP ranges and localhost. Alternatively, ensure the vision_client verifies URL safety. | File: orchestrator/image_audit.py | Severity: critical
+Steps to Reproduce: 
+Notes: FALSE POSITIVE, NO ACTION. The single fetch path for every img src IS the safety layer the reviewer asks for: vision_client.fetch_image validates each size-variant URL with _is_safe_public_url (scheme must be http/https; resolved IP must not be private/loopback/link-local/reserved/multicast/unspecified -- TICKET-0159) and fetches exclusively through context_extractor.safe_get, which re-validates EVERY redirect hop (TICKET-0178). The reviewer's own alternative suggestion ('ensure the vision_client verifies URL safety') describes the implemented state. Covered by existing tests test_fetch_rejects_unsafe_url (file:///etc/passwd and http://169.254.169.254 both rejected as 'unsafe url') and test_fetch_rejects_redirect_to_private. collect_image_records itself is a pure HTML parse that performs no I/O. No code change made.
