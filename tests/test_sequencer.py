@@ -7,6 +7,7 @@
 Dry tests for the G4 sequencer -- no LLM. Verifies the step-entry gate, artifact
 persistence, the Phase 4 approval gate (block + pass), all on the reference HTML.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -289,6 +290,46 @@ def test_resume_skips_completed_nodes():
     check("resume_only_gate_ran", ran == ["phase4_gate"], ran)
 
 
+def test_image_audit_disabled_by_default():
+    """TICKET-0202: the visual image audit must be OFF unless the operator
+    explicitly opts in with ORCH_IMAGE_AUDIT=1 -- it makes metered VLM calls
+    per image and must never run silently."""
+    state = RunState.create(_src_html(), run_id="test_image_audit_default")
+    sctx = sequencer.StepContext(state=state, context={}, operator=Operator(auto=True))
+    node = sequencer.image_audit_node()
+    had_env = "ORCH_IMAGE_AUDIT" in os.environ
+    saved = os.environ.pop("ORCH_IMAGE_AUDIT", None)
+    try:
+        result = node.handler(sctx)
+    finally:
+        if had_env:
+            os.environ["ORCH_IMAGE_AUDIT"] = saved
+    check("image_audit_off_by_default", "disabled" in result.get("note", ""), result)
+    art = state.read_artifact("1J_image_audit")
+    check("image_audit_artifact_disabled", art == {"status": "disabled"}, art)
+
+    # Explicit opt-in must actually reach the audit call, not the disabled
+    # short-circuit -- verified by mocking audit_images (no network call) and
+    # confirming it was invoked.
+    from orchestrator import image_audit as _image_audit_mod
+    calls = []
+    orig_audit = _image_audit_mod.audit_images
+    _image_audit_mod.audit_images = lambda html, **kw: (calls.append(1)
+                                                        or {"images_total": 0, "images_audited": 0,
+                                                            "fetch_failures": 0, "review_failures": 0,
+                                                            "contradicted_count": 0, "findings": [],
+                                                            "corrections": []})
+    os.environ["ORCH_IMAGE_AUDIT"] = "1"
+    sctx2 = sequencer.StepContext(state=state, context={}, operator=Operator(auto=True))
+    try:
+        result2 = node.handler(sctx2)
+    finally:
+        del os.environ["ORCH_IMAGE_AUDIT"]
+        _image_audit_mod.audit_images = orig_audit
+    check("image_audit_optin_reaches_real_audit_call", len(calls) == 1, calls)
+    check("image_audit_optin_not_disabled", "disabled" not in result2.get("note", ""), result2)
+
+
 def test_title_check_flags_stacked_state_suffixes():
     from orchestrator import nodes
     ctx = {"origin": "Vancouver, BC", "destination": "Fairbanks, AK",
@@ -329,6 +370,7 @@ def main():
     test_quoted_phrases_extraction()
     test_drop_factoid_requires_output_evidence()
     test_resume_skips_completed_nodes()
+    test_image_audit_disabled_by_default()
     test_title_check_flags_stacked_state_suffixes()
     test_locate_single_word_needle()
     print()

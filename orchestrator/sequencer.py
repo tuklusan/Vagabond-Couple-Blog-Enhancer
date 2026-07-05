@@ -503,16 +503,20 @@ def image_audit_node():
     at every photograph and flags alt/title/caption text the visible content
     CONTRADICTS (subject-category impossibility only -- proper nouns are
     unverifiable from pixels and never flagged). Gated corrections land in the
-    1J artifact and are applied deterministically at Phase 5 assembly. Opt out
-    with ORCH_IMAGE_AUDIT=0. An audit outage (no key, all models down) records
-    status=unavailable and continues -- this pass improves the post, it must
-    never block the pipeline."""
+    1J artifact and are applied deterministically at Phase 5 assembly.
+
+    OFF BY DEFAULT (TICKET-0202): this pass makes real, metered VLM calls per
+    image (hundreds on a large post) and was judged something the operator
+    should deliberately turn on per-run, not something every run silently pays
+    for. Opt in with ORCH_IMAGE_AUDIT=1. An audit outage while enabled (no key,
+    all models down) records status=unavailable and continues -- once turned
+    on, it must never block the pipeline."""
     def handler(sctx):
         if sctx.dry_generative:
             return {"complete": True, "note": "[dry] image audit stubbed"}
-        if os.environ.get("ORCH_IMAGE_AUDIT", "1") == "0":
+        if os.environ.get("ORCH_IMAGE_AUDIT", "0") != "1":
             sctx.state.save_artifact("1J_image_audit", {"status": "disabled"})
-            return {"complete": True, "note": "image audit disabled (ORCH_IMAGE_AUDIT=0)"}
+            return {"complete": True, "note": "image audit disabled (default off; set ORCH_IMAGE_AUDIT=1 to enable)"}
         from . import image_audit
         try:
             result = image_audit.audit_images(sctx.state.get_working_html(),

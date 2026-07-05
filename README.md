@@ -377,7 +377,7 @@ All optional; sensible defaults shown.
 | `ORCH_RUN_ROOT` | `Output/runs` | Where run state is written. |
 | `ORCH_MAX_NODE_ROUNDS` | `6` | Writer↔reviewer rounds per node before escalating to the operator. |
 | `ORCH_GATE_FAIL_CLOSED` | `0` | `1` = block on a total review outage instead of failing open. |
-| `ORCH_IMAGE_AUDIT` | `1` | `0` disables the Phase 1/1J visual image audit entirely. |
+| `ORCH_IMAGE_AUDIT` | `0` (off) | `1` enables the Phase 1/1J visual image audit. **Off by default** (TICKET-0202) -- it makes a metered NIM vision-model call per image (hundreds on a large post), so it is opt-in per run rather than something every run silently pays for. |
 | `ORCH_IMAGE_AUDIT_LIMIT` | `0` (all images) | Cap the number of images audited per run (smoke tests / metered runs). |
 | `ORCH_IMAGE_AUDIT_APPLY` | `0` (findings-only) | `1` = apply 1J corrections at Phase 5. Every applied correction must now also pass **second-VLM visual certification** (TICKET-0175: accuracy, natural prose, no unjustified proper-noun/vantage deletion; fails closed). Default stays off pending one supervised validation run with certification active. |
 | `ORCH_VLM_MODEL` | `meta/llama-3.2-90b-vision-instruct` | Primary NIM vision model for 1J; fixed fallbacks `nvidia/nemotron-nano-12b-v2-vl` then `microsoft/phi-4-multimodal-instruct`. |
