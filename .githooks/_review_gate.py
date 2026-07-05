@@ -102,14 +102,27 @@ def decide(results, fingerprints=None):
     return 0, "PASS: no Critical findings", [], suppressed
 
 
+def _within_repo(repo, rel_path):
+    """True when rel_path resolves to a file INSIDE repo -- the gate sends file
+    content to an external review API, so a traversal entry ('../../secret')
+    in the file list must never be read/shipped (TICKET-0185). The pre-push
+    hook only ever passes git-tracked paths, so this is defense-in-depth."""
+    try:
+        resolved = (Path(repo) / rel_path).resolve()
+        resolved.relative_to(Path(repo).resolve())
+        return resolved.exists()
+    except (ValueError, OSError):
+        return False
+
+
 def _load_files():
     args = [a for a in sys.argv[1:] if a != "-"]
     if not args or "-" in sys.argv[1:]:
         args += [ln.strip() for ln in sys.stdin if ln.strip()]
-    # de-dup, keep order
+    # de-dup, keep order; confine every entry to the repository root
     seen, out = set(), []
     for f in args:
-        if f and f not in seen and Path(REPO / f).exists():
+        if f and f not in seen and _within_repo(REPO, f):
             seen.add(f)
             out.append(f)
     return out

@@ -79,11 +79,29 @@ def test_load_fingerprints_from_tickets():
     check("fingerprints_loaded", len(fps) == 1 and fps[0][0] == "assembler.py", fps)
 
 
+def test_within_repo_confines_paths():
+    """File-list entries must resolve INSIDE the repo (TICKET-0185): traversal
+    entries are dropped before their content is read/shipped to the review API."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td) / "repo"
+        (repo / "sub").mkdir(parents=True)
+        (repo / "sub" / "ok.py").write_text("x = 1\n", encoding="utf-8")
+        outside = Path(td) / "secret.txt"
+        outside.write_text("secret\n", encoding="utf-8")
+        check("inside_path_allowed", gate._within_repo(repo, "sub/ok.py"))
+        check("traversal_rejected", not gate._within_repo(repo, "../secret.txt"))
+        check("absolute_outside_rejected", not gate._within_repo(repo, str(outside)))
+        check("missing_inside_rejected", not gate._within_repo(repo, "sub/nope.py"))
+        # in-repo path reached via a redundant traversal still resolves inside -> allowed
+        check("normalized_inside_allowed", gate._within_repo(repo, "sub/../sub/ok.py"))
+
+
 def main():
     test_critical_blocks()
     test_fingerprinted_critical_suppressed()
     test_fail_open_on_total_outage()
     test_load_fingerprints_from_tickets()
+    test_within_repo_confines_paths()
     print()
     if FAILS:
         print("FAILED: " + str(FAILS))
