@@ -498,6 +498,27 @@ def analysis_node(node_id, phase):
     return SeqNode(node_id, phase, "analysis", handler)
 
 
+def image_normalize_node():
+    """Setup -- wrap bare photographs into the canonical tr-caption-container
+    structure IN THE WORKING HTML, before anything inventories or derives from
+    it (TICKET-0206). Wrapping only at Phase-5 assembly (where TICKET-0205
+    first put it) left every earlier consumer -- the 1C inventory, the 1J
+    audit's caption extraction, and Step 13's consecutive-pair derivation --
+    seeing the unwrapped source, so separators were computed for pairs that
+    did not exist yet and Pass-2 failed no_consecutive_images. Idempotent:
+    already-tabled images are untouched."""
+    def handler(sctx):
+        html = sctx.state.get_working_html()
+        wrapped_html, n = assembler.wrap_bare_images(html)
+        if n:
+            sctx.state.set_working_html(wrapped_html)
+        return {"complete": True,
+                "note": ("wrapped " + str(n) + " bare photo(s) into canonical caption tables"
+                         if n else "all photos already in caption tables")}
+    return SeqNode("image_normalize", "Setup - Canonical image structure (wrap bare photos)",
+                   "deterministic", handler)
+
+
 def image_audit_node():
     """Phase 1 / 1J -- visual image audit (TICKET-0167): a NIM vision model looks
     at every photograph and flags alt/title/caption text the visible content
@@ -980,6 +1001,8 @@ def build_full_sequence():
         precheck_node(),
         context_extraction_node(),
         lead_context_node(),
+        # Canonical image structure BEFORE any inventory/derivation (TICKET-0206).
+        image_normalize_node(),
         # Phase 1 -- scan & analyze (read-only)
         a("1A_facts", "Phase 1 / 1A - Fact & sanity check"),
         a("1B_readability", "Phase 1 / 1B - Human readability"),

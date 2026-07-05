@@ -401,7 +401,7 @@ python tests/test_context.py           # source-context extraction
 python tests/test_assembler.py         # HTML transforms + fragment splicing
 python tests/test_sequencer.py         # G4 gate, Phase 4 block/pass
 python tests/test_document_cert.py     # G2 Pass 2 (deterministic re-derivation)
-python tests/test_full_sequence.py     # full 28-node canonical dry walk
+python tests/test_full_sequence.py     # full 29-node canonical dry walk
 python tests/test_image_audit.py       # 1J visual image audit (VLM mocked)
 ```
 
