@@ -330,6 +330,25 @@ def test_image_audit_disabled_by_default():
     check("image_audit_optin_not_disabled", "disabled" not in result2.get("note", ""), result2)
 
 
+def test_journey_mode_phrase():
+    """TICKET-0203: the title's journey word is picked deterministically from
+    the extracted method, so the prompt never argues with the deterministic
+    'Overland on a sea journey' check."""
+    from orchestrator import nodes
+    check("mode_mixed", nodes._journey_mode_phrase("sailed and drove") == "Cruise & Road Trip")
+    check("mode_mixed_alt", nodes._journey_mode_phrase("cruise and drive") == "Cruise & Road Trip")
+    check("mode_sea_only", nodes._journey_mode_phrase("cruised") == "Cruise")
+    check("mode_land", nodes._journey_mode_phrase("drove") == "Overland")
+    check("mode_unknown_defaults_overland", nodes._journey_mode_phrase("") == "Overland")
+    # the chosen phrase never trips the 0176 deterministic check
+    ok, findings = nodes.title_deterministic_check(
+        "Vancouver, BC to Fairbanks, AK Cruise & Road Trip via Ketchikan and Denali "
+        "National Park, Alaska", {"origin": "Vancouver, BC", "destination": "Fairbanks, AK",
+                                  "waypoints": ["Ketchikan", "Denali National Park"],
+                                  "method": "cruise and drive"})
+    check("mode_phrase_passes_det_check", ok, findings)
+
+
 def test_title_check_flags_stacked_state_suffixes():
     from orchestrator import nodes
     ctx = {"origin": "Vancouver, BC", "destination": "Fairbanks, AK",
@@ -371,6 +390,7 @@ def main():
     test_drop_factoid_requires_output_evidence()
     test_resume_skips_completed_nodes()
     test_image_audit_disabled_by_default()
+    test_journey_mode_phrase()
     test_title_check_flags_stacked_state_suffixes()
     test_locate_single_word_needle()
     print()

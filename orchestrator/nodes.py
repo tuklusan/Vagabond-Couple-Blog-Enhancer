@@ -439,15 +439,35 @@ def title_deterministic_check(output, context):
     return (len(findings) == 0, findings)
 
 
+def _journey_mode_phrase(method):
+    """Deterministic journey word for the title format, from the extracted
+    method (TICKET-0203). The old prompt HARD-CODED 'Overland' in its default
+    format while a separate sentence said not to use 'Overland' on sea
+    journeys -- observed live (alaska3v1): the writer anchored to the template
+    word for 6 straight rounds against the deterministic check and escalated.
+    Pick the word in code so the prompt never argues with itself."""
+    m = (method or "").lower()
+    sea = any(w in m for w in ("sail", "cruise", "boat", "ferr", "ship"))
+    land = any(w in m for w in ("driv", "drove", "car", "road", "overland", "bus", "train"))
+    if sea and land:
+        return "Cruise & Road Trip"
+    if sea:
+        return "Cruise"
+    return "Overland"
+
+
 def step1_title() -> GenerativeNode:
     def writer(context, prior, revision):
         origin = context.get("origin") or ""
         dest = context.get("destination") or ""
         single_location = _no_real_route(context)
         subject = dest or origin or context.get("post_title") or "the post"
+        mode = _journey_mode_phrase(context.get("method"))
         system = (
             "You write ONE SEO-optimized blog post title. Default format: "
-            "'[Origin] to [Destination] Overland via [waypoints or themes]'. The title "
+            "'[Origin] to [Destination] " + mode + " via [waypoints or themes]'. "
+            "Use EXACTLY the journey phrase '" + mode + "' -- do not substitute "
+            "another travel word. The title "
             "must carry the highest-value search keywords (place names, landmarks, route "
             "terms a real searcher types). Default cap THREE waypoints; exceed only if each "
             "extra term is independently high-search-value. NEVER invent a waypoint, detour, "
@@ -459,10 +479,10 @@ def step1_title() -> GenerativeNode:
                 "landmark (e.g. a lobby/room), not a separate place. Use this format instead: "
                 "'" + subject + ": [2-6 word real theme/subject]'."
                 if single_location else ""
-            ) + " When several waypoints share one state/province, write the region ONCE "
-            "after the LAST of them, never after each (', AK, ..., AK' is keyword-stuffing). "
-            "Use 'Overland' only for an all-land journey; for a mixed sea+road journey use a "
-            "mode-accurate phrase like 'Cruise & Road Trip'. "
+            ) + " A 2-letter state/province code (', AK', ', BC') may appear AT MOST ONCE in "
+            "the whole title; when the destination already carries it, do NOT repeat it on "
+            "any waypoint -- instead write the full region name once after the LAST waypoint "
+            "(e.g. '... via Ketchikan, Glacier Bay, and Denali National Park, Alaska'). "
             "NO emoji, NO parentheticals, NO business brand names, no forbidden words. "
             "Output ONLY the title text on one line."
         )
@@ -480,6 +500,7 @@ def step1_title() -> GenerativeNode:
 
     def review(output, det_findings, context):
         single_location = _no_real_route(context)
+        mode = _journey_mode_phrase(context.get("method"))
         system = (
             "You certify a travel-blog SEO title. Use web_search to gauge whether the place "
             "names are real and which terms have genuine search value. Certify: (a) FACTS -- "
@@ -488,11 +509,13 @@ def step1_title() -> GenerativeNode:
             "that is simply ABSENT from that context is a FABRICATION and must FAIL, even if "
             "the place itself genuinely exists; (b) WRITING RULES -- " + (
                 "there is NO real two-endpoint route here (origin/destination missing or "
-                "identical), so the format '[Origin] to [Destination] Overland via ...' does "
+                "identical), so the '[Origin] to [Destination] ... via ...' format does "
                 "NOT apply -- do not fail the title merely for lacking an origin/destination/"
-                "Overland clause; instead require format '[Subject]: [theme]'."
+                "journey clause; instead require format '[Subject]: [theme]'."
                 if single_location else
-                "format '[Origin] to [Destination] Overland via ...'"
+                "format '[Origin] to [Destination] " + mode + " via ...' (the journey phrase "
+                "'" + mode + "' is mode-accurate for this trip -- do not demand a different "
+                "travel word)"
             ) + ", no emoji/parenthetical/brand/forbidden words, "
             "waypoints justified by keyword value; (d) no redundant terms. If you find a "
             "problem with a waypoint, your revision_instructions must NEVER suggest a "
