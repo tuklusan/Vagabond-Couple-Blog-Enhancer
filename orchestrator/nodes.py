@@ -68,6 +68,25 @@ def writing_rules_findings(text: str):
     return findings
 
 
+def temporal_rule(context, for_reviewer=False):
+    """The trip-timeframe grounding clause for every fact-INSERTING node
+    (TICKET-0207). The writer/reviewer models are trained AFTER the narrated
+    trip and know how events evolved since; a fact that is true today but
+    postdates the trip is an anachronism the plain truth check cannot catch
+    (operator rule, 2026-07-05). Empty when the post carries no usable dates."""
+    tf = (context or {}).get("trip_timeframe") or ""
+    if not tf:
+        return ""
+    if for_reviewer:
+        return (" TEMPORAL VALIDITY (part of the FACTS criterion): this post narrates a trip "
+                "taken in " + tf + ". FAIL any stated fact that concerns something which "
+                "happened, opened, closed, changed, or was measured AFTER " + tf + ", even if "
+                "it is true today -- the narrator cannot know it yet (anachronism).")
+    return (" TEMPORAL RULE: this post narrates a trip taken in " + tf + ". Every fact you "
+            "state must have been true AS OF " + tf + " -- never mention anything that "
+            "happened, opened, closed, changed, or was measured after it, even if true today.")
+
+
 # Minimum plain-text length below which an output is almost certainly not real
 # content but a stray token / moderation artifact (e.g. openrouter/free emitting
 # "User Safety: safe"). Catching it deterministically routes it back to the writer
@@ -322,6 +341,7 @@ def step9f_factoid() -> GenerativeNode:
             "MUST frame it as such ('Local legend holds that...'). Narrator we/us, no "
             "forbidden words, no 'X is not just a Y' framing. 1-3 sentences. Output ONLY "
             "the factoid text (a single <p>...</p>), no label opener unless told otherwise."
+            + temporal_rule(context)
         )
         user = (
             "Section topic: " + (context.get("section_topic") or "") + "\n"
@@ -338,8 +358,9 @@ def step9f_factoid() -> GenerativeNode:
         system = (
             "You certify a section-closing travel factoid. Use web_search to VERIFY the "
             "claim against authoritative sources. Certify against: (a) FACTS -- verifiably "
-            "true, OR explicitly framed as folklore/legend/disputed if not settled; "
-            "(b) WRITING RULES -- narrator we/us, no forbidden words, no contrast framing; "
+            "true, OR explicitly framed as folklore/legend/disputed if not settled;"
+            + temporal_rule(context, for_reviewer=True) +
+            " (b) WRITING RULES -- narrator we/us, no forbidden words, no contrast framing; "
             "(d) REPETITION -- the fact is not already in the post.\n" + _VERDICT_SHAPE +
             "\nNever CERTIFY an unframed claim you cannot verify -- REVISE (add framing or "
             "swap to a verifiable fact) or ESCALATE."
@@ -627,7 +648,7 @@ def step10_journey_significance() -> GenerativeNode:
                 "never invent what the next post covers, and do not drift into abstract/"
                 "philosophical language to fill space; keep the lead-out concrete."
                 if next_post else ""
-            ) + " Output ONLY a single <p>...</p>."
+            ) + temporal_rule(context) + " Output ONLY a single <p>...</p>."
         )
         user = (
             "Post route: " + (context.get("origin") or "") + " -> " + (context.get("destination") or "") +
@@ -649,7 +670,8 @@ def step10_journey_significance() -> GenerativeNode:
         no_route = _no_real_route(context)
         system = (
             "You certify a journey-significance paragraph. Use web_search to verify any "
-            "historical/geographic claim (e.g. Silk Road links). Certify: (a) FACTS accurate" + (
+            "historical/geographic claim (e.g. Silk Road links). Certify: (a) FACTS accurate"
+            + temporal_rule(context, for_reviewer=True) + (
                 "; there is no real route/wider-expedition connection here, so the paragraph "
                 "must NOT invent one (e.g. a fabricated route, region, or historical-trade "
                 "theme not grounded in this post's real subject/sections) -- FAIL if it does"
@@ -684,8 +706,11 @@ def step13_separator() -> GenerativeNode:
             "You write ONE separator paragraph (2-4 sentences) to sit between two adjacent "
             "photos. It must add genuine, factual information about what the photos show -- "
             "history, construction, cultural significance, or sensory reality -- NOT restate "
-            "anything already in the post. Narrator we/us where natural; no forbidden words, "
-            "no category-colon openers. Output ONLY a single <p>...</p>."
+            "anything already in the post. PREFER well-established, widely-documented facts "
+            "(the kind found in any guidebook) over obscure specifics -- a modest verifiable "
+            "fact beats an impressive unverifiable one. Narrator we/us where natural; no "
+            "forbidden words, no category-colon openers. Output ONLY a single <p>...</p>."
+            + temporal_rule(context)
         )
         user = (
             "Between photos of: " + (context.get("subject") or "") +
@@ -701,10 +726,14 @@ def step13_separator() -> GenerativeNode:
     def review(output, det_findings, context):
         system = (
             "You certify an image-separator paragraph. Use web_search to verify its factual "
-            "claims. Certify: (a) FACTS verifiable; (b) WRITING RULES -- narrator we/us, no "
+            "claims. Certify: (a) FACTS verifiable;"
+            + temporal_rule(context, for_reviewer=True) +
+            " (b) WRITING RULES -- narrator we/us, no "
             "forbidden words, no label openers; (d) REPETITION -- adds nothing already in the "
             "post.\n" + _VERDICT_SHAPE +
-            "\nNever CERTIFY an unverifiable factual claim -- REVISE or ESCALATE."
+            "\nNever CERTIFY an unverifiable factual claim -- REVISE or ESCALATE. When the "
+            "claim is wrong or shaky but the SUBJECT is well-known, prefer REVISE with a "
+            "concrete steer toward a widely-documented fact about that subject over ESCALATE."
         )
         user = ("Facts already in post:\n" + (context.get("existing_facts") or "(none)") +
                 "\n\nSeparator to certify:\n" + output)
@@ -963,7 +992,7 @@ def step12_resolve() -> GenerativeNode:
             "only if the backward reference is truly necessary). Preserve the author's voice, "
             "every existing <a href> in the passage VERBATIM (same href and link text), and any "
             "genuinely new/kept fact must remain verifiable. Narrator we/us, no forbidden "
-            "words. Output ONLY the corrected passage HTML."
+            "words. Output ONLY the corrected passage HTML." + temporal_rule(context)
         )
         user = ("Flagged issue: " + context.get("issue", "") +
                 "\nPassage to fix:\n" + context.get("passage", "") +
@@ -977,7 +1006,8 @@ def step12_resolve() -> GenerativeNode:
     def review(output, det_findings, context):
         system = (
             "You certify a repetition/rules/whiplash fix. Use web_search to verify any "
-            "replacement fact. Certify: (a) FACTS -- any new fact is verifiable; (b) WRITING "
+            "replacement fact. Certify: (a) FACTS -- any new fact is verifiable;"
+            + temporal_rule(context, for_reviewer=True) + " (b) WRITING "
             "RULES clean; (d) REPETITION/WHIPLASH -- the original duplication, violation, or "
             "backward timeline/route jump is resolved, no new duplication or oscillation "
             "introduced, and every original <a href> in the passage is still present "

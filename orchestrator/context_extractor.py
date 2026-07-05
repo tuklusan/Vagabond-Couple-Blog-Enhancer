@@ -152,6 +152,64 @@ def derive_route_from_prose(html, max_chars=9000):
     return {}
 
 
+_MONTHS = ("January", "February", "March", "April", "May", "June", "July",
+           "August", "September", "October", "November", "December")
+
+
+def extract_trip_timeframe(html):
+    """Deterministically derive WHEN the narrated trip happened, from the post's
+    own dates (TICKET-0207). Returns 'December 2022', 'June - July 2012',
+    '2013', or '' when the post carries no usable dates. Needed because the
+    writer/reviewer models are trained AFTER the trip and know how events
+    evolved since -- any fact they insert must have been true AS OF this
+    timeframe, not merely true today (operator rule, 2026-07-05).
+
+    Heuristics, learned against real posts: travel posts are dense with
+    HISTORICAL dates ('Alaska joined the union in January 1959'), so a naive
+    majority vote picks the history, not the trip. Two signals separate them:
+    (1) DAY-BEARING dates ('December 21, 2022' diary headings, '2012/06/06'
+    photo timestamps) are narrative evidence, month-only mentions usually
+    history; (2) the trip is the MOST RECENT thing narrated -- nothing in a
+    retrospective post postdates the trip itself. So: prefer the maximum year
+    among day-bearing dates, fall back to the maximum year mentioned at least
+    twice, then the maximum year at all."""
+    from collections import Counter
+    text = BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
+    month_pat = "|".join(_MONTHS)
+    # Day-bearing: 'December 21, 2022' (require the day) + numeric timestamps.
+    named_day = re.findall(r"\b(" + month_pat + r")\s+\d{1,2},\s*((?:19|20)\d{2})\b", text)
+    numeric_day = re.findall(r"\b((?:19|20)\d{2})[/-](\d{1,2})[/-]\d{1,2}\b", text)
+    day_years = [y for _m, y in named_day] + [y for y, _m in numeric_day]
+    month_year = re.findall(r"\b(" + month_pat + r")\s+((?:19|20)\d{2})\b", text)
+    all_years = re.findall(r"\b((?:19|20)\d{2})\b", text)
+    # The trip year is the most recent year with REAL narrative evidence:
+    # day-bearing dates OR repeated mentions. Either alone misfires (observed:
+    # a day-bearing 'January 3, 1959' statehood fact beat a trip whose own
+    # dates were never day-written; a majority vote beat recency on
+    # history-dense posts) -- their union's maximum survives both shapes.
+    counts = Counter(all_years)
+    repeated = [y for y, c in counts.items() if c >= 2]
+    candidates = set(day_years) | set(repeated)
+    if candidates:
+        year = max(candidates)
+    elif all_years:
+        year = max(all_years)
+    else:
+        return ""
+    # Months for that year: day-bearing named dates first, else any named
+    # mention, else numeric-timestamp months.
+    months = [m for m, y in named_day if y == year] or [m for m, y in month_year if y == year]
+    if not months:
+        nums = sorted({int(m) for y, m in numeric_day if y == year and 1 <= int(m) <= 12})
+        months = [_MONTHS[n - 1] for n in nums]
+    seen = sorted({m for m in months}, key=_MONTHS.index)
+    if not seen:
+        return year
+    if len(seen) == 1:
+        return seen[0] + " " + year
+    return seen[0] + " - " + seen[-1] + " " + year
+
+
 def extract_context(html, allow_llm=False):
     soup = BeautifulSoup(html, "html.parser")
     schema = parse_schema(html)
@@ -160,6 +218,7 @@ def extract_context(html, allow_llm=False):
         "waypoints": [], "stops": [], "landmarks": "", "covers": "",
         "sections": [], "existing_facts": "", "etr_minutes": 0,
         "vehicle": extract_vehicle(html),   # {name,manufacturer,model} or {} (TICKET-0103)
+        "trip_timeframe": extract_trip_timeframe(html),   # TICKET-0207
     }
 
     if schema:

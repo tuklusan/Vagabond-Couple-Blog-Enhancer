@@ -70,12 +70,39 @@ def main():
     check("known_entities_present", "Ashgabat" in joined and "Turkmenbashi" in joined, joined[:80])
 
     test_derived_waypoints_string_type_ignored()
+    test_trip_timeframe_extraction()
 
     print()
     if FAILS:
         print(_ascii("FAILED: " + str(FAILS)))
         sys.exit(1)
     print("CONTEXT-EXTRACTION TESTS PASSED")
+
+
+def test_trip_timeframe_extraction():
+    """TICKET-0207: the trip timeframe is derived from the post's own dates so
+    fact-inserting nodes can forbid post-trip facts (anachronism guard)."""
+    diary = ("<html><body><h2>December 21, 2022</h2><p>We arrived.</p>"
+             "<h2>December 25, 2022</h2><p>Christmas in Cusco.</p>"
+             "<p>Back in 1533 the Spanish arrived; unrelated aside about 1911.</p></body></html>")
+    tf = context_extractor.extract_trip_timeframe(diary)
+    check("timeframe_diary", tf == "December 2022", tf)
+    span = ("<html><body><p>We left on June 3, 2012 and flew home July 1, 2012.</p></body></html>")
+    check("timeframe_span", context_extractor.extract_trip_timeframe(span) == "June - July 2012",
+          context_extractor.extract_trip_timeframe(span))
+    bare = "<html><body><p>Our 2013 drive across the state. Also 2013 again.</p></body></html>"
+    check("timeframe_bare_year", context_extractor.extract_trip_timeframe(bare) == "2013")
+    none = "<html><body><p>No dates here at all.</p></body></html>"
+    check("timeframe_none", context_extractor.extract_trip_timeframe(none) == "")
+    # threading: the temporal rule appears in a fact-inserting node's prompts
+    from orchestrator import nodes
+    ctx = {"trip_timeframe": "December 2022", "section_topic": "Cusco", "subject": "Cusco"}
+    sys_w, _u = nodes.step13_separator().build_writer_prompt(ctx, "", "")
+    sys_r, _u2 = nodes.step13_separator().build_review_prompt("<p>x</p>", [], ctx)
+    check("temporal_in_writer", "December 2022" in sys_w and "TEMPORAL RULE" in sys_w)
+    check("temporal_in_reviewer", "December 2022" in sys_r and "TEMPORAL VALIDITY" in sys_r)
+    sys_w2, _ = nodes.step13_separator().build_writer_prompt({"subject": "x"}, "", "")
+    check("temporal_absent_without_dates", "TEMPORAL RULE" not in sys_w2)
 
 
 def test_derived_waypoints_string_type_ignored():

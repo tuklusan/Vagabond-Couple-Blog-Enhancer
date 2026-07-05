@@ -103,7 +103,10 @@ It will, for a given post:
   flagged). Gated corrections are applied at Phase 5 assembly; risky ones
   (linked captions, place-name-dropping caption rewrites) are recorded as
   operator findings instead of auto-applied.
-- Generate (and **fact-check**) a route-first first paragraph, a route summary
+- Generate (and **fact-check, with temporal validity**: every inserted fact must
+  have been true as of the trip's own dates, derived from the post — a
+  currently-true fact that postdates the trip is rejected as an anachronism)
+  a route-first first paragraph, a route summary
   box, a "Route at a Glance" list, section-closing factoids, a journey-
   significance paragraph, image separators, an SEO title, and a search
   description.
