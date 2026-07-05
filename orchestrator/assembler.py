@@ -717,6 +717,63 @@ def apply_image_corrections(html, corrections):
     return str(soup), applied
 
 
+def wrap_bare_images(html):
+    """Wrap photographs that are NOT in a Blogger caption table into the
+    canonical `tr-caption-container` structure the rev-18 workflow requires of
+    every photo (workflow doc: 'Each photograph must be in a tr-caption-container
+    table'), TICKET-0205. Every prior test post already complied, so this gap
+    was invisible until a post arrived with bare `<p><img/><br/>caption</p>`
+    markup (peru-2023: 305 of 309 photos bare).
+
+    Zero-fabrication caption policy: the visible caption is the author's own
+    INLINE caption -- the nodes following the first <br/> after the image
+    inside its block -- moved (not copied) into the caption cell so any <a
+    href> in it survives verbatim (G3). When there is no inline caption, the
+    author's own alt text is used. An <a> already wrapping the image is kept
+    around it inside the table. Images already inside ANY table are left
+    untouched. Returns (html, wrapped_count)."""
+    from bs4 import NavigableString
+    soup = BeautifulSoup(html, "html.parser")
+    wrapped = 0
+    for img in list(soup.find_all("img")):
+        if img.find_parent("table") is not None:
+            continue
+        block = img.find_parent(["p", "div"])
+        if block is None or len(block.find_all("img")) != 1:
+            continue   # unusual layout (no block / multi-image block): leave as-is
+        # The element to place in the image cell: the wrapping <a> when present.
+        visual = img.parent if (img.parent.name == "a" and img.parent.find_parent(["p", "div"]) is block) else img
+        # Caption = everything after the first <br/> that follows the image.
+        caption_nodes = []
+        br = visual.find_next_sibling("br")
+        if br is not None:
+            node = br.next_sibling
+            while node is not None:
+                nxt = node.next_sibling
+                if not (isinstance(node, NavigableString) and not str(node).strip()):
+                    caption_nodes.append(node.extract())
+                node = nxt
+            br.extract()
+        table = _frag(
+            '<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container">'
+            "<tbody><tr><td></td></tr>"
+            '<tr><td class="tr-caption"></td></tr></tbody></table>')
+        cells = table.find_all("td")
+        cells[0].append(visual.extract())
+        if caption_nodes:
+            for n in caption_nodes:
+                cells[1].append(n)
+        else:
+            cells[1].append(NavigableString((img.get("alt") or "").strip()))
+        # Whole block consumed -> replace it; otherwise insert before the remains.
+        if not block.get_text(strip=True) and not block.find(["img", "a", "iframe", "table"]):
+            block.replace_with(table)
+        else:
+            block.insert_before(table)
+        wrapped += 1
+    return str(soup), wrapped
+
+
 def assemble(html, fragments=None, context=None, image_corrections=None):
     """Run the deterministic transforms (and splice fragments if provided).
 
@@ -729,6 +786,7 @@ def assemble(html, fragments=None, context=None, image_corrections=None):
     """
     if not isinstance(html, str):
         raise ValueError("assemble() requires html to be a string, got " + type(html).__name__)
+    html, _ = wrap_bare_images(html)            # TICKET-0205 (before corrections/styles)
     if image_corrections:
         html, _ = apply_image_corrections(html, image_corrections)
     html, _ = remove_m1_internal(html)

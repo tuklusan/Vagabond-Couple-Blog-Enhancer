@@ -161,8 +161,40 @@ def test_prefold_without_more_marker():
     check("prefold_more_before_section", -1 < out.find("<!--more-->") < h2)
 
 
+def test_wrap_bare_images():
+    """TICKET-0205: bare <p><img/><br/>caption</p> photos are wrapped into the
+    canonical tr-caption-container table with the author's inline caption (or
+    alt fallback), preserving hrefs; tabled images are untouched."""
+    html = (
+        "<html><body><!--more-->"
+        '<p style="text-align: center;">'
+        '<img alt="Plaza de Armas Cusco" src="https://x/img/s640/p1.jpg"/><br/>'
+        'View from the hotel, see <a href="https://example.com/cusco">Cusco guide</a></p>'
+        '<p><a href="https://x/full/p2.jpg"><img alt="Sacsayhuaman walls" '
+        'src="https://x/img/s640/p2.jpg"/></a><br/></p>'
+        '<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container">'
+        '<tbody><tr><td><img alt="ok" src="https://x/img/s640/p3.jpg"/></td></tr>'
+        '<tr><td class="tr-caption">existing caption</td></tr></tbody></table>'
+        "</body></html>")
+    out, n = assembler.wrap_bare_images(html)
+    check("wrap_count", n == 2, n)
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(out, "html.parser")
+    tables = soup.find_all("table", class_=lambda c: c and "tr-caption-container" in c)
+    check("wrap_total_tables", len(tables) == 3, len(tables))
+    caps = [t.find("td", class_="tr-caption").get_text(" ", strip=True) for t in tables]
+    check("wrap_inline_caption_moved", any("View from the hotel" in c for c in caps), caps)
+    check("wrap_alt_fallback", any("Sacsayhuaman walls" in c for c in caps), caps)
+    check("wrap_existing_untouched", any("existing caption" in c for c in caps))
+    check("wrap_caption_link_kept", 'href="https://example.com/cusco"' in out)
+    check("wrap_fullres_link_kept", 'href="https://x/full/p2.jpg"' in out)
+    check("wrap_hrefs_ok", validators.diff_hrefs(validators.href_inventory(html), out)["ok"])
+    check("wrap_inventory_match", validators.media_inventory(out)["image_table_match"])
+
+
 def main():
     test_prefold_without_more_marker()
+    test_wrap_bare_images()
     test_youtube_caption_escaped()
     test_reference_transforms()
     test_strip_removes_body_style()
