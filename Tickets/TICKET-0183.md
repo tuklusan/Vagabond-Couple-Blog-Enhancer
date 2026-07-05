@@ -1,0 +1,13 @@
+# TICKET-0183: [.claude/dev_review.py/.githooks] Push gate has no finding memory and reviews whole files -- repeated-noise loop on large batches
+Status: Open
+Priority: Medium
+Type: Enhancement
+Created: 2026-07-04
+Description: Observed on the alaska2v1 batch (5 commits, 8 changed files): four consecutive push attempts were each blocked by FRESH Critical findings, because the gate re-reviews the ENTIRE content of every changed file on every attempt and has no record of findings already triaged. Batch scorecard: 8 findings, 1 genuine (TICKET-0178 redirect SSRF -- the gate earned its keep), 7 false positives (0177 run-id traversal already blocked by 0018; 0179 unreachable NameError; 0180 "SSRF" on a fixed public host; 0181 misread G4 step-entry semantics; 0182 misread durable-on-write persistence; plus 0165/0166 from the prior batch). Each retry re-rolls the dice at temperature 0 over slightly different file sets, so noise compounds with batch size; the operator ultimately had to authorize a one-time SKIP_DEEPSEEK_REVIEW=1 bypass (2026-07-04) to land a triple-reviewed batch.
+Steps to Reproduce: Accumulate 4+ commits touching the same 3+ files; push; close the false positives with justification; push again; observe new, different findings against unchanged code.
+Notes: Candidate improvements (any subset helps):
+1. **Finding memory:** persist a fingerprint (file + normalized title/claim) of every finding closed as false-positive/duplicate in Tickets/; the gate drops re-occurrences of a fingerprinted finding instead of blocking on it again. Cheap: scan Tickets/*.md for 'FALSE POSITIVE'/'DUPLICATE' notes at gate time.
+2. **Diff-scoped review:** review only the diff hunks (plus N context lines) being pushed, not whole files -- pre-existing, previously-reviewed code stops generating new findings. `git diff origin/master..HEAD -- <file>` is already available in the hook.
+3. **Claim verification pass:** before BLOCKING, ask the model a second question per Critical finding -- "quote the exact lines proving this" -- and drop findings whose evidence doesn't appear in the diff (0179/0181/0182 would all have failed this).
+4. **Confidence floor / two-vote rule:** only block when the finding survives two independent reviews (temperature 0 responses still vary run-to-run; observed: the identical file set passed cleanly on the very next attempt after 0165/0166).
+The gate's value is real (0159, 0162, 0168, 0178 were all genuine catches) -- the goal is precision on re-review, not removal.
