@@ -281,25 +281,31 @@ def _is_safe_public_url(url):
         return False
 
 
-def safe_get(url, timeout=8, headers=None, max_redirects=3):
+def safe_get(url, timeout=8, headers=None, max_redirects=3, stream=False):
     """requests.get with the SSRF guard enforced on EVERY hop, not just the
     first URL (TICKET-0178): redirects are disabled and followed manually, each
     Location re-validated by _is_safe_public_url -- so a public host that 302s
     to localhost/a private range/the metadata endpoint is refused. Raises
     requests' own exceptions on HTTP errors; raises ValueError on an unsafe URL
-    at any hop or on too many redirects."""
+    at any hop or on too many redirects.
+
+    stream=True (TICKET-0198): the response body is NOT read into memory by
+    this call -- the caller must consume `resp.raw`/`resp.iter_content()` (and
+    close the response) themselves, so an unbounded remote body can be capped
+    incrementally instead of buffered whole via `.content` first."""
     from urllib.parse import urljoin
     current = str(url)
     for _hop in range(max_redirects + 1):
         if not _is_safe_public_url(current):
             raise ValueError("unsafe url: " + current[:120])
         resp = requests.get(current, timeout=timeout, headers=headers,
-                            allow_redirects=False)
+                            allow_redirects=False, stream=stream)
         if resp.status_code in (301, 302, 303, 307, 308):
             loc = resp.headers.get("Location")
             if not loc:
                 resp.raise_for_status()
                 return resp
+            resp.close()   # done with this hop's (unread) body before following it
             current = urljoin(current, loc)
             continue
         return resp

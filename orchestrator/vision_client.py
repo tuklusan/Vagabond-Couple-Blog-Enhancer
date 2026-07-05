@@ -86,11 +86,31 @@ def downscaled_url(src, token=FETCH_SIZE_TOKEN):
     return _SIZE_TOKEN_RE.sub("/" + token, src, count=1)
 
 
+def _read_capped(resp, max_bytes, chunk_size=8192):
+    """Read a streamed response body incrementally, aborting the download the
+    moment it exceeds max_bytes (TICKET-0198) -- `resp.content` on a
+    non-streamed request buffers the ENTIRE body in memory first regardless of
+    size, so a host serving a multi-GB response (malicious or just a very
+    large image) would exhaust memory before the existing length check ever
+    ran. Returns bytes, or None if the cap was exceeded (connection is closed
+    either way; never trusts a possibly-absent/lying Content-Length header)."""
+    data = bytearray()
+    try:
+        for chunk in resp.iter_content(chunk_size=chunk_size):
+            data.extend(chunk)
+            if len(data) > max_bytes:
+                return None
+    finally:
+        resp.close()
+    return bytes(data)
+
+
 def fetch_image(src):
     """Fetch an image for auditing: SSRF-guarded (TICKET-0159 helper), fetched
-    at a downscaled size as a forced JPEG, hard-capped in bytes, with one
-    smaller-size retry on either a transient error or an oversized response.
-    Returns (bytes, mime) or (None, reason) on any failure -- never raises."""
+    at a downscaled size as a forced JPEG, hard-capped in bytes via a streamed,
+    incrementally-aborted read (TICKET-0198), with one smaller-size retry on
+    either a transient error or an oversized response. Returns (bytes, mime)
+    or (None, reason) on any failure -- never raises."""
     last_reason = "no size variant succeeded"
     for token in (FETCH_SIZE_TOKEN, RETRY_SIZE_TOKEN):
         url = downscaled_url(src, token)
@@ -99,7 +119,8 @@ def fetch_image(src):
         try:
             # safe_get re-validates every redirect hop -- a public image host
             # 302-ing to a private/metadata address is refused (TICKET-0178).
-            resp = safe_get(url, timeout=FETCH_TIMEOUT, headers=FETCH_HEADERS)
+            # stream=True: nothing is read into memory until _read_capped.
+            resp = safe_get(url, timeout=FETCH_TIMEOUT, headers=FETCH_HEADERS, stream=True)
             resp.raise_for_status()
         except ValueError:
             return None, "unsafe url"
@@ -108,12 +129,14 @@ def fetch_image(src):
             continue
         mime = (resp.headers.get("content-type") or "").split(";")[0].strip()
         if not mime.startswith("image/"):
+            resp.close()
             last_reason = "not an image: " + (mime or "no content-type")
             continue
-        if len(resp.content) > MAX_IMAGE_BYTES:
-            last_reason = "too large (" + str(len(resp.content)) + " bytes at " + token + ")"
+        content = _read_capped(resp, MAX_IMAGE_BYTES)
+        if content is None:
+            last_reason = "too large (exceeded " + str(MAX_IMAGE_BYTES) + " bytes at " + token + ")"
             continue
-        return resp.content, mime
+        return content, mime
     return None, last_reason
 
 

@@ -104,6 +104,7 @@ def test_fetch_rejects_redirect_to_private():
         status_code = 302
         headers = {"Location": "http://169.254.169.254/latest/meta-data"}
         def raise_for_status(self): pass
+        def close(self): pass
 
     orig_get = _requests.get
     calls = []
@@ -153,6 +154,61 @@ def _restore_vision(orig):
     image_audit.vision_client.fetch_image = orig[0]
     image_audit.vision_client.inspect_image = orig[1]
     image_audit.vision_client.certify_correction = orig[2]
+
+
+def test_fetch_image_aborts_oversized_stream_without_buffering():
+    """TICKET-0198: a body exceeding MAX_IMAGE_BYTES must be aborted DURING
+    the stream, not buffered whole via .content first."""
+    from orchestrator import context_extractor
+
+    class FakeStreamResp:
+        status_code = 200
+        headers = {"content-type": "image/jpeg"}
+        def __init__(self, total_bytes, chunk=8192):
+            self._total = total_bytes
+            self._chunk = chunk
+            self.closed = False
+            self.content_accessed = False
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, chunk_size=8192):
+            remaining = self._total
+            while remaining > 0:
+                n = min(self._chunk, remaining)
+                remaining -= n
+                yield b"x" * n
+
+        def close(self):
+            self.closed = True
+
+        @property
+        def content(self):
+            # If fetch_image ever touches .content, that's the exact bug
+            # TICKET-0198 flags (buffers everything before the size check).
+            self.content_accessed = True
+            return b"x" * self._total
+
+    huge = vision_client.MAX_IMAGE_BYTES * 50   # a body far past the cap
+    made = {}
+
+    def fake_safe_get(url, timeout=None, headers=None, stream=False):
+        r = FakeStreamResp(huge)
+        made["resp"] = r
+        return r
+
+    orig_safe_get = vision_client.safe_get
+    vision_client.safe_get = fake_safe_get
+    try:
+        data, reason = vision_client.fetch_image(
+            "https://blogger.googleusercontent.com/img/x/s1600/huge.jpg")
+    finally:
+        vision_client.safe_get = orig_safe_get
+    check("oversized_stream_rejected", data is None and "too large" in reason, reason)
+    check("oversized_stream_never_touched_content",
+          made["resp"].content_accessed is False)
+    check("oversized_stream_closed", made["resp"].closed is True)
 
 
 def test_audit_contradicted_produces_gated_corrections():
@@ -475,6 +531,7 @@ def main():
     test_downscaled_url()
     test_fetch_rejects_unsafe_url()
     test_fetch_rejects_redirect_to_private()
+    test_fetch_image_aborts_oversized_stream_without_buffering()
     test_audit_contradicted_produces_gated_corrections()
     test_audit_rejects_rule_breaking_correction()
     test_unknown_status_degrades_to_plausible()
