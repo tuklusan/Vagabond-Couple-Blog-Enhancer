@@ -1,0 +1,8 @@
+# TICKET-0190: [README.md] Executable instructions contradict view-only license
+Status: Closed
+Priority: High
+Type: Task
+Created: 2026-07-05
+Description: The README states the software is view-only and prohibits execution, yet the Install and Usage sections provide commands to run the orchestrator (e.g., pip install, python -m orchestrator.writer_client, python -m orchestrator --input ...). Following these instructions would violate the license, rendering them broken for any compliant user. | Suggestion: Either change the license to allow execution or remove all executable instructions from the README, replacing them with purely descriptive examples that do not imply permission to run. | File: README.md | Severity: critical
+Steps to Reproduce: 
+Notes: ACCEPTED, NO ACTION (author's own documentation, not a licensee obligation). The Limited Source-Code Viewing License's execution restriction (LICENSE section 2(a)) is a Licensor-to-licensee grant: it defines what a THIRD PARTY who views this code may do with it. The README is authored by the Licensor (git author/LICENSE copyright holder are the same person) describing and running their OWN software during its own development -- a copyright holder is never bound by restrictions their own license imposes on others; that is what 'all rights not expressly granted herein are reserved [to the Licensor]' (section 1) means. No document edit changes what a licensee is permitted to do, so there is no real contradiction a licensee could act on incorrectly. Left as-is; if the intent is instead to eventually offer a permissive execution license to others, that is a business/legal decision for the repo owner, not a code-review action item.
