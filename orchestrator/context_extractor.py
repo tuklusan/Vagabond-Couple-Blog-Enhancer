@@ -226,12 +226,19 @@ def extract_context(html, allow_llm=False):
         if derived:
             ctx["origin"] = ctx["origin"] or derived.get("origin", "") or ""
             ctx["destination"] = ctx["destination"] or derived.get("destination", "") or ""
-            if not ctx["waypoints"] and derived.get("waypoints"):
-                ctx["waypoints"] = derived["waypoints"][:5]
+            # The writer is instructed to return an array, but a weak/fallback
+            # model can still emit a bare string despite instructions; slicing
+            # or joining a string silently corrupts it into garbled fragments
+            # (TICKET-0199) rather than raising, so validate the type first.
+            derived_waypoints = derived.get("waypoints")
+            if not isinstance(derived_waypoints, list):
+                derived_waypoints = None
+            if not ctx["waypoints"] and derived_waypoints:
+                ctx["waypoints"] = [str(w) for w in derived_waypoints[:5]]
             if ctx["method"] == "overland" and derived.get("method"):
                 ctx["method"] = derived["method"]
-            if not ctx["landmarks"] and derived.get("waypoints"):
-                ctx["landmarks"] = ", ".join(derived["waypoints"][:8])
+            if not ctx["landmarks"] and derived_waypoints:
+                ctx["landmarks"] = ", ".join(str(w) for w in derived_waypoints[:8])
 
     ctx["etr_minutes"] = validators.etr_minutes(html)["etr_minutes"]
     return ctx

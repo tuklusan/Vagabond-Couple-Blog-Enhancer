@@ -69,11 +69,40 @@ def main():
     joined = " ".join(ctx["stops"] + ctx["waypoints"]) + " " + ctx["landmarks"]
     check("known_entities_present", "Ashgabat" in joined and "Turkmenbashi" in joined, joined[:80])
 
+    test_derived_waypoints_string_type_ignored()
+
     print()
     if FAILS:
         print(_ascii("FAILED: " + str(FAILS)))
         sys.exit(1)
     print("CONTEXT-EXTRACTION TESTS PASSED")
+
+
+def test_derived_waypoints_string_type_ignored():
+    """TICKET-0199: a schema-less post falls to derive_route_from_prose (LLM).
+    If that returns waypoints as a bare STRING instead of the instructed array
+    (weak/fallback model not following instructions), the string must be
+    ignored rather than sliced/joined into garbled character fragments."""
+    html = "<html><body><h1>Some Trip</h1><!--more--><p>We went somewhere.</p></body></html>"
+    orig = context_extractor.derive_route_from_prose
+    context_extractor.derive_route_from_prose = lambda html, **kw: {
+        "origin": "A", "destination": "B", "waypoints": "Foo, Bar, Baz", "method": "drove"}
+    try:
+        ctx = context_extractor.extract_context(html, allow_llm=True)
+    finally:
+        context_extractor.derive_route_from_prose = orig
+    check("string_waypoints_not_sliced_into_chars", ctx["waypoints"] == [])
+    check("string_waypoints_not_joined_into_landmarks", ctx["landmarks"] == "")
+    check("origin_destination_still_applied", ctx["origin"] == "A" and ctx["destination"] == "B")
+
+    # A well-formed list still works normally.
+    context_extractor.derive_route_from_prose = lambda html, **kw: {
+        "origin": "A", "destination": "B", "waypoints": ["Foo", "Bar"], "method": "drove"}
+    try:
+        ctx2 = context_extractor.extract_context(html, allow_llm=True)
+    finally:
+        context_extractor.derive_route_from_prose = orig
+    check("list_waypoints_still_applied", ctx2["waypoints"] == ["Foo", "Bar"], ctx2["waypoints"])
 
 
 if __name__ == "__main__":

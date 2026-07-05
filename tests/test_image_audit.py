@@ -211,6 +211,36 @@ def test_fetch_image_aborts_oversized_stream_without_buffering():
     check("oversized_stream_closed", made["resp"].closed is True)
 
 
+def test_fetch_image_survives_mid_stream_error():
+    """TICKET-0200: a connection error mid-body (after headers/status succeed)
+    must not escape fetch_image's 'never raises' contract."""
+    import requests as _requests
+
+    class FlakyStreamResp:
+        status_code = 200
+        headers = {"content-type": "image/jpeg"}
+        def raise_for_status(self):
+            pass
+        def iter_content(self, chunk_size=8192):
+            yield b"x" * 100
+            raise _requests.exceptions.ChunkedEncodingError("connection dropped")
+        def close(self):
+            pass
+
+    def fake_safe_get(url, timeout=None, headers=None, stream=False):
+        return FlakyStreamResp()
+
+    orig_safe_get = vision_client.safe_get
+    vision_client.safe_get = fake_safe_get
+    try:
+        data, reason = vision_client.fetch_image(
+            "https://blogger.googleusercontent.com/img/x/s1600/flaky.jpg")
+    finally:
+        vision_client.safe_get = orig_safe_get
+    check("mid_stream_error_no_raise", data is None)
+    check("mid_stream_error_reason_recorded", "mid-stream" in reason, reason)
+
+
 def test_audit_contradicted_produces_gated_corrections():
     src1 = "https://blogger.googleusercontent.com/img/x/w640-h480/p1.jpg"
     src2 = "https://blogger.googleusercontent.com/img/x/s1600/p2.jpg"
@@ -532,6 +562,7 @@ def main():
     test_fetch_rejects_unsafe_url()
     test_fetch_rejects_redirect_to_private()
     test_fetch_image_aborts_oversized_stream_without_buffering()
+    test_fetch_image_survives_mid_stream_error()
     test_audit_contradicted_produces_gated_corrections()
     test_audit_rejects_rule_breaking_correction()
     test_unknown_status_degrades_to_plausible()

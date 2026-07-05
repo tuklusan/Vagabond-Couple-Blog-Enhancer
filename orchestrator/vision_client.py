@@ -132,7 +132,15 @@ def fetch_image(src):
             resp.close()
             last_reason = "not an image: " + (mime or "no content-type")
             continue
-        content = _read_capped(resp, MAX_IMAGE_BYTES)
+        try:
+            # The stream can still fail mid-body (dropped connection, chunked-
+            # encoding error) even after headers succeeded -- _read_capped
+            # itself already closes resp in its finally, but the exception
+            # must not escape fetch_image's "never raises" contract (TICKET-0200).
+            content = _read_capped(resp, MAX_IMAGE_BYTES)
+        except requests.exceptions.RequestException as e:
+            last_reason = "fetch failed mid-stream: " + str(e)[:120]
+            continue
         if content is None:
             last_reason = "too large (exceeded " + str(MAX_IMAGE_BYTES) + " bytes at " + token + ")"
             continue
