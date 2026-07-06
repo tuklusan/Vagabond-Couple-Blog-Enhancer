@@ -76,10 +76,15 @@ def test_writer_reviewer_evidence_modes():
 class _FakeState:
     def __init__(self, html):
         self._html = html
+        self.artifacts = {}
     def get_working_html(self):
         return self._html
     def log_ai_call(self, *a, **kw):
         pass
+    def read_artifact(self, name):
+        return self.artifacts.get(name)
+    def save_artifact(self, name, obj):
+        self.artifacts[name] = obj
 
 
 def test_pair_items_enriched():
@@ -121,12 +126,84 @@ def test_pair_items_enriched():
     check("pair_visible_attached", it.get("visible") == "Terraces; a market.")
 
 
+_PAIR_HTML = ("<html><body><!--more-->"
+              '<table class="tr-caption-container"><tbody><tr><td>'
+              '<img src="https://x/img/s640/a.jpg"/></td></tr>'
+              '<tr><td class="tr-caption">Pisac terraces</td></tr></tbody></table>'
+              '<table class="tr-caption-container"><tbody><tr><td>'
+              '<img src="https://x/img/s640/b.jpg"/></td></tr>'
+              '<tr><td class="tr-caption">Pisac market</td></tr></tbody></table>'
+              "</body></html>")
+
+
+def test_enrichment_cached_across_reruns():
+    """TICKET-0213: a rerun must not re-pay the VLM/research calls for pairs
+    already enriched -- the step13_enrichment artifact serves them."""
+    import os
+    from orchestrator import research_client as rc, vision_client as vc
+    sctx = sequencer.StepContext(state=_FakeState(_PAIR_HTML),
+                                 context={"destination": "Cusco, Peru"}, operator=None)
+    calls = {"vlm": 0, "research": 0}
+    orig_res, orig_fetch, orig_pair = rc.research, vc.fetch_image, vc.inspect_image_pair
+    rc.research = lambda q, **kw: (calls.__setitem__("research", calls["research"] + 1)
+                                   or [{"source": "Wikipedia", "title": "Pisac", "year": None,
+                                        "url": "u", "snippet": "s"}])
+    vc.fetch_image = lambda src: (b"\xff\xd8x", "image/jpeg")
+    vc.inspect_image_pair = lambda images, prompt, **kw: (
+        calls.__setitem__("vlm", calls["vlm"] + 1)
+        or ({"subjects": ["Pisac"], "visible": "v"}, "raw", "mock"))
+    os.environ["ORCH_STEP13_VISION"] = "1"
+    try:
+        items1 = sequencer._image_pair_items(sctx)
+        items2 = sequencer._image_pair_items(sctx)   # rerun over the same state
+    finally:
+        del os.environ["ORCH_STEP13_VISION"]
+        rc.research, vc.fetch_image, vc.inspect_image_pair = orig_res, orig_fetch, orig_pair
+    check("enrich_cache_single_vlm_call", calls["vlm"] == 1, calls)
+    check("enrich_cache_single_research_call", calls["research"] == 1, calls)
+    check("enrich_cache_rerun_still_enriched",
+          items2[0].get("evidence") and items2[0].get("visible") == "v", items2[0].get("visible"))
+
+
+def test_iterating_node_progress_survives_outage():
+    """TICKET-0213: certified per-item outcomes checkpoint incrementally, so a
+    rerun after a mid-node outage reuses them without new provider calls."""
+    from orchestrator import review_loop, nodes as n
+    state = _FakeState(_PAIR_HTML)
+    sctx = sequencer.StepContext(state=state, context={}, operator=None)
+    node = sequencer.iterating_generative_node(
+        "step13_separator", "test", n.step13_separator,
+        lambda s: [{"subject": "Pisac terraces / Pisac market",
+                    "section_topic": "Pisac", "pair_srcs": ["a", "b"]}])
+    orig = review_loop.run_generative_node
+    review_loop.run_generative_node = lambda spec, ctx, state=None: {
+        "status": "CERTIFIED", "output": "<p>certified separator</p>", "rounds": 1}
+    try:
+        r1 = node.handler(sctx)
+    finally:
+        review_loop.run_generative_node = orig
+    check("progress_checkpointed",
+          any(v.get("output") == "<p>certified separator</p>"
+              for v in (state.artifacts.get("gen_step13_separator_progress") or {}).values()))
+    # outage simulation: provider now raises -- the cached outcome must carry the rerun
+    review_loop.run_generative_node = lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("402"))
+    try:
+        r2 = node.handler(sctx)
+    finally:
+        review_loop.run_generative_node = orig
+    check("rerun_uses_cache_despite_outage", "certified 1/1" in r2.get("note", ""), r2)
+    art = state.artifacts.get("gen_step13_separator")
+    check("rerun_artifact_has_output", art and art["outputs"] == ["<p>certified separator</p>"])
+
+
 def main():
     test_abstract_reconstruction()
     test_format_evidence()
     test_research_merges_and_dedupes()
     test_writer_reviewer_evidence_modes()
     test_pair_items_enriched()
+    test_enrichment_cached_across_reruns()
+    test_iterating_node_progress_survives_outage()
     print()
     if FAILS:
         print("FAILED: " + str(FAILS))

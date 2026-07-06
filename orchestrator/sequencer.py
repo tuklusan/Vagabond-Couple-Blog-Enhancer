@@ -335,8 +335,25 @@ def _enrich_separator_item(item, sctx):
     on -- keyless, free), producing the numbered evidence packet the writer is
     confined to and the web-less reviewer verifies entailment against. Best
     effort: any failure leaves the item unenriched and the old prompt path
-    applies."""
+    applies.
+
+    Enrichment is CACHED per pair in the step13_enrichment artifact
+    (TICKET-0213): a node rerun after a mid-run provider/billing outage must
+    not re-pay 193 VLM calls and research fetches for pairs already enriched."""
     from . import research_client
+    cache_key = "|".join(item.get("pair_srcs") or []) or item.get("subject", "")
+    cache = {}
+    try:
+        cache = sctx.state.read_artifact("step13_enrichment") or {}
+    except Exception:
+        pass
+    hit = cache.get(cache_key)
+    if isinstance(hit, dict):
+        if hit.get("visible"):
+            item["visible"] = hit["visible"]
+        if hit.get("evidence"):
+            item["evidence"] = hit["evidence"]
+        return
     subjects, visible = [], ""
     if os.environ.get("ORCH_STEP13_VISION") == "1":
         try:
@@ -377,6 +394,12 @@ def _enrich_separator_item(item, sctx):
         item["visible"] = visible
     if snippets:
         item["evidence"] = research_client.format_evidence(snippets)
+    cache[cache_key] = {"visible": item.get("visible", ""),
+                        "evidence": item.get("evidence", "")}
+    try:
+        sctx.state.save_artifact("step13_enrichment", cache)
+    except Exception:
+        pass
 
 
 def _transcript_seq(sctx, node_id, model, content):
@@ -479,17 +502,39 @@ def step12_resolve_node():
     return SeqNode(node_id, "Phase 3 / Step 12 - Resolve repetition/rules", "generative", handler)
 
 
+def _item_cache_key(item):
+    """Stable identity for a per-item outcome across node reruns: only the
+    invariant fields (volatile ones like the research evidence text vary
+    between enrichment runs and would defeat the cache)."""
+    ident = {k: item.get(k) for k in ("subject", "section_topic", "pair_srcs")
+             if item.get(k)}
+    return json.dumps(ident, sort_keys=True, ensure_ascii=False)
+
+
 def iterating_generative_node(node_id, phase, spec_factory, items_fn):
     """Run a generative node ONCE PER ITEM (Step 9-F per section, Step 13 per image
     pair -- TICKET-0053). Each item builds its own per-item context; certified
     outputs are collected. Items that cannot certify are skipped (workflow-sanctioned
-    for these optional enhancers), so the run never halts here."""
+    for these optional enhancers), so the run never halts here.
+
+    CERTIFIED per-item outcomes are checkpointed incrementally in the
+    gen_<node>_progress artifact (TICKET-0213): the node's main artifact is only
+    written at node END, so a mid-node provider/billing outage (observed live:
+    DeepSeek 402 mid-way through 193 separators) used to discard every already-
+    certified item; a rerun now re-pays only the UNcertified ones."""
     def handler(sctx):
         if sctx.dry_generative:
             return {"complete": True, "note": "[dry] iterating generative stubbed"}
         items = items_fn(sctx)
+        progress = sctx.state.read_artifact("gen_" + node_id + "_progress") or {}
         outputs, per_item = [], []
         for it in items:
+            cached = progress.get(_item_cache_key(it))
+            if isinstance(cached, dict) and cached.get("output"):
+                outputs.append(cached["output"])
+                per_item.append({"item": it, "output": cached["output"],
+                                 "rounds": cached.get("rounds"), "cached": True})
+                continue
             # run_generative_node already catches its own internal failures and
             # returns an ESCALATE outcome rather than raising, but a per-item
             # exception here (a bad spec_factory/items_fn value, an unexpected
@@ -508,6 +553,13 @@ def iterating_generative_node(node_id, phase, spec_factory, items_fn):
                 outputs.append(outcome["output"])
                 per_item.append({"item": it, "output": outcome["output"],
                                  "rounds": outcome.get("rounds")})
+                # Incremental checkpoint (TICKET-0213): survive a mid-node outage.
+                progress[_item_cache_key(it)] = {"output": outcome["output"],
+                                                 "rounds": outcome.get("rounds")}
+                try:
+                    sctx.state.save_artifact("gen_" + node_id + "_progress", progress)
+                except Exception:
+                    pass
             else:
                 per_item.append({"item": it, "skipped": True,
                                  "reason": outcome.get("reason", outcome["status"])})
