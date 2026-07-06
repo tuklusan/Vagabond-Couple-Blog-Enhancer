@@ -252,7 +252,11 @@ def extract_context(html, allow_llm=False):
         ctx["stops"] = stops
         ctx["landmarks"] = ", ".join(landmarks[:8])
         ctx["waypoints"] = (waypoints or stops)[:5]
-        ctx["covers"] = (schema.get("description", "") or "")[:220]
+        # schema.org allows non-string description values (objects/arrays);
+        # slicing one raises TypeError -- same class as the TICKET-0092 guard
+        # on hasPart names/descs, missed here at the top level (TICKET-0211).
+        desc = schema.get("description")
+        ctx["covers"] = desc[:220] if isinstance(desc, str) else ""
         ctx["existing_facts"] = "\n".join(facts[:25])
 
     # sections: body H2s first, else summary-block descriptors. validators.

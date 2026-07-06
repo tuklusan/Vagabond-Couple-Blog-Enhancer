@@ -70,6 +70,7 @@ def main():
     check("known_entities_present", "Ashgabat" in joined and "Turkmenbashi" in joined, joined[:80])
 
     test_derived_waypoints_string_type_ignored()
+    test_non_string_schema_description_safe()
     test_trip_timeframe_extraction()
 
     print()
@@ -77,6 +78,18 @@ def main():
         print(_ascii("FAILED: " + str(FAILS)))
         sys.exit(1)
     print("CONTEXT-EXTRACTION TESTS PASSED")
+
+
+def test_non_string_schema_description_safe():
+    """TICKET-0211: a schema.org description that is an object/array (legal)
+    must not crash the covers extraction."""
+    html = ('<html><body><script type="application/ld+json">'
+            '{"@context":"https://schema.org","@type":"TravelAction",'
+            '"name":"X","description":{"@type":"Thing","name":"weird"},'
+            '"fromLocation":{"name":"A"},"toLocation":{"name":"B"}}'
+            "</script><!--more--><p>body</p></body></html>")
+    ctx = context_extractor.extract_context(html, allow_llm=False)
+    check("nonstring_description_no_crash", ctx["covers"] == "", ctx["covers"])
 
 
 def test_trip_timeframe_extraction():
