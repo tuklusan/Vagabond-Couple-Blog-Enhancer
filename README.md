@@ -172,7 +172,7 @@ one writer and one reviewer.
 | **OpenRouter** | Writer (primary) | <https://openrouter.ai/keys> | Free models available (`openrouter/free`). Key looks like `sk-or-v1-…`. |
 | **DeepSeek** | Writer fallback **+ Reviewer fallback** | <https://platform.deepseek.com/api_keys> | Paid but inexpensive. Used as the **universal reviewer fallback** when Claude is unusable. |
 | **Anthropic (Claude)** | Reviewer (primary, **web-grounded**) | <https://console.anthropic.com/settings/keys> | Key looks like `sk-ant-…`. **Requires a positive credit balance** (Plans & Billing) or every call returns `400: credit balance too low`. Web-grounded fact-checking only works here. |
-| **NVIDIA NIM** | Writer fallback + 1J vision audit | <https://build.nvidia.com/> | Optional for writing (last-resort writer fallback); **required for the Phase 1/1J visual image audit** (the only provider in the stack that can look at a photograph — without this key 1J records `unavailable` and the run continues). |
+| **NVIDIA NIM** | Writer fallback + reviewer fallback + vision | <https://build.nvidia.com/> | Optional for writing (writer fallback chain); **hosts the same `deepseek-v4-pro` as a reviewer/writer fallback pool** (TICKET-0214) so a DeepSeek-account outage doesn't silence the pipeline's only reviewer; **required for all vision features** (1J image audit, Step-13 vision nudge — without this key they record `unavailable`/skip and the run continues). |
 
 > **Minimum viable setup:** OpenRouter (free) for the writer + DeepSeek for the
 > reviewer. Fact-checking then runs on DeepSeek's own knowledge (no live web). Add

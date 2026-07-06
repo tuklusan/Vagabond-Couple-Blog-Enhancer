@@ -205,11 +205,31 @@ def _review_with_deepseek(system, user, max_tokens):
     return text, []
 
 
+def _review_with_nim_deepseek(system, user, max_tokens):
+    """SAME DeepSeek model, NVIDIA-hosted (TICKET-0214): NIM serves
+    deepseek-ai/deepseek-v4-pro on integrate.api.nvidia.com under the existing
+    NVIDIA_API_KEY_CODING -- a separate billing pool from api.deepseek.com, so a
+    DeepSeek-account 402 (observed live, 2026-07-05: it took down reviewer,
+    writer-fallback, AND the push gate at once) no longer silences the
+    pipeline's only reviewer. Model identity is preserved ('deepseek-ai/' +
+    the configured reviewer model), so review behavior matches the primary
+    fallback."""
+    messages = [
+        {"role": "system", "content": system + DEEPSEEK_FALLBACK_NOTE},
+        {"role": "user", "content": user},
+    ]
+    budget = max(max_tokens, REVIEWER_DEEPSEEK_TOKEN_FLOOR)
+    text = writer_client.call_nvidia(messages, max_tokens=budget,
+                                     model="deepseek-ai/" + config.REVIEWER_DEEPSEEK_MODEL)
+    return text, []
+
+
 def review_raw(system, user, web_search=True, model=None, max_tokens=4096, max_continuations=4):
     """
     Run a review. Reviewer role = Claude (web-grounded) first; if Claude is
     unusable for ANY reason (no credit balance, auth, outage), fall back
-    UNIVERSALLY to DeepSeek. Returns: (text, sources, provider).
+    UNIVERSALLY to DeepSeek -- first on its own API, then the same model
+    NVIDIA-hosted (TICKET-0214). Returns: (text, sources, provider).
     """
     try:
         text, sources = _review_with_claude(system, user, web_search, model, max_tokens, max_continuations)
@@ -220,13 +240,21 @@ def review_raw(system, user, web_search=True, model=None, max_tokens=4096, max_c
             text, sources = _review_with_deepseek(system, user, max_tokens)
             return text, sources, "deepseek:" + config.REVIEWER_DEEPSEEK_MODEL
         except Exception as e_ds:
-            # Both reviewer providers are unusable. Never crash and never silently
-            # certify -> emit a verdict that forces ESCALATE to the operator.
-            _safe_print("[reviewer] DeepSeek also failed (" + str(e_ds)[:160] + "); ESCALATING.")
-            note = ("both reviewer providers unavailable: claude=" + str(e_claude)[:120]
-                    + " | deepseek=" + str(e_ds)[:120])
-            synthetic = json.dumps({"decision": "ESCALATE", "note": note, "criteria": {}})
-            return synthetic, [], "none"
+            _safe_print("[reviewer] DeepSeek API failed (" + str(e_ds)[:160]
+                        + "); trying NVIDIA-hosted DeepSeek...")
+            try:
+                text, sources = _review_with_nim_deepseek(system, user, max_tokens)
+                return text, sources, "nim-deepseek:deepseek-ai/" + config.REVIEWER_DEEPSEEK_MODEL
+            except Exception as e_nim:
+                # Every reviewer provider is unusable. Never crash and never
+                # silently certify -> emit a verdict that forces ESCALATE.
+                _safe_print("[reviewer] NVIDIA-hosted DeepSeek also failed ("
+                            + str(e_nim)[:160] + "); ESCALATING.")
+                note = ("all reviewer providers unavailable: claude=" + str(e_claude)[:100]
+                        + " | deepseek=" + str(e_ds)[:100]
+                        + " | nim-deepseek=" + str(e_nim)[:100])
+                synthetic = json.dumps({"decision": "ESCALATE", "note": note, "criteria": {}})
+                return synthetic, [], "none"
 
 
 def ping():

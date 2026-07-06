@@ -299,18 +299,23 @@ def chat(messages, max_tokens=2048, temperature=0.1, allow_fallback=True,
     Send a chat completion across the writer provider chain, moving on when a
     provider errors so the pipeline keeps going.
 
-    Default order: OpenRouter (free) -> DeepSeek -> NVIDIA.
-    prefer_deepseek=True reorders to DeepSeek -> OpenRouter -> NVIDIA. The review
+    Default order: OpenRouter (free) -> DeepSeek -> NVIDIA-hosted DeepSeek ->
+    NVIDIA nemotron. prefer_deepseek=True reorders DeepSeek first. The review
     loop sets this after openrouter/free repeatedly fails a node's OBJECTIVE
     (deterministic) checks: the free model is a weak instruction-follower on
     tight-constraint nodes, so we escalate the writer to the reliable provider
     rather than burning rounds -- mirroring the reviewer's universal fallback.
+    The NIM-hosted deepseek-v4-pro link (TICKET-0214) keeps the writer on the
+    SAME model when the DeepSeek account itself is out of credit (402) -- a
+    separate billing pool under the existing NVIDIA key.
 
     Returns: (content_str, provider_label). Raises only if every provider fails.
     """
     providers = [
         ("openrouter:" + OPENROUTER_MODEL, lambda: call_openrouter(messages, max_tokens, temperature)),
         ("deepseek-v4-pro", lambda: call_deepseek(messages, max_tokens, temperature)),
+        ("nim-deepseek-v4-pro", lambda: call_nvidia(messages, max_tokens, temperature,
+                                                    model="deepseek-ai/deepseek-v4-pro")),
         ("nvidia-nemotron", lambda: call_nvidia(messages, max_tokens, temperature)),
     ]
     if prefer_deepseek:
